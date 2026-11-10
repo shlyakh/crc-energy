@@ -61,6 +61,7 @@ report.coops_detail = await detail(); console.log(JSON.stringify(report.coops_de
 await source("ghcnh"); await sleep(600); report.ghcnh_stations = await evaluate("document.querySelectorAll('#stations-list li').length"); console.log(JSON.stringify({ ghcnh_stations: report.ghcnh_stations }));
 // ERA5 baseline (cells) and CRC Open (cells) with a cell click
 await source("era5"); report.era5 = { horizon: await evaluate("document.getElementById('horizon').value"), options: await evaluate("document.getElementById('horizon').options.length") }; console.log(JSON.stringify(report.era5)); await sleep(800); await shot("s6-era5");
+await source("storm_curves"); report.curves = { hazards: await evaluate("document.getElementById('hazard').options.length"), horizon: await evaluate("document.getElementById('horizon').value") }; console.log(JSON.stringify(report.curves)); await sleep(800); await shot("s6b-curves");
 await source("crc_open"); await sleep(800);
 await change("#hazard", "rflood"); await waitReady("crc_open: rflood"); await change("#hazard", "tx_max"); await waitReady("crc_open: tx_max"); await sleep(600);
 const c = await centre(); await click(c[0], c[1]); report.cell_detail = await detail(); console.log(JSON.stringify(report.cell_detail)); await shot("s7-crc-cell");

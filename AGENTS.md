@@ -1,9 +1,15 @@
 # Agent guide — crc-lab
 
 Current work: a data explorer for Climate Risk Commons (CRC) data, Texas, with eight CRC Open hazards
-(Phase 1) and NOAA Storm Events as a cleaned source on H3 cells (Phase 2); both built 2026-11-10, awaiting
-review. Deferred: hail and thunderstorm-gust curves (Phase 3), two asset sets (Phase 4). A separate sources
-track (branch `sources-track`, `docs/sources-track/`) scopes the other crc-sdk sources for the explorer.
+(Phase 1), NOAA Storm Events as a cleaned source on H3 cells (Phase 2) and hail-size and thunderstorm-gust
+curves built from it and brought into CRC (Phase 3); all built 2026-11-10, awaiting review. Deferred: two
+asset sets (Phase 4). Branches: `sources-track` (other crc-sdk sources, `docs/sources-track/`) and
+`explorer-v2` (source-centric explorer redo, IBTrACS first).
+
+On this branch (`explorer-v2`) the explorer is source-centric: `site/layers.json` declares `sources` and every
+layer's `source_id`; the page lists sources (IBTrACS first, CRC Open as one of them) and shows per-source
+controls. `src/crc_lab/explorer/tracks.py` builds the IBTrACS storm records; `tools/smoke.mjs` walks every
+source. Report: `docs/reports/E2-explorer-v2.md`.
 
 Read first:
 
@@ -43,16 +49,22 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - `src/crc_lab/storm_events/` — `plan.py` (S1 snapshot), `parse.py` (S2), `geometry.py` (S3 cells),
   `table.py` (S4 event table + data card), `compare.py` (S5), `explorer_layer.py` (S6),
   `build.py` (`python -m crc_lab.storm_events.build [--compare]`)
+<<<<<<< HEAD
   (per-hazard files, `for_assets` check), `build.py` (`python -m crc_lab.explorer.build`), `check_site.py`;
   `sources.py` (sources track: IBTrACS, CO-OPS, GHCNh layers under `site/data/sources/`)
 - `docs/sources-track/` — requirements and plan for the other crc-sdk sources (probes in `tools/probes/`)
 - `tools/smoke.mjs` — headless Chrome smoke test of the page (`node tools/smoke.mjs <out dir> [url] [--sources]`)
+=======
+- `src/crc_lab/curves/` — `annual_maxima.py` (C1), `fit.py` (C2 pooling, C3 `from_table`, cards, `for_assets`
+  checks), `sensitivity.py`, `build.py` (`python -m crc_lab.curves.build [--sensitivity] [--verify]`)
+>>>>>>> origin/main
 - `site/` — the static explorer: `index.html`, `app.js`, `style.css`, `layers.json` (E9 registry),
   `sources.json` (E2, hand-written); `site/data/` is generated and git-ignored
 - `tests/` — pytest, offline; `test_pins.py` guards the pins, `test_explorer.py` the build helpers,
-  `test_storm_events.py` the parser and cells on `tests/fixtures/` (a fixed 2024 sample)
-- `justfile` — `just data`, `just verify`, `just storm-events`, `just storm-events-compare`, `just site`,
-  `just all`, `just serve`, `just up`, `just test`, `just lint`
+  `test_storm_events.py` the parser and cells on `tests/fixtures/` (a fixed 2024 sample), `test_curves.py`
+  the annual maxima and pooling on a synthetic event table
+- `justfile` — `just data`, `just verify`, `just storm-events`, `just storm-events-compare`, `just curves`,
+  `just curves-sensitivity`, `just site`, `just all`, `just serve`, `just up`, `just test`, `just lint`
 - `Dockerfile`, `Caddyfile`, `compose.yaml` — one container serving `site/` (E8); `.github/workflows/pages.yml`
 
 Explorer conventions: curves are evaluated in Python at return periods 2–500 years and shipped as values

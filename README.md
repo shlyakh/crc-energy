@@ -11,11 +11,15 @@ layers (hottest day, coldest night, wettest day, river flood, wind, fire weather
 2. Hail and thunderstorm-gust hazard curves derived from it and brought into CRC.
 3. Asset sets: solar farms (energy) and real estate.
 
-Status: Phase 1 (explorer v1) and Phase 2 (Storm Events) built 2026-11-10, awaiting review; a sources track
-(other crc-sdk sources in the explorer) runs on branch `sources-track`. See `docs/requirements.md`,
+Status: Phases 1–3 (explorer, Storm Events, hail and gust curves) built 2026-11-10, awaiting review. Branches:
+`sources-track` (other crc-sdk sources probed and prototyped) and `explorer-v2` (source-centric redo, IBTrACS first). See `docs/requirements.md`,
 `docs/implementation-plan.md` and `docs/reports/`. Earlier scope is in `docs/archive/`.
 
 ## Explorer
+
+Branch `explorer-v2`: the page is organised by source (cyclone tracks, storm reports, hail and gust curves,
+coastal water levels, station curves, ERA5 baseline, CRC Open projections); see
+`docs/reports/E2-explorer-v2.md`. The text below describes version 1 on main.
 
 `site/` is a static page: a Texas map of eight CRC Open hazards on H3 cells (hazard, horizon and return
 period selectors; click a cell for its curve) and a catalogue of all 63 hazards in the release, generated
@@ -27,6 +31,8 @@ just data      # build site/data/ (catalogue, Texas outline, 8 hazards x 3 horiz
 just verify    # same, then compare shipped values with crc-sdk's for_assets at sampled cells
 just storm-events          # NOAA Storm Events snapshot (360 MB, cached), Texas event table, explorer layer
 just storm-events-compare  # plus the NCEI vs Source Cooperative comparison report
+just curves                # hail-size and gust curves from the event table, into CRC and the explorer
+just curves-sensitivity    # plus the sensitivity note at ten cities
 just serve     # http://127.0.0.1:8000
 just up        # one container (Caddy) on http://127.0.0.1:8080
 ```

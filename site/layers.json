@@ -5,7 +5,12 @@
     "style": "https://tiles.openfreemap.org/styles/positron",
     "attribution": "Basemap © OpenFreeMap, © OpenMapTiles, data © OpenStreetMap contributors"
   },
-  "defaults": { "source": "ibtracs", "crc_hazard": "tx_max", "horizon": 2050, "return_period": 100 },
+  "defaults": {
+    "source": "ibtracs",
+    "crc_hazard": "tx_max",
+    "horizon": 2050,
+    "return_period": 100
+  },
   "sources": [
     {
       "id": "ibtracs",
@@ -31,6 +36,20 @@
       "coverage": "Texas, 1950–2026 (tornado only before 1955; hail and wind from 1955; all types from 1996).",
       "licence": "U.S. government work; attribution requested",
       "status": "loaded"
+    },
+    {
+      "id": "storm_curves",
+      "title": "Hail and gust curves from storm reports",
+      "provider": "crc-lab curves fitted from NOAA Storm Events reports (Phase 3), brought into CRC with crc-sdk from_table",
+      "short": "Largest hail and strongest thunderstorm wind of the year, 1996–2025, as a curve per H3 cell.",
+      "returns": "Per resolution-5 cell, a return-level curve of the annual maximum hail size and thunderstorm gust.",
+      "coverage": "Texas cells, reports 1996–2025; horizon 2025 is the end of the observed window.",
+      "licence": "Derived from U.S. government data; attribution to NOAA NCEI",
+      "status": "loaded",
+      "caveats": [
+        "Built from storm reports, not measurements: reports follow people and roads, so an empty or low cell may be unobserved rather than calm.",
+        "Regional screening: a value is the curve for a whole cell (about 253 km²)."
+      ]
     },
     {
       "id": "coops",
@@ -86,7 +105,15 @@
       "file": "data/texas.geojson",
       "source": "U.S. Census Bureau, TIGER/Line cartographic boundary cb_2024_us_state_500k",
       "licence": "Public domain (U.S. government work)",
-      "style": { "line": [42, 42, 40, 255], "width": 1.5 },
+      "style": {
+        "line": [
+          42,
+          42,
+          40,
+          255
+        ],
+        "width": 1.5
+      },
       "on": true
     },
     {
@@ -97,7 +124,67 @@
       "file": "data/sources/ibtracs.json",
       "source": "NOAA NCEI IBTrACS v04r01, North Atlantic basin, via crc-sdk IBTrACSPlan",
       "licence": "U.S. government work; attribution requested (Schreck et al. 2024, doi:10.25921/82ty-9e16)",
-      "style": { "hue": 300, "chroma": 0.14, "category_colors": { "-5": [160, 160, 158], "-4": [160, 160, 158], "-3": [160, 160, 158], "-2": [160, 160, 158], "-1": [140, 170, 210], "0": [94, 141, 203], "1": [237, 161, 0], "2": [235, 104, 52], "3": [214, 60, 40], "4": [170, 30, 60], "5": [110, 10, 60] } }
+      "style": {
+        "hue": 300,
+        "chroma": 0.14,
+        "category_colors": {
+          "-5": [
+            160,
+            160,
+            158
+          ],
+          "-4": [
+            160,
+            160,
+            158
+          ],
+          "-3": [
+            160,
+            160,
+            158
+          ],
+          "-2": [
+            160,
+            160,
+            158
+          ],
+          "-1": [
+            140,
+            170,
+            210
+          ],
+          "0": [
+            94,
+            141,
+            203
+          ],
+          "1": [
+            237,
+            161,
+            0
+          ],
+          "2": [
+            235,
+            104,
+            52
+          ],
+          "3": [
+            214,
+            60,
+            40
+          ],
+          "4": [
+            170,
+            30,
+            60
+          ],
+          "5": [
+            110,
+            10,
+            60
+          ]
+        }
+      }
     },
     {
       "id": "storm_events",
@@ -110,10 +197,77 @@
       "licence": "U.S. government work; attribution requested",
       "detail_url": "https://www.ncei.noaa.gov/stormevents/eventdetails.jsp?id={event_id}",
       "style": {
-        "colors": { "Hail": [42, 120, 214], "Thunderstorm Wind": [235, 104, 52], "Tornado": [232, 123, 164], "Flash Flood": [27, 175, 122], "Flood": [237, 161, 0] },
-        "other": [122, 121, 118]
+        "colors": {
+          "Hail": [
+            42,
+            120,
+            214
+          ],
+          "Thunderstorm Wind": [
+            235,
+            104,
+            52
+          ],
+          "Tornado": [
+            232,
+            123,
+            164
+          ],
+          "Flash Flood": [
+            27,
+            175,
+            122
+          ],
+          "Flood": [
+            237,
+            161,
+            0
+          ]
+        },
+        "other": [
+          122,
+          121,
+          118
+        ]
       },
-      "default_types": ["Hail", "Thunderstorm Wind"]
+      "default_types": [
+        "Hail",
+        "Thunderstorm Wind"
+      ]
+    },
+    {
+      "id": "hail_size",
+      "kind": "h3-cells",
+      "title": "Largest hail of the year (reports, 1996–2025)",
+      "file": "data/hazards/hail_size/{horizon}.json",
+      "source": "crc-lab curves from NOAA Storm Events reports",
+      "licence": "Derived from U.S. government data; attribution to NOAA NCEI",
+      "horizons": [
+        2025
+      ],
+      "style": {
+        "hue": 330,
+        "chroma": 0.15
+      },
+      "caveat": "Built from storm reports, not measurements: an empty cell may be unobserved. Annual maxima per cell, pooled with the six neighbouring cells, Gumbel with a zero atom (see data/curves/hail_size.card.json).",
+      "source_id": "storm_curves"
+    },
+    {
+      "id": "thunderstorm_gust",
+      "kind": "h3-cells",
+      "title": "Strongest thunderstorm wind of the year (reports, 1996–2025)",
+      "file": "data/hazards/thunderstorm_gust/{horizon}.json",
+      "source": "crc-lab curves from NOAA Storm Events reports",
+      "licence": "Derived from U.S. government data; attribution to NOAA NCEI",
+      "horizons": [
+        2025
+      ],
+      "style": {
+        "hue": 285,
+        "chroma": 0.14
+      },
+      "caveat": "Built from storm reports (mostly estimated gusts), not measurements: an empty cell may be unobserved. Pooled with the six neighbouring cells, Gumbel with a zero atom (see data/curves/thunderstorm_gust.card.json).",
+      "source_id": "storm_curves"
     },
     {
       "id": "coops",
@@ -124,7 +278,24 @@
       "source": "NOAA CO-OPS Extreme Water Levels, via crc-sdk NOAAExtremeWaterLevelPlan",
       "licence": "U.S. government work; attribution requested (NOAA CO-OPS)",
       "caveat": "Levels as published by NOAA (annual exceedance probabilities from a detrended series, relative to the station datum); not fitted by crc-sdk. A station is a point, not a stretch of coast.",
-      "style": { "fill": [26, 110, 170, 220], "line": [255, 255, 255, 230], "radius": 6, "width": 1.5, "hue": 215, "chroma": 0.13 }
+      "style": {
+        "fill": [
+          26,
+          110,
+          170,
+          220
+        ],
+        "line": [
+          255,
+          255,
+          255,
+          230
+        ],
+        "radius": 6,
+        "width": 1.5,
+        "hue": 215,
+        "chroma": 0.13
+      }
     },
     {
       "id": "ghcnh",
@@ -135,7 +306,24 @@
       "source": "NOAA GHCNh hourly temperature, curves fitted by crc-sdk (GEV, L-moments)",
       "licence": "CC0-1.0 per the AWS registry; attribution requested (NOAA GHCNh)",
       "caveat": "Historical observations at a point, not a projection; extremes of sampled hourly temperature, not daily TXx. Curves are crc-sdk's fit from 2000–2024 (at least 15 valid years).",
-      "style": { "fill": [214, 90, 40, 220], "line": [255, 255, 255, 230], "radius": 6, "width": 1.5, "hue": 30, "chroma": 0.16 }
+      "style": {
+        "fill": [
+          214,
+          90,
+          40,
+          220
+        ],
+        "line": [
+          255,
+          255,
+          255,
+          230
+        ],
+        "radius": 6,
+        "width": 1.5,
+        "hue": 30,
+        "chroma": 0.16
+      }
     },
     {
       "id": "era5_txx",
@@ -143,27 +331,152 @@
       "kind": "h3-cells",
       "title": "Hottest day of the year, ERA5 baseline 1991–2020",
       "file": "data/sources/era5_txx/{horizon}.json",
-      "horizons": [2005],
-      "display": { "unit": "°C", "offset": 0 },
+      "horizons": [
+        2005
+      ],
+      "display": {
+        "unit": "°C",
+        "offset": 0
+      },
       "source": "ERA5 reanalysis (1.5° WeatherBench2 copy), curves fitted by crc-sdk (GEV, L-moments)",
       "licence": "CC BY 4.0; contains modified Copernicus Climate Change Service information",
       "caveat": "Historical baseline, not a projection: annual maxima 1991–2020 from a 1.5° reanalysis, fitted per H3 resolution-4 cell (about 1,770 km²). Reanalysis underestimates local extremes; a cell is an area average. Horizon 2005 is the window centre.",
-      "style": { "hue": 30, "chroma": 0.16 }
+      "style": {
+        "hue": 30,
+        "chroma": 0.16
+      }
     },
-    { "id": "tx_max", "source_id": "crc_open", "kind": "h3-cells", "title": "Hottest day of the year", "file": "data/hazards/tx_max/{horizon}.json", "source": "CRC Open", "licence": "CC BY-NC 4.0", "display": { "unit": "°C", "offset": -273.15 }, "style": { "hue": 30, "chroma": 0.16 } },
-    { "id": "tn_min", "source_id": "crc_open", "kind": "h3-cells", "title": "Coldest night of the year", "file": "data/hazards/tn_min/{horizon}.json", "source": "CRC Open", "licence": "CC BY-NC 4.0", "display": { "unit": "°C", "offset": -273.15 }, "style": { "hue": 265, "chroma": 0.14 } },
-    { "id": "rx1day", "source_id": "crc_open", "kind": "h3-cells", "title": "Wettest day of the year", "file": "data/hazards/rx1day/{horizon}.json", "source": "CRC Open", "licence": "CC BY-NC 4.0", "style": { "hue": 235, "chroma": 0.14 } },
-    { "id": "rflood", "source_id": "crc_open", "kind": "h3-cells", "title": "River flood depth", "file": "data/hazards/rflood/{horizon}.json", "source": "CRC Open", "licence": "CC BY-NC 4.0", "style": { "hue": 215, "chroma": 0.13 } },
-    { "id": "wind_max_daily_max", "source_id": "crc_open", "kind": "h3-cells", "title": "Strongest daily wind", "file": "data/hazards/wind_max_daily_max/{horizon}.json", "source": "CRC Open", "licence": "CC BY-NC 4.0", "style": { "hue": 300, "chroma": 0.13 } },
-    { "id": "fwi", "source_id": "crc_open", "kind": "h3-cells", "title": "Fire weather index, annual maximum", "file": "data/hazards/fwi/{horizon}.json", "source": "CRC Open", "licence": "CC BY-NC 4.0", "style": { "hue": 15, "chroma": 0.16 } },
-    { "id": "spei", "source_id": "crc_open", "kind": "h3-cells", "title": "Drought index (SPEI)", "file": "data/hazards/spei/{horizon}.json", "source": "CRC Open", "licence": "CC BY-NC 4.0", "style": { "hue": 150, "chroma": 0.12 } },
-    { "id": "hot_days", "source_id": "crc_open", "kind": "h3-cells", "title": "Hot days per year", "file": "data/hazards/hot_days/{horizon}.json", "source": "CRC Open", "licence": "CC BY-NC 4.0", "style": { "hue": 45, "chroma": 0.15 } }
+    {
+      "id": "tx_max",
+      "source_id": "crc_open",
+      "kind": "h3-cells",
+      "title": "Hottest day of the year",
+      "file": "data/hazards/tx_max/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "display": {
+        "unit": "°C",
+        "offset": -273.15
+      },
+      "style": {
+        "hue": 30,
+        "chroma": 0.16
+      }
+    },
+    {
+      "id": "tn_min",
+      "source_id": "crc_open",
+      "kind": "h3-cells",
+      "title": "Coldest night of the year",
+      "file": "data/hazards/tn_min/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "display": {
+        "unit": "°C",
+        "offset": -273.15
+      },
+      "style": {
+        "hue": 265,
+        "chroma": 0.14
+      }
+    },
+    {
+      "id": "rx1day",
+      "source_id": "crc_open",
+      "kind": "h3-cells",
+      "title": "Wettest day of the year",
+      "file": "data/hazards/rx1day/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": {
+        "hue": 235,
+        "chroma": 0.14
+      }
+    },
+    {
+      "id": "rflood",
+      "source_id": "crc_open",
+      "kind": "h3-cells",
+      "title": "River flood depth",
+      "file": "data/hazards/rflood/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": {
+        "hue": 215,
+        "chroma": 0.13
+      }
+    },
+    {
+      "id": "wind_max_daily_max",
+      "source_id": "crc_open",
+      "kind": "h3-cells",
+      "title": "Strongest daily wind",
+      "file": "data/hazards/wind_max_daily_max/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": {
+        "hue": 300,
+        "chroma": 0.13
+      }
+    },
+    {
+      "id": "fwi",
+      "source_id": "crc_open",
+      "kind": "h3-cells",
+      "title": "Fire weather index, annual maximum",
+      "file": "data/hazards/fwi/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": {
+        "hue": 15,
+        "chroma": 0.16
+      }
+    },
+    {
+      "id": "spei",
+      "source_id": "crc_open",
+      "kind": "h3-cells",
+      "title": "Drought index (SPEI)",
+      "file": "data/hazards/spei/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": {
+        "hue": 150,
+        "chroma": 0.12
+      }
+    },
+    {
+      "id": "hot_days",
+      "source_id": "crc_open",
+      "kind": "h3-cells",
+      "title": "Hot days per year",
+      "file": "data/hazards/hot_days/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": {
+        "hue": 45,
+        "chroma": 0.15
+      }
+    }
   ],
   "planned": [
-    { "id": "hail", "source_id": "storm_events", "title": "Hail size curves", "status": "planned (Phase 3): curves from NOAA Storm Events" },
-    { "id": "gust", "source_id": "storm_events", "title": "Thunderstorm gust curves", "status": "planned (Phase 3): curves from NOAA Storm Events" },
-    { "id": "solar_farms", "source_id": null, "title": "Solar farms", "status": "planned (Phase 4): USGS / Berkeley Lab database" },
-    { "id": "usgs", "source_id": null, "title": "USGS stream gauges", "status": "planned (sources track S2)" },
-    { "id": "chirps", "source_id": null, "title": "CHIRPS monthly rainfall", "status": "planned (sources track; raster reader blocked on this Mac)" }
+    {
+      "id": "solar_farms",
+      "source_id": null,
+      "title": "Solar farms",
+      "status": "planned (Phase 4): USGS / Berkeley Lab database"
+    },
+    {
+      "id": "usgs",
+      "source_id": null,
+      "title": "USGS stream gauges",
+      "status": "planned (sources track S2)"
+    },
+    {
+      "id": "chirps",
+      "source_id": null,
+      "title": "CHIRPS monthly rainfall",
+      "status": "planned (sources track; raster reader blocked on this Mac)"
+    }
   ]
 }

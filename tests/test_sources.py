@@ -119,7 +119,7 @@ def test_registry_lists_the_sources_layers() -> None:
     root = Path(__file__).resolve().parents[1] / "site"
     registry = json.loads((root / "layers.json").read_text())
     kinds = {layer["id"]: layer["kind"] for layer in registry["layers"]}
-    assert kinds["ibtracs"] == "lines"
+    assert kinds["ibtracs"] == "tracks"
     assert kinds["coops"] == "points"
     assert kinds["ghcnh"] == "points"
     era5 = next(layer for layer in registry["layers"] if layer["id"] == "era5_txx")
@@ -128,5 +128,20 @@ def test_registry_lists_the_sources_layers() -> None:
     for layer in registry["layers"]:
         if layer["kind"] in ("points", "lines"):
             assert layer["file"].startswith("data/sources/")
-            assert layer.get("on") is False, "source layers start switched off"
             assert layer["licence"] and layer["source"] and layer["caveat"]
+    declared = {source["id"] for source in registry["sources"]}
+    assert registry["defaults"]["source"] == "ibtracs"
+    assert {
+        "ibtracs",
+        "storm_events",
+        "storm_curves",
+        "coops",
+        "ghcnh",
+        "era5",
+        "crc_open",
+    } == declared
+    for layer in registry["layers"]:
+        assert layer["source_id"] is None or layer["source_id"] in declared
+    for source in registry["sources"]:
+        assert source["status"] in ("loaded", "prototype", "planned")
+        assert source["licence"] and source["coverage"] and source["returns"]
