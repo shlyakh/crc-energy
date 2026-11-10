@@ -1,6 +1,6 @@
 # crc-energy requirements
 
-Status: **draft for review** · 2026-11-09 · pinned to `crc-sdk==0.11.1`, `crc-framework==0.6.0`
+Status: **committed draft, open items carried forward** · 2026-11-09 · pinned to `crc-sdk==0.11.1`, `crc-framework==0.6.0`
 
 This document answers one question for every component of the system: is it Climate Risk Commons (CRC) as shipped,
 something outside CRC, or an extension of CRC? Steps and schedule are in
@@ -189,7 +189,10 @@ First-phase scope follows the first three rows. The full 19-row table is in the 
 2. **Gust recipe.** PR to crc-sdk first, or build outside and upstream later?
 3. **Impact packaging.** Separate pack referenced by digest, or PR into the registry? `docs/impact-contracts.md` in
    crc-framework-rs has not yet been read field by field.
-4. **Region for D1.** Florida and the Gulf Coast need cyclone fields (H6) for wind; an interior region does not.
+4. **Region: decided — Texas (ERCOT footprint).** Heat (D1–D3) needs nothing extra. For wind (D4), the Gulf Coast part
+   of Texas needs cyclone fields (H6); start wind with interior and West Texas.
+6. **Heat first or wind first?** Still open: the draft plan starts with heat because CRC's ERA5 provider has no
+   gust recipe. Decide when work resumes.
 5. **Contribution channel.** crc-framework-rs has no CONTRIBUTING file; ask on CRC's Discord after D1 is public.
 
 ## 10. Not yet verified

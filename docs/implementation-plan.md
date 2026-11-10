@@ -1,6 +1,6 @@
 # crc-energy implementation plan
 
-Status: **draft for review** · 2026-11-09 · requirement IDs refer to [requirements.md](requirements.md)
+Status: **committed draft, open items carried forward** · 2026-11-09 · requirement IDs refer to [requirements.md](requirements.md)
 
 The plan is a sequence of small deliverables, each ending in something public. The order follows dependencies: no
 impact function before there is a present-day curve to apply it to, no aggregation before there are per-asset
@@ -10,6 +10,7 @@ losses, no validation report before there is a numerical oracle.
 
 | Decision | Choice |
 | --- | --- |
+| Region | Texas (ERCOT footprint) |
 | Hazard source, phase 1 | ERA5 and station observations. No CMIP projections for now |
 | Python and tooling | 3.12, `uv`, pinned `crc-sdk==0.11.1` and `crc-framework==0.6.0` |
 | Rust | Read the core, write Python; propose Rust changes only after a Python version has proved the design |
@@ -36,7 +37,7 @@ new recipe, so it is D4, not D1.
 
 ## D1 — Present-day heat layer (one day)
 
-Goal: per-cell annual-maximum temperature curves for one US state, written as a CRC canonical dataset that CRC's own
+Goal: per-cell annual-maximum temperature curves for Texas, written as a CRC canonical dataset that CRC's own
 reader and asset evaluation accept, plus a comparison with station records.
 
 1. **Set up (1 h).** `uv sync --all-extras --group dev`; `uv run pytest` (pin test passes).
@@ -94,7 +95,7 @@ assumption does to them.
 3. **Station check for wind.** This is where ERA5's underestimation of extremes will show; quantify it.
 4. **Fragility.** Line, tower and substation wind curves (I1) as impact definitions; each states the intensity
    measure it expects. Verify each parameter against its original paper before use.
-5. **Region.** Choose a region without tropical cyclones first. Cyclone regions need CLIMADA wind fields (H6).
+5. **Region.** Start with interior and West Texas. The Gulf Coast needs CLIMADA cyclone wind fields (H6).
 
 ## D5 — Footprints, dependence and roll-up (three to five days)
 
@@ -141,3 +142,9 @@ energy question-skills with evals (O2); physrisk and CLIMADA benchmarks (V3); SR
 
 Pin and record versions. Declare probability semantics and intensity measures. Label cell-level results as regional
 screening. Keep damage, derating and liability apart. Publish what was not verified.
+
+## Pick up here
+
+1. Decide heat-first (as drafted) or wind-first (requirements, open question 6).
+2. Work through requirements section 10, "Not yet verified".
+3. Start D1 for Texas.
