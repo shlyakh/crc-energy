@@ -48,7 +48,8 @@ Status: **in use** (built into a pipeline here) · **probed** (read from this re
 | NWS public forecast zones (`z_16ap26`) | Zone polygons for zone-located events | in use | `storm_events/geometry.py` | U.S. government work | 298 Texas zones; 1,694 events carry retired zone codes |
 | OpenFreeMap / OpenMapTiles / OpenStreetMap | Basemap | in use | `site/` | ODbL data, attribution | — |
 | GPWv4 gridded population (SEDAC) | Population density, 30 arc-seconds, 2000–2020 | candidate | planned, `docs/plan-hail-exposure.md` | Open, per its DOI page (research) | Not yet read from this repo |
-| Census TIGER/Line roads | Road network for a reporting-bias covariate | candidate | planned, same plan | Public domain | Not yet read from this repo |
+| Census TIGER/Line roads | Road network for a reporting-bias covariate | in use (first attempt) | `assets/reporting_bias.py` | Public domain | `tl_2024_48_prisecroads.zip` read 2026-11-10: 102,802 km of primary and secondary road in the Texas cells |
+| Census 2020 tract boundaries and tract populations | Population per tract for a reporting-bias covariate | in use (first attempt) | `assets/reporting_bias.py` | Public domain | `cb_2020_48_tract_500k.zip` and `CenPop2020_Mean_TR48.txt` read 2026-11-10: 6,884 tracts, 29,145,505 people. The Census API needs a key and was not used |
 
 ## What the solar research changes
 
