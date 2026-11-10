@@ -142,6 +142,40 @@
       "on": true
     },
     {
+      "id": "hail_size",
+      "kind": "h3-cells",
+      "title": "Largest hail of the year (reports, 1996\u20132025)",
+      "file": "data/hazards/hail_size/{horizon}.json",
+      "source": "crc-lab curves from NOAA Storm Events reports",
+      "licence": "Derived from U.S. government data; attribution to NOAA NCEI",
+      "horizons": [
+        2025
+      ],
+      "style": {
+        "hue": 330,
+        "chroma": 0.15
+      },
+      "caveat": "Built from storm reports, not measurements: an empty cell may be unobserved. Annual maxima per cell, pooled with the six neighbouring cells, Gumbel with a zero atom (see data/curves/hail_size.card.json).",
+      "on": true
+    },
+    {
+      "id": "thunderstorm_gust",
+      "kind": "h3-cells",
+      "title": "Strongest thunderstorm wind of the year (reports, 1996\u20132025)",
+      "file": "data/hazards/thunderstorm_gust/{horizon}.json",
+      "source": "crc-lab curves from NOAA Storm Events reports",
+      "licence": "Derived from U.S. government data; attribution to NOAA NCEI",
+      "horizons": [
+        2025
+      ],
+      "style": {
+        "hue": 285,
+        "chroma": 0.14
+      },
+      "caveat": "Built from storm reports (mostly estimated gusts), not measurements: an empty cell may be unobserved. Pooled with the six neighbouring cells, Gumbel with a zero atom (see data/curves/thunderstorm_gust.card.json).",
+      "on": true
+    },
+    {
       "id": "storm_events",
       "kind": "points-binary",
       "title": "Storm Events (NOAA reports)",
@@ -192,16 +226,6 @@
     }
   ],
   "planned": [
-    {
-      "id": "hail",
-      "title": "Hail size",
-      "status": "planned (Phase 3): curves from NOAA Storm Events"
-    },
-    {
-      "id": "gust",
-      "title": "Thunderstorm gust",
-      "status": "planned (Phase 3): curves from NOAA Storm Events"
-    },
     {
       "id": "solar_farms",
       "title": "Solar farms",

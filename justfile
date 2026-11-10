@@ -39,12 +39,20 @@ storm-events:
 storm-events-compare:
     uv run python -m crc_lab.storm_events.build --compare
 
+# Hail-size and thunderstorm-gust curves from the Storm Events table, into CRC and the explorer
+curves:
+    uv run python -m crc_lab.curves.build
+
+# Same, plus the sensitivity note (pooling ring, start year, family) at ten cities
+curves-sensitivity:
+    uv run python -m crc_lab.curves.build --sensitivity
+
 # Check that the static site is complete: every registry layer has its files
 site:
     uv run python -m crc_lab.explorer.check_site
 
 # Everything: all data, then site
-all: data storm-events site
+all: data storm-events curves site
 
 # Serve the site locally (http://127.0.0.1:8000)
 serve:

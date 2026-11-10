@@ -89,7 +89,9 @@ function buildSelectors() {
   sel.value = state.hazard;
 
   const hz = $("horizon"); hz.innerHTML = "";
-  for (const y of state.manifest.horizons) hz.append(new Option(String(y), y));
+  const horizons = layerById(state.hazard).horizons || state.manifest.horizons;
+  if (!horizons.includes(state.horizon)) state.horizon = horizons[0];
+  for (const y of horizons) hz.append(new Option(layerById(state.hazard).horizons ? `${y} (observed window end)` : String(y), y));
   hz.value = state.horizon;
   const rp = $("rp"); rp.innerHTML = "";
   for (const t of state.manifest.return_periods) rp.append(new Option(`1 in ${t} years`, t));
@@ -114,14 +116,15 @@ function buildSelectors() {
 function buildCaveats(payload) {
   const { catalog, manifest } = state; const layer = layerById(state.hazard);
   const res = payload.h3_resolution; const km2 = res === 5 ? "about 253 km²" : res === 7 ? "about 5.2 km²" : `resolution ${res}`;
+  const crcOpen = layer.source === "CRC Open";
   const items = [
-    `<b>High-emissions case (SSP5-8.5), not a forecast.</b> One pathway, pooled model ensemble, no historical baseline in the release.`,
+    crcOpen ? `<b>High-emissions case (SSP5-8.5), not a forecast.</b> One pathway, pooled model ensemble, no historical baseline in the release.` : `<b>${layer.caveat || "Observed data, not a projection."}</b>`,
     `<b>Regional screening.</b> Each cell is ${km2} (H3 resolution ${res}); a value is the curve for the whole cell, not any site in it.`,
-    `<b>Source:</b> CRC Open release <code>${catalog.release}</code>, licence ${catalog.licence} (non-commercial, with attribution). Attribution: ${catalog.attribution}.`,
+    crcOpen ? `<b>Source:</b> CRC Open release <code>${catalog.release}</code>, licence ${catalog.licence} (non-commercial, with attribution). Attribution: ${catalog.attribution}.` : `<b>Source:</b> ${layer.source}; ${layer.licence}. Window ${payload.release.includes("snapshot") ? payload.release : ""}.`,
     `<b>Curve:</b> ${payload.value_semantics}; probability semantics ${payload.probability_semantics || "unspecified"}; return periods read on the ${payload.tail} tail (1 in T years = non-exceedance ${payload.tail === "upper" ? "1 − 1/T" : "1/T"}).`,
     `<b>Cells:</b> every resolution-${res} cell that intersects the Texas boundary (${manifest.texas.cells[res]} cells); cells with no curve in the release are not drawn.`,
   ];
-  const note = catalog.hazards[state.hazard].notes; if (note) items.push(`<b>Release note for ${state.hazard}:</b> ${note}`);
+  const note = crcOpen && catalog.hazards[state.hazard] ? catalog.hazards[state.hazard].notes : null; if (note) items.push(`<b>Release note for ${state.hazard}:</b> ${note}`);
   const build = manifest.hazards.find((h) => h.hazard === state.hazard);
   if (build && build.outside_tabulated_support) items.push(`<b>Tabulated curves:</b> ${build.kinds.tabulated || 0} cells per horizon carry only a few knots near the rare end; return periods outside those knots show as no value (${build.outside_tabulated_support} values across horizons).`);
   if (build && build.warnings.length) for (const w of build.warnings) items.push(`<b>crc-sdk warning:</b> ${w}`);
@@ -212,8 +215,8 @@ async function render() {
   $("legend-note").textContent = `Scale spans the 2nd–98th percentile of ${n} cells with a value (${payload.cells.length - n} without). Grey: no value.`;
   buildCaveats(payload);
   buildSelectors();
-  if (state.selected && (state.selected.hazard !== state.hazard || state.selected.horizon !== state.horizon)) { state.selected = null; $("detail").classList.add("hidden"); }
-  else if (state.selected) showDetail(state.selected.index);
+  if (state.selected && (state.selected.hazard !== state.hazard || state.selected.horizon !== state.horizon)) state.selected = null;
+  if (state.selected) showDetail(state.selected.index); else $("detail").classList.add("hidden");
   requestAnimationFrame(() => {
     if (token !== rendering) return;
     const total = performance.now() - started;
@@ -374,7 +377,7 @@ async function main() {
   for (const l of registry.layers) state.layersOn.set(l.id, l.on !== false);
   $("release").innerHTML = `CRC Open <code>${catalog.release}</code> · crc-sdk ${manifest.versions["crc-sdk"]} · built ${manifest.built_at.slice(0, 10)}<br>${catalog.licence} · high-emissions case SSP5-8.5, not a forecast`;
   buildSelectors(); buildCatalog();
-  $("hazard").onchange = (e) => { state.hazard = e.target.value; state.selected = null; render(); };
+  $("hazard").onchange = (e) => { state.hazard = e.target.value; state.selected = null; const h = layerById(state.hazard).horizons || manifest.horizons; if (!h.includes(state.horizon)) state.horizon = h[0]; render(); };
   $("horizon").onchange = (e) => { state.horizon = Number(e.target.value); render(); };
   $("rp").onchange = (e) => { state.rp = Number(e.target.value); render(); };
   $("lock").onchange = (e) => { state.locked = e.target.checked; if (!state.locked) render(); };

@@ -19,7 +19,7 @@ Status: **agreed 2026-11-10** · for a separate Claude Code effort · requiremen
 | 0 | Repo ready; open items from requirements section 10 checked | G1 | 3 | done, reviewed 2026-11-10 |
 | 1 | Explorer v1: catalogue page and Texas hazard map, eight CRC Open hazards | E1–E9 | 20–30 | built 2026-11-10, awaiting review |
 | 2 | Storm Events table and the two-source comparison | S1–S6 | 20–25 | built 2026-11-10, awaiting review |
-| 3 | Hail and gust curves in CRC | C1–C6 | 10–15 | deferred |
+| 3 | Hail and gust curves in CRC | C1–C6 | 10–15 | built 2026-11-10, awaiting review |
 | 4 | Assets: solar farms; real-estate exploration | A1–A3 | 10–15 | deferred |
 
 Decided 2026-11-10: Phases 2–4 do not start until Phase 1 is reviewed. Their steps stay here so the explorer
@@ -113,6 +113,8 @@ the sources track (branch `sources-track`, `docs/sources-track/`), at Yuri's req
 
 Done when: both datasets load through CRC's reader, `for_assets` returns values, and both layers appear beside
 CRC Open's wind layer in the explorer.
+
+Report: [reports/3-curves.md](reports/3-curves.md); sensitivity: [reports/3-curves-sensitivity.md](reports/3-curves-sensitivity.md).
 
 ## Phase 4 — Assets
 

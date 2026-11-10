@@ -154,22 +154,20 @@ def _params(row: dict[str, Any]) -> list[Any]:
     return out
 
 
-def build_hazard(
-    plan: CRCOpenPlan,
+def write_horizon_files(
+    parquet: Path,
     hazard: str,
     cells_by_resolution: dict[int, set[int]],
     out_dir: Path,
-    cache_dir: Path,
     *,
-    horizons: tuple[int, ...] = HORIZONS,
+    horizons: tuple[int, ...],
+    pathway: str,
+    release: str,
     return_periods: tuple[int, ...] = RETURN_PERIODS,
     workers: int | None = None,
-    refresh: bool = False,
+    result: HazardBuild | None = None,
 ) -> HazardBuild:
-    import time
-
-    started = time.time()
-    parquet, notes = materialize(plan, hazard, cache_dir, refresh=refresh)
+    """One JSON per horizon from any canonical Parquet (CRC Open or curves built here)."""
     meta = read_hazard_metadata(parquet)
     resolution = meta.h3_resolution
     cells = cells_by_resolution[resolution]
@@ -179,7 +177,7 @@ def build_hazard(
         pc.is_in(table["horizon"], pa.array(list(horizons), table["horizon"].type))
     )
     probabilities = return_periods_to_probabilities(return_periods, tail=meta.return_period_tail)
-    result = HazardBuild(
+    result = result or HazardBuild(
         hazard=hazard,
         parquet=str(parquet),
         unit=meta.value_unit,
@@ -187,7 +185,6 @@ def build_hazard(
         h3_resolution=resolution,
         horizons=list(horizons),
         cells_in_texas=len(cells),
-        warnings=notes,
     )
     for horizon in horizons:
         part = table.filter(pc.equal(table["horizon"], horizon)).sort_by("cell_index")
@@ -197,8 +194,8 @@ def build_hazard(
         payload = {
             "hazard": hazard,
             "horizon": horizon,
-            "pathway": plan.pathway,
-            "release": plan.release,
+            "pathway": pathway,
+            "release": release,
             "unit": meta.value_unit,
             "value_semantics": meta.value_semantics,
             "tail": meta.return_period_tail,
@@ -217,13 +214,53 @@ def build_hazard(
         result.rows_per_horizon[horizon] = len(rows)
         for row in rows:
             result.kinds[row["curve_kind"]] = result.kinds.get(row["curve_kind"], 0) + 1
-            key = "families" if row["curve_kind"] in ("fitted", "hurdle") else None
-            if key:
+            if row["curve_kind"] in ("fitted", "hurdle"):
                 result.families[row["curve_type"]] = result.families.get(row["curve_type"], 0) + 1
             if row["curve_kind"] == "no_data":
-                result.no_data_reasons[row["curve_type"]] = (
-                    result.no_data_reasons.get(row["curve_type"], 0) + 1
-                )
+                reason = row["curve_type"]
+                result.no_data_reasons[reason] = result.no_data_reasons.get(reason, 0) + 1
+    return result
+
+
+def build_hazard(
+    plan: CRCOpenPlan,
+    hazard: str,
+    cells_by_resolution: dict[int, set[int]],
+    out_dir: Path,
+    cache_dir: Path,
+    *,
+    horizons: tuple[int, ...] = HORIZONS,
+    return_periods: tuple[int, ...] = RETURN_PERIODS,
+    workers: int | None = None,
+    refresh: bool = False,
+) -> HazardBuild:
+    import time
+
+    started = time.time()
+    parquet, notes = materialize(plan, hazard, cache_dir, refresh=refresh)
+    meta = read_hazard_metadata(parquet)
+    result = HazardBuild(
+        hazard=hazard,
+        parquet=str(parquet),
+        unit=meta.value_unit,
+        tail=meta.return_period_tail,
+        h3_resolution=meta.h3_resolution,
+        horizons=list(horizons),
+        cells_in_texas=len(cells_by_resolution[meta.h3_resolution]),
+        warnings=notes,
+    )
+    write_horizon_files(
+        parquet,
+        hazard,
+        cells_by_resolution,
+        out_dir,
+        horizons=horizons,
+        pathway=plan.pathway,
+        release=plan.release,
+        return_periods=return_periods,
+        workers=workers,
+        result=result,
+    )
     result.seconds = round(time.time() - started, 1)
     return result
 
