@@ -1,4 +1,4 @@
-# crc-energy documentation
+# crc-lab documentation
 
 Current work (agreed 2026-11-10):
 

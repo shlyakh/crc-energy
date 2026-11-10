@@ -2,7 +2,7 @@
 
 from importlib.metadata import version
 
-from crc_energy import PINNED
+from crc_lab import PINNED
 
 
 def test_crc_versions_are_pinned() -> None:

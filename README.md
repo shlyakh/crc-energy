@@ -1,4 +1,4 @@
-# crc-energy
+# crc-lab
 
 Work on [Climate Risk Commons](https://climateriskcommons.org/) (CRC) data, for Texas:
 

@@ -1,4 +1,4 @@
-# Agent guide — crc-energy
+# Agent guide — crc-lab
 
 Current work: a data explorer for Climate Risk Commons (CRC) data and a NOAA Storm Events source, for Texas.
 Then hail and thunderstorm-gust hazard curves brought into CRC, and two asset sets (solar farms, real estate).
@@ -27,7 +27,7 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 ## Layout
 
 - `docs/` — requirements, plan, primers, explainers, archive
-- `src/crc_energy/` — package
+- `src/crc_lab/` — package
 - `tests/` — pytest; `test_pins.py` guards the pins
 
 ## Checks
