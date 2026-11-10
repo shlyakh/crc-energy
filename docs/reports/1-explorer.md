@@ -46,9 +46,12 @@ awaiting review before Phase 2.
 
 ## Not done / for review
 
-- Pages deployment runs on the first push of this commit; confirm the site renders at the Pages URL (the CI build
-  reads CRC Open over HTTPS, about a minute).
-- E7 was measured against a local server with software rendering; a measurement from the Pages URL on a laptop
-  is still to be written here.
+- Pages: the first workflow run succeeded (2026-11-10, run 42854310771); the site is at
+  https://shlyakh.github.io/crc-lab/ with the data built in CI (verification 0 mismatches) and the explainers at
+  `/explainers/`. Pages was switched from the legacy `main:/docs` build to the workflow build.
+- E7 from the Pages URL, same headless Chrome: first view **183 ms** after the scripts load (page wall time 2.9 s on
+  a cold cache, dominated by the 2 MB deck.gl bundle); hazard switch 13–64 ms, river flood **217 ms** (189 ms of it
+  the 0.5 MB gzipped file). Both limits hold; a cold-cache measurement with a real GPU on a laptop is still worth
+  a look during review.
 - No screenshots are committed; the smoke script lives in the session scratchpad and could move to `tools/`.
 - Phases 2–4 remain deferred.
