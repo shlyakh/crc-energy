@@ -37,6 +37,37 @@ SENSITIVITY_RULES = [
 ]
 
 
+def reporting_rates(
+    path: Path, rows: list[dict[str, Any]], hail: list[dict[str, Any]]
+) -> list[float | None]:
+    """Mean fitted reporting rate of the H3 cells whose centres fall inside each plant's hail circle.
+
+    From the reporting-bias model (report 5). None when the model output is absent or no cell
+    centre falls inside the circle.
+    """
+    if not path.exists():
+        return [None] * len(rows)
+    import h3
+    import numpy as np
+
+    table = pq.read_table(path, columns=["cell", "reporting_rate"]).to_pylist()
+    centres = np.array([h3.cell_to_latlng(h3.int_to_str(c["cell"])) for c in table])
+    rate = np.array([c["reporting_rate"] for c in table])
+    out: list[float | None] = []
+    for r, h in zip(rows, hail, strict=True):
+        cells = exposure.Reports(centres[:, 1], centres[:, 0], rate, 0, 0)
+        inside = exposure.distances_km(r["longitude"], r["latitude"], cells) <= h["radius_km"]
+        out.append(float(rate[inside].mean()) if inside.any() else None)
+    return out
+
+
+def corrected(prob: float, reporting_rate: float | None) -> float | None:
+    """Annual chance after dividing the underlying rate by the reporting rate."""
+    if reporting_rate is None or reporting_rate <= 0:
+        return None
+    return round(1 - (1 - prob) ** (1 / reporting_rate), 5)
+
+
 def mounting(r: dict[str, Any]) -> str | None:
     if r["single_axis"]:
         return "single-axis"
@@ -251,7 +282,15 @@ def main(argv: list[str] | None = None) -> int:
     ]
     levels = return_levels(assets, args.curves)
 
+    rr = reporting_rates(args.out / "reporting_bias.parquet", rows, hail)
     flat = {
+        "hail_reporting_rate": rr,
+        "hail_annual_prob_ge_1in_corrected": [
+            corrected(h["annual_prob_ge_1in"], x) for h, x in zip(hail, rr, strict=True)
+        ],
+        "hail_annual_prob_ge_2in_corrected": [
+            corrected(h["annual_prob_ge_2in"], x) for h, x in zip(hail, rr, strict=True)
+        ],
         "hail_radius_km": [h["radius_km"] for h in hail],
         "hail_reports_in_radius": [h["reports_in_radius"] for h in hail],
         "hail_circle_share_in_region": [h["circle_share_inside_region"] for h in hail],
@@ -323,7 +362,7 @@ def main(argv: list[str] | None = None) -> int:
     fit.write_json(args.out / "solar_tx.card.json", card)
 
     features = []
-    for r, h in zip(rows, hail, strict=True):
+    for r, h, x in zip(rows, hail, rr, strict=True):
         lv = levels.get(r["asset_id"], {})
         props = {
             "label": f"{r['name']} ({r['county']} County)",
@@ -354,6 +393,10 @@ def main(argv: list[str] | None = None) -> int:
             "hail_size_largest_mm": h["size_max_mm"],
             "annual_chance_hail_1in_or_more": h["annual_prob_ge_1in"],
             "annual_chance_hail_2in_or_more": h["annual_prob_ge_2in"],
+            "reporting_rate_fitted": round(x, 3) if x is not None else None,
+            "annual_chance_hail_1in_or_more_bias_corrected": corrected(h["annual_prob_ge_1in"], x),
+            "annual_chance_hail_2in_or_more_bias_corrected": corrected(h["annual_prob_ge_2in"], x),
+            "location_source": r["location_source"],
             "footprint_km2_placeholder": h["footprint_km2_placeholder"],
             "gust_return_levels_ms": ", ".join(
                 f"1 in {t}: {v:.1f}"

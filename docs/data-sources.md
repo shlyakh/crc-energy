@@ -21,8 +21,10 @@ Status: **in use** (built into a pipeline here) · **probed** (read from this re
 | NOAA ISD, USGS streamflow, USDA CDL, sea-level scenarios | Station curves; gauge flows; crop classes; scenarios | probed | — | crc-sdk plans | U.S. government works | See `docs/sources-track/requirements.md` |
 | CHIRPS, GloFAS | Monthly rain; flood depth rasters | probed, could not verify | — | crc-sdk | CC BY 4.0 | rasterio does not load on this Mac |
 | EFAS, EDO, ECCC, HYDAT | European and Canadian sources | not usable | — | crc-sdk | — | No Texas coverage |
-| MRMS radar hail (MESH) | Radar hail size, about 1 km, daily and sub-daily maxima | candidate | planned, `docs/plan-hail-exposure.md` | AWS `noaa-mrms-pds`, `CONUS/MESH_Max_1440min_00.50/` | NOAA open data | Listed 2026-11-10: first folder 20201014; files about 0.8 MB GRIB2. Not yet opened |
-| MYRORSS radar reanalysis | Radar hail size 1998–2011, 0.01° | candidate | planned, same plan | AWS `noaa-oar-myrorss-pds` | NOAA open data | Listed 2026-11-10: year folders 1998–2011. No open archive found for 2012 to October 2020 |
+| MRMS radar hail (MESH) | Radar hail size, 0.01°, daily maxima | in use | `radar/mrms.py`, `radar/analysis.py` | AWS `noaa-mrms-pds`, `CONUS/MESH_Max_1440min_00.50/` | NOAA open data | 1,903 days decoded, 2020-10-15 to 2025-12-31; 2 days missing |
+| NCEI Severe Weather Data Inventory, hail signatures (`nx3hail`) | Radar hail signatures per storm cell, 1995 on | in use | `radar/swdi.py` | NCEI yearly CSV | U.S. government (licence text not found) | Yearly files clipped to Texas; see `docs/research/radar-hail-sources.md` |
+| MYRORSS radar reanalysis | Radar hail size 1998–2011, 0.01° | candidate | — | AWS `noaa-oar-myrorss-pds` | NOAA open data | Year folders listed; not opened |
+| Iowa State MRMS archive | Radar hail size grid, August 2019 to October 2020 | candidate | — | `mtarchive.geol.iastate.edu` | open | Listed by research; daily maximum has gaps |
 | SPC hail climatology maps | Hail days per year, 1986–2015 | probed | Phase 3 by-eye check | `spc.noaa.gov/wcm/climo/` | U.S. government work | Image viewed; not ingested |
 
 ## Asset sources
@@ -47,6 +49,7 @@ Status: **in use** (built into a pipeline here) · **probed** (read from this re
 | Census cartographic boundaries (state, county, 2024) | Texas outline, county polygons | in use | `explorer/texas.py`, `storm_events/geometry.py` | Public domain | 254 Texas counties |
 | NWS public forecast zones (`z_16ap26`) | Zone polygons for zone-located events | in use | `storm_events/geometry.py` | U.S. government work | 298 Texas zones; 1,694 events carry retired zone codes |
 | OpenFreeMap / OpenMapTiles / OpenStreetMap | Basemap | in use | `site/` | ODbL data, attribution | — |
+| Census 2020 tract populations and TIGER 2024 primary and secondary roads | Covariates of the reporting-bias model | in use | `assets/reporting_bias.py` | Census Bureau | Public domain | See `docs/reports/5-reporting-bias.md` for files and checksums |
 | GPWv4 gridded population (SEDAC) | Population density, 30 arc-seconds, 2000–2020 | candidate | planned, `docs/plan-hail-exposure.md` | Open, per its DOI page (research) | Not yet read from this repo |
 | Census TIGER/Line roads | Road network for a reporting-bias covariate | in use (first attempt) | `assets/reporting_bias.py` | Public domain | `tl_2024_48_prisecroads.zip` read 2026-11-10: 102,802 km of primary and secondary road in the Texas cells |
 | Census 2020 tract boundaries and tract populations | Population per tract for a reporting-bias covariate | in use (first attempt) | `assets/reporting_bias.py` | Public domain | `cb_2020_48_tract_500k.zip` and `CenPop2020_Mean_TR48.txt` read 2026-11-10: 6,884 tracts, 29,145,505 people. The Census API needs a key and was not used |

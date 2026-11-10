@@ -70,11 +70,11 @@ def main(argv: list[str] | None = None) -> int:
         out_rows.append(
             {
                 "asset_id": r["asset_id"],
-                "radar_days_ge_29mm": int(res["plant_days"][t_lo][i]),
+                "radar_days_ge_30mm": int(res["plant_days"][t_lo][i]),
                 "radar_days_ge_50mm": int(res["plant_days"][t_hi][i]),
-                "radar_days_per_year_ge_29mm": res["plant_days"][t_lo][i] / years,
+                "radar_days_per_year_ge_30mm": res["plant_days"][t_lo][i] / years,
                 "radar_days_per_year_ge_50mm": res["plant_days"][t_hi][i] / years,
-                "radar_local_rate_ge_29mm": smoothed_rate(
+                "radar_local_rate_ge_30mm": smoothed_rate(
                     res["counts"][t_lo], grid, r["longitude"], r["latitude"], years
                 ),
                 "radar_local_rate_ge_50mm": smoothed_rate(
@@ -104,10 +104,17 @@ def main(argv: list[str] | None = None) -> int:
     # report-based figures on the same plants: annual chance of 1 inch or more -> rate of hits per year
     rep_rate = [-math.log(1 - r["hail_annual_prob_ge_1in"]) for r in rows]
     rep_rate2 = [-math.log(1 - r["hail_annual_prob_ge_2in"]) for r in rows]
-    rad29 = [o["radar_days_per_year_ge_29mm"] for o in out_rows]
+    rad29 = [o["radar_days_per_year_ge_30mm"] for o in out_rows]
     rad50 = [o["radar_days_per_year_ge_50mm"] for o in out_rows]
-    loc29 = [o["radar_local_rate_ge_29mm"] for o in out_rows]
+    loc29 = [o["radar_local_rate_ge_30mm"] for o in out_rows]
     loc50 = [o["radar_local_rate_ge_50mm"] for o in out_rows]
+    cor = [
+        -math.log(1 - r["hail_annual_prob_ge_1in_corrected"])
+        if r.get("hail_annual_prob_ge_1in_corrected") not in (None, 1.0)
+        else None
+        for r in rows
+    ]
+    ratio_cor = [a / b for a, b in zip(loc29, cor, strict=True) if b]
     ratio = [a / b for a, b in zip(loc29, rep_rate, strict=True) if b > 0]
     ratio2 = [a / b for a, b in zip(loc50, rep_rate2, strict=True) if b > 0]
     sw = {t: analysis.swath_summary(res["swath_areas_km2"][t]) for t in analysis.THRESHOLDS_MM}
@@ -133,16 +140,17 @@ def main(argv: list[str] | None = None) -> int:
         "",
         "| Measure | 10th percentile | Median | 90th percentile |",
         "| --- | --- | --- | --- |",
-        f"| Radar hail days per year over the plant, MESH 29 mm or more | {' | '.join(f(v) for v in q(rad29))} |",
+        f"| Radar hail days per year over the plant, MESH 30 mm or more | {' | '.join(f(v) for v in q(rad29))} |",
         f"| Radar hail days per year over the plant, MESH 50 mm or more | {' | '.join(f(v) for v in q(rad50))} |",
-        f"| Radar hail days per year at a point, averaged over {SMOOTH_KM:g} km, 29 mm or more | {' | '.join(f(v) for v in q(loc29))} |",
+        f"| Radar hail days per year at a point, averaged over {SMOOTH_KM:g} km, 30 mm or more | {' | '.join(f(v) for v in q(loc29))} |",
         f"| Radar hail days per year at a point, averaged over {SMOOTH_KM:g} km, 50 mm or more | {' | '.join(f(v) for v in q(loc50, (0.1, 0.5, 0.9)))} |",
         f"| Report-based hits per year, hail 1 inch or more (footprint 25 km²) | {' | '.join(f(v, 3) for v in q(rep_rate))} |",
         f"| Report-based hits per year, hail 2 inches or more | {' | '.join(f(v, 4) for v in q(rep_rate2))} |",
-        f"| Radar (29 mm, {SMOOTH_KM:g} km average) ÷ report-based (1 inch) | {' | '.join(f(v, 1) for v in q(ratio))} |",
+        f"| Radar (30 mm, {SMOOTH_KM:g} km average) ÷ report-based (1 inch) | {' | '.join(f(v, 1) for v in q(ratio))} |",
+        f"| Radar (30 mm, {SMOOTH_KM:g} km average) ÷ report-based, bias-corrected (1 inch) | {' | '.join(f(v, 1) for v in q(ratio_cor))} |",
         f"| Radar (50 mm, {SMOOTH_KM:g} km average) ÷ report-based (2 inches) | {' | '.join(f(v, 1) for v in q(ratio2))} |",
         "",
-        f"Plants with no radar hail day over them in the period: {sum(1 for v in rad29 if v == 0)} at 29 mm, {sum(1 for v in rad50 if v == 0)} at 50 mm.",
+        f"Plants with no radar hail day over them in the period: {sum(1 for v in rad29 if v == 0)} at 30 mm, {sum(1 for v in rad50 if v == 0)} at 50 mm.",
         "",
         "## Measured swath areas in the Texas box",
         "",
@@ -162,12 +170,12 @@ def main(argv: list[str] | None = None) -> int:
         "",
         "## Fort Bend County plants",
         "",
-        "| Plant | Radar days 29 mm or more | Radar days 50 mm or more | Largest radar size over the plant (mm) | On | Report-based annual chance, 2 inches or more |",
+        "| Plant | Radar days 30 mm or more | Radar days 50 mm or more | Largest radar size over the plant (mm) | On | Report-based annual chance, 2 inches or more |",
         "| --- | --- | --- | --- | --- | --- |",
     ]
     for r, o in fb:
         lines.append(
-            f"| {r['name']} | {o['radar_days_ge_29mm']} | {o['radar_days_ge_50mm']} | {o['radar_max_mm']:.1f} | {o['radar_max_day']} | {r['hail_annual_prob_ge_2in']:.4f} |"
+            f"| {r['name']} | {o['radar_days_ge_30mm']} | {o['radar_days_ge_50mm']} | {o['radar_max_mm']:.1f} | {o['radar_max_day']} | {r['hail_annual_prob_ge_2in']:.4f} |"
         )
     lines += [
         "",

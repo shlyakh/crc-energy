@@ -15,7 +15,10 @@ from typing import Any
 
 import numpy as np
 
-THRESHOLDS_MM = (29.0, 50.0)  # about the severe-hail discriminator in the literature, and 2 inches
+THRESHOLDS_MM = (
+    30.0,
+    50.0,
+)  # 30 mm: the severe-hail discriminator (Ortega 2018), chosen 2026-11-10; and 2 inches
 
 
 def day_files(cache: Path) -> list[Path]:
