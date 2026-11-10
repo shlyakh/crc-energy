@@ -46,7 +46,8 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 
 ## Layout
 
-- `docs/` — requirements, plan, reports (one per phase), primers, explainers, archive
+- `docs/` — requirements, plan, reports (one per phase), primers, explainers, archive; `docs/research/` holds
+  background research (web-sourced, unverified until checked; e.g. `solar-plant-data-sources.md`)
 - `src/crc_lab/explorer/` — data build: `texas.py` (boundary, cells), `catalog.py` (E1), `hazards.py`
   (per-hazard files, `for_assets` check), `build.py` (`python -m crc_lab.explorer.build`), `check_site.py`
 - `src/crc_lab/storm_events/` — `plan.py` (S1 snapshot), `parse.py` (S2), `geometry.py` (S3 cells),
