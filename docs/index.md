@@ -16,4 +16,6 @@ Background:
 - [Explainers (D0)](explainers/README.md): [Anatomy of one CRC question](explainers/anatomy.html) ·
   [Climate risk curves, animated](explainers/primer.html)
 - [Candidate nuggets](nuggets.md)
+- [Research: solar plant data sources, U.S. and Texas](research/solar-plant-data-sources.md): EIA-860/860M,
+  USPVDB, ERCOT reports and others compared (background; not a requirement)
 - [Archive](archive/README.md): earlier requirements and implementation plan
