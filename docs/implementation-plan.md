@@ -20,7 +20,7 @@ Status: **agreed 2026-11-10** · for a separate Claude Code effort · requiremen
 | 1 | Explorer v1: catalogue page and Texas hazard map, eight CRC Open hazards | E1–E9 | 20–30 | built 2026-11-10, awaiting review |
 | 2 | Storm Events table and the two-source comparison | S1–S6 | 20–25 | built 2026-11-10, awaiting review |
 | 3 | Hail and gust curves in CRC | C1–C6 | 10–15 | built 2026-11-10, awaiting review |
-| 4 | Assets, solar value, hail at the asset by local report density | A1–A4, H1–H4 | 20–30 | proposed 2026-11-10 |
+| 4 | Assets, solar value, hail at the asset by local report density | A1–A4, H1–H4 | 20–30 | built 2026-11-10, awaiting review |
 | 5 | Hail impact functions v0 and loss per asset | draft in PR 3 | 15–20 | proposed 2026-11-10 |
 
 Decided 2026-11-10: Phases 2–4 do not start until Phase 1 is reviewed. Their steps stay here so the explorer
@@ -121,7 +121,7 @@ Report: [reports/3-curves.md](reports/3-curves.md); sensitivity: [reports/3-curv
 
 Revised 2026-11-10 after the hail impact draft (`docs/requirements-hail-impact-v0.md`, PR 3) and Yuri's two
 decisions: hail exposure by local report density, and a value source for solar plants from capacity.
-Proposal, not started.
+Built 2026-11-10; report: [reports/4-assets.md](reports/4-assets.md).
 
 1. Solar loader (A1): download the solar database, Texas subset, asset table with passthrough columns
    (capacity, year, mounting type, array boundary); tests.
@@ -152,16 +152,18 @@ Measured before writing this step (located hail reports 1996–2025, 39,624 in T
 
 | Place | Radius to reach 30 / 100 / 300 reports (km) | Reports within 10 km |
 | --- | --- | --- |
-| Amarillo | 1.1 / 1.4 / 3.4 | over 300 |
-| Fort Worth | 1.7 / 2.2 / 4.8 | over 300 |
-| Houston | 0.3 / 2.3 / 11.6 | 253 |
-| Midland | 0.4 / 4.6 / 17.7 | 195 |
-| Fort Bend solar area | 5.6 / 12.4 / 24.0 | 70 |
-| Corpus Christi | 3.2 / 15.1 / 31.1 | 44 |
-| El Paso | 6.7 / 28.1 / 277.8 | 53 |
-| Presidio (remote) | 29.9 / 49.3 / 81.0 | 13 |
+| Amarillo | 2.4 / 2.5 / 6.7 | 498 |
+| Fort Worth | 1.9 / 3.8 / 13.4 | 191 |
+| Houston | 3.0 / 6.3 / 26.8 | 110 |
+| Midland | 0.3 / 6.1 / 24.2 | 167 |
+| Fort Bend solar area | 18.6 / 33.3 / 50.2 | 13 |
+| Corpus Christi | 10.5 / 27.0 / 71.0 | 29 |
+| El Paso | 10.4 / 27.7 / 261.4 | 28 |
+| Presidio (remote) | 65.1 / 95.3 / 125.9 | 10 |
 
-The spread is the reporting bias: city centres reach 100 reports inside 2 to 5 km, rural sites need 12 to 50 km.
+Corrected 2026-11-10: the first version of this table used DuckDB's `ST_Distance_Sphere` with longitude and
+latitude in the wrong order and understated most radii; these are great-circle distances from the Phase 4 code.
+The spread is the reporting bias: city centres reach 100 reports inside 3 to 6 km, rural sites need 27 to 95 km.
 Suggested start: N = 100, minimum radius 10 km, maximum 75 km; to be confirmed by the sensitivity run.
 
 ## Phase 5 — Hail impact functions v0

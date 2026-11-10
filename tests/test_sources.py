@@ -127,7 +127,7 @@ def test_registry_lists_the_sources_layers() -> None:
     assert "{horizon}" in era5["file"] and era5["file"].startswith("data/sources/")
     for layer in registry["layers"]:
         if layer["kind"] in ("points", "lines"):
-            assert layer["file"].startswith("data/sources/")
+            assert layer["file"].startswith(("data/sources/", "data/assets/"))
             assert layer["licence"] and layer["source"] and layer["caveat"]
     declared = {source["id"] for source in registry["sources"]}
     assert registry["defaults"]["source"] == "ibtracs"
@@ -139,13 +139,14 @@ def test_registry_lists_the_sources_layers() -> None:
         "ghcnh",
         "era5",
         "crc_open",
+        "solar_plants",
     } == declared
     for layer in registry["layers"]:
         assert layer["source_id"] is None or layer["source_id"] in declared
     groups = {g["id"] for g in registry["groups"]}
     assert groups == {"crc-sdk", "crc-lab"}
     new_here = {s["id"] for s in registry["sources"] if s["origin"] == "crc-lab"}
-    assert new_here == {"storm_events", "storm_curves"}
+    assert new_here == {"storm_events", "storm_curves", "solar_plants"}
     for source in registry["sources"]:
         assert source["origin"] in groups
         assert source["status"] in ("loaded", "prototype", "planned")

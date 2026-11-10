@@ -56,6 +56,9 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
   (IBTrACS tracks with wind radii, CO-OPS, GHCNh, ERA5 baseline)
 - `src/crc_lab/curves/` — `annual_maxima.py` (C1), `fit.py` (C2 pooling, C3 `from_table`, cards, `for_assets`
   checks), `sensitivity.py`, `build.py` (`python -m crc_lab.curves.build [--sensitivity] [--verify]`)
+- `src/crc_lab/assets/` — `solar.py` (USPVDB asset table), `value.py` (NREL ATB cost, `reference/`),
+  `exposure.py` (hail at the asset by local report density), `real_estate.py` (Fort Bend comparison),
+  `build.py` (`python -m crc_lab.assets.build [--sensitivity]`)
 - `docs/sources-track/` — requirements and plan for the other crc-sdk sources (probes in `tools/probes/`)
 - `tools/smoke.mjs`, `tools/record-demo.mjs` — headless Chrome smoke test and demo recorder
 - `site/` — the static explorer: `index.html`, `app.js`, `style.css`, `layers.json` (E9 registry),

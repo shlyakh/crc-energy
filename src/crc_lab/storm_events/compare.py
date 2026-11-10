@@ -141,8 +141,8 @@ def comparisons(con: duckdb.DuckDBPyConnection) -> dict[str, Any]:
                   count(*) events,
                   count(*) FILTER (WHERE lon IS NULL) copy_no_geometry,
                   count(*) FILTER (WHERE lon0 IS NOT NULL AND lon IS NOT NULL AND abs(lon - lon0) < 1e-6 AND abs(lat - lat0) < 1e-6) same_point,
-                  round(quantile_cont(ST_Distance_Sphere(ST_Point(lon0, lat0), ST_Point(lon, lat)) / 1000, 0.5), 2) median_km,
-                  round(max(ST_Distance_Sphere(ST_Point(lon0, lat0), ST_Point(lon, lat)) / 1000), 1) max_km
+                  round(quantile_cont(ST_Distance_Sphere(ST_Point(lat0, lon0), ST_Point(lat, lon)) / 1000, 0.5), 2) median_km,
+                  round(max(ST_Distance_Sphere(ST_Point(lat0, lon0), ST_Point(lat, lon)) / 1000), 1) max_km
            FROM m GROUP BY 1 ORDER BY events DESC""",
     )
     out["centroid_share"] = q(

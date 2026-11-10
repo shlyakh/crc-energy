@@ -6,6 +6,7 @@ __pycache__/
 data/cache/
 data/storm-events/
 data/curves/
+data/assets/
 data/*.parquet
 data/*.pmtiles
 pipeline_output/

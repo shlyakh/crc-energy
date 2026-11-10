@@ -1,0 +1,180 @@
+{
+ "source": "NREL Annual Technology Baseline (ATB) 2025, electricity, v1.0.0",
+ "url": "https://oedi-data-lake.s3.amazonaws.com/ATB/electricity/csv/2025/v1.0.0/ATBe.csv",
+ "sha256": "d7459613002684e27709e5492d789f83bc6bbfe169546f7a677364a7277f038a",
+ "technology": "UtilityPV",
+ "parameter": "OCC (overnight capital cost)",
+ "case": "R&D financial case, 30-year cost recovery; identical across resource classes",
+ "capacity_basis": "per kW AC, as ATB reports utility PV",
+ "dollar_year": "as stated in the ATB 2025 documentation; not given in the data file",
+ "rows": [
+  {
+   "year": 2023,
+   "scenario": "Advanced",
+   "occ_usd_per_kw": 1493.85,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2023,
+   "scenario": "Conservative",
+   "occ_usd_per_kw": 1493.85,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2023,
+   "scenario": "Moderate",
+   "occ_usd_per_kw": 1493.85,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2024,
+   "scenario": "Advanced",
+   "occ_usd_per_kw": 1300.56,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2024,
+   "scenario": "Conservative",
+   "occ_usd_per_kw": 1300.56,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2024,
+   "scenario": "Moderate",
+   "occ_usd_per_kw": 1300.56,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2025,
+   "scenario": "Advanced",
+   "occ_usd_per_kw": 1207.47,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2025,
+   "scenario": "Conservative",
+   "occ_usd_per_kw": 1275.35,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2025,
+   "scenario": "Moderate",
+   "occ_usd_per_kw": 1246.74,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2026,
+   "scenario": "Advanced",
+   "occ_usd_per_kw": 1114.39,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2026,
+   "scenario": "Conservative",
+   "occ_usd_per_kw": 1250.14,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2026,
+   "scenario": "Moderate",
+   "occ_usd_per_kw": 1192.92,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2027,
+   "scenario": "Advanced",
+   "occ_usd_per_kw": 1021.3,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2027,
+   "scenario": "Conservative",
+   "occ_usd_per_kw": 1224.94,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2027,
+   "scenario": "Moderate",
+   "occ_usd_per_kw": 1139.1,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2028,
+   "scenario": "Advanced",
+   "occ_usd_per_kw": 928.21,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2028,
+   "scenario": "Conservative",
+   "occ_usd_per_kw": 1199.73,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2028,
+   "scenario": "Moderate",
+   "occ_usd_per_kw": 1085.27,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2029,
+   "scenario": "Advanced",
+   "occ_usd_per_kw": 835.13,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2029,
+   "scenario": "Conservative",
+   "occ_usd_per_kw": 1174.52,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2029,
+   "scenario": "Moderate",
+   "occ_usd_per_kw": 1031.45,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2030,
+   "scenario": "Advanced",
+   "occ_usd_per_kw": 742.04,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2030,
+   "scenario": "Conservative",
+   "occ_usd_per_kw": 1149.31,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  },
+  {
+   "year": 2030,
+   "scenario": "Moderate",
+   "occ_usd_per_kw": 977.63,
+   "units": "$/kW",
+   "distinct_values_across_classes": 1
+  }
+ ]
+}

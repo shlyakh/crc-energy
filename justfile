@@ -50,12 +50,20 @@ curves:
 curves-sensitivity:
     uv run python -m crc_lab.curves.build --sensitivity
 
+# Solar plants (USPVDB), replacement value (NREL ATB), hail exposure by local report density
+assets:
+    uv run python -m crc_lab.assets.build
+
+# Same, plus the exposure sensitivity note
+assets-sensitivity:
+    uv run python -m crc_lab.assets.build --sensitivity
+
 # Check that the static site is complete: every registry layer has its files
 site:
     uv run python -m crc_lab.explorer.check_site
 
 # Everything: all data, then site
-all: data storm-events curves sources site
+all: data storm-events curves assets sources site
 
 # Serve the site locally (http://127.0.0.1:8000)
 serve:

@@ -101,6 +101,22 @@
         "Regional screening: a value is the curve for a whole cell (about 253 km\u00b2)."
       ],
       "origin": "crc-lab"
+    },
+    {
+      "id": "solar_plants",
+      "title": "Solar plants with value and hail exposure",
+      "provider": "USGS / Berkeley Lab solar database (USPVDB v4.0), valued with NREL ATB cost, hail from NOAA Storm Events reports",
+      "short": "Texas utility-scale solar plants: capacity, replacement value, and hail reports around each plant.",
+      "returns": "Per plant: capacity, a benchmark replacement value, the local hail report rate and sizes, and hail and gust return levels from the cell curves.",
+      "coverage": "Texas plants of 1 MW or more in the April 2026 database release; hail reports 1996\u20132025.",
+      "licence": "U.S. government works (USGS, NOAA) and NREL ATB; attribution requested",
+      "status": "prototype",
+      "caveats": [
+        "Hail numbers come from storm reports, which follow people and roads. The circle around a plant grows until it holds 100 reports, never smaller than 10 km.",
+        "The annual chance of hail at the plant rests on a placeholder: the area hit per report (25 km\u00b2) has no source.",
+        "Value is a national benchmark cost per kW times capacity, not the plant's own cost or insured value."
+      ],
+      "origin": "crc-lab"
     }
   ],
   "layers": [
@@ -463,6 +479,34 @@
       "style": {
         "hue": 45,
         "chroma": 0.15
+      }
+    },
+    {
+      "id": "solar_plants",
+      "source_id": "solar_plants",
+      "kind": "points",
+      "title": "Solar plants (USPVDB), value and local hail",
+      "file": "data/assets/solar_tx.geojson",
+      "source": "USPVDB v4.0; NREL ATB 2025; NOAA Storm Events via crc-lab",
+      "licence": "U.S. government works and NREL ATB; attribution requested",
+      "caveat": "Hail figures are report-based and local to a circle around the plant; the annual chance uses a placeholder footprint of 25 km\u00b2 per report. The curve is the plant's cell curve from Phase 3, a regional value.",
+      "style": {
+        "fill": [
+          237,
+          161,
+          0,
+          230
+        ],
+        "line": [
+          42,
+          42,
+          40,
+          255
+        ],
+        "radius": 5,
+        "width": 1,
+        "hue": 80,
+        "chroma": 0.14
       }
     }
   ],
