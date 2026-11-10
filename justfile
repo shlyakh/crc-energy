@@ -58,6 +58,10 @@ assets:
 assets-sensitivity:
     uv run python -m crc_lab.assets.build --sensitivity
 
+# First reporting-bias correction for hail reports: population and roads (report 5)
+reporting-bias:
+    uv run python -m crc_lab.assets.reporting_bias
+
 # Check that the static site is complete: every registry layer has its files
 site:
     uv run python -m crc_lab.explorer.check_site
