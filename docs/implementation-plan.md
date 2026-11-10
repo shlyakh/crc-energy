@@ -20,7 +20,8 @@ Status: **agreed 2026-11-10** · for a separate Claude Code effort · requiremen
 | 1 | Explorer v1: catalogue page and Texas hazard map, eight CRC Open hazards | E1–E9 | 20–30 | built 2026-11-10, awaiting review |
 | 2 | Storm Events table and the two-source comparison | S1–S6 | 20–25 | built 2026-11-10, awaiting review |
 | 3 | Hail and gust curves in CRC | C1–C6 | 10–15 | built 2026-11-10, awaiting review |
-| 4 | Assets: solar farms; real-estate exploration | A1–A3 | 10–15 | deferred |
+| 4 | Assets, solar value, hail at the asset by local report density | A1–A4, H1–H4 | 20–30 | proposed 2026-11-10 |
+| 5 | Hail impact functions v0 and loss per asset | draft in PR 3 | 15–20 | proposed 2026-11-10 |
 
 Decided 2026-11-10: Phases 2–4 do not start until Phase 1 is reviewed. Their steps stay here so the explorer
 is built to take them (E5, E9), and the explorer marks hail and gust as planned.
@@ -116,15 +117,75 @@ CRC Open's wind layer in the explorer.
 
 Report: [reports/3-curves.md](reports/3-curves.md); sensitivity: [reports/3-curves-sensitivity.md](reports/3-curves-sensitivity.md).
 
-## Phase 4 — Assets
+## Phase 4 — Assets and hail at the asset
 
-1. Solar loader (A1): download the solar database, Texas subset, asset table with passthrough columns; tests.
-2. Evaluate hail and gust return levels at each farm (C4); add an asset layer with a click panel (A3).
-3. Real-estate exploration (A2) for Fort Bend County: load both federal sources; counts, occupancy agreement,
+Revised 2026-11-10 after the hail impact draft (`docs/requirements-hail-impact-v0.md`, PR 3) and Yuri's two
+decisions: hail exposure by local report density, and a value source for solar plants from capacity.
+Proposal, not started.
+
+1. Solar loader (A1): download the solar database, Texas subset, asset table with passthrough columns
+   (capacity, year, mounting type, array boundary); tests.
+2. Solar value source (A4): replacement value = capacity × installed cost per watt for the plant's year and
+   mounting type, from a published cost series (candidates to check: Berkeley Lab "Utility-Scale Solar" annual
+   data file; NREL Annual Technology Baseline). The series, its vintage and the dollar year are recorded in the
+   asset table; no cost number is typed in.
+3. Hail at the asset (H1–H4), the step the impact draft leaves open:
+   - **Rule.** Around each asset, grow a circle until it holds N located hail reports from the window
+     (1996 to the last complete year). The reports inside give the local size distribution; N over the circle's
+     area and the years gives the local report rate per km² per year (a nearest-neighbour density estimate).
+   - **Guards.** A minimum radius, because in cities the circle collapses to about 2 km and the rate then
+     measures population, not hail; a maximum radius, beyond which the asset is flagged "too few reports".
+   - **From rate to the asset.** A report is a point; the chance that hail of that size reached the asset needs
+     an area per report (a footprint). That area is a placeholder to be stated and varied, not hidden.
+   - **Sensitivity.** N, the two guards and the footprint, at the ten cities and at the solar plants, in the
+     style of the Phase 3 note.
+4. Evaluate hail and gust return levels at each farm (C4) from the Phase 3 curves, beside the density-based
+   numbers; add an asset layer with a click panel (A3).
+5. Real-estate exploration (A2) for Fort Bend County: load both federal sources; counts, occupancy agreement,
    point-to-footprint join rate; one map; recommendation.
 
-Done when: Texas solar farms show in the explorer with their return levels, and the real-estate note recommends a
-source with numbers behind it.
+Done when: Texas solar farms show in the explorer with value, local hail rate and size distribution, and
+return levels; the exposure sensitivity note exists; and the real-estate note recommends a source with
+numbers behind it.
+
+Measured before writing this step (located hail reports 1996–2025, 39,624 in Texas):
+
+| Place | Radius to reach 30 / 100 / 300 reports (km) | Reports within 10 km |
+| --- | --- | --- |
+| Amarillo | 1.1 / 1.4 / 3.4 | over 300 |
+| Fort Worth | 1.7 / 2.2 / 4.8 | over 300 |
+| Houston | 0.3 / 2.3 / 11.6 | 253 |
+| Midland | 0.4 / 4.6 / 17.7 | 195 |
+| Fort Bend solar area | 5.6 / 12.4 / 24.0 | 70 |
+| Corpus Christi | 3.2 / 15.1 / 31.1 | 44 |
+| El Paso | 6.7 / 28.1 / 277.8 | 53 |
+| Presidio (remote) | 29.9 / 49.3 / 81.0 | 13 |
+
+The spread is the reporting bias: city centres reach 100 reports inside 2 to 5 km, rural sites need 12 to 50 km.
+Suggested start: N = 100, minimum radius 10 km, maximum 75 km; to be confirmed by the sensitivity run.
+
+## Phase 5 — Hail impact functions v0
+
+From `docs/requirements-hail-impact-v0.md`. Checked against the pins on 2026-11-10: every test vector in the
+draft reproduces; crc-framework's `SigmoidImpact` is a logistic (midpoint, steepness), so the Swiss curves are
+callables; `PiecewiseLinearImpact` fits the solar breakage tables; crc-sdk's impact context carries only
+country, continent, building type and historic mean, so glass class, stow and roof class are applied in this
+repo's code; CRC has no hail factor yet.
+
+1. Parameter file (the draft's JSON block) and a validating loader.
+2. The three functional forms and four curve callables, free of CRC imports; tests from the draft's vectors,
+   plus monotonicity and bounds on a fine grid.
+3. Loss per asset from the Phase 4 hail exposure: expected annual damage ratio and loss in dollars (solar:
+   value from A4), with the building baseline and roof sensitivity reported as a range.
+4. A rule for several hail events in one year at one asset (open: sum capped at 1, or the largest).
+5. Register with CRC where the form fits (`value_semantics="damage ratio"`, a hazard factor named
+   `hail_diameter_obs_mm`); explorer: loss on the asset click panel.
+
+Done when: the vectors pass, each Texas solar plant has an expected annual hail loss with its assumptions
+listed, and the report states which numbers rest on placeholders.
+
+Open before Phase 5: the draft's three decisions (placeholder defaults, baseline versus range, where curve
+data lives); cars have no asset set; `AGENTS.md` still says damage curves are out of scope.
 
 ## After this effort
 

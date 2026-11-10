@@ -116,6 +116,11 @@ first analysis task of the build.
 | A1 | Solar farms: USGS / Berkeley Lab solar database v4.0 (April 2026; 6,611 facilities of 1 MW or more, with array boundaries; public domain), Texas subset, as a CRC-ready asset table with capacity, year and mounting type | OUTSIDE → USE |
 | A2 | Real estate: explore **both** federal sources for one Texas county first (Fort Bend, where the March 2024 hail fell), then decide | OUTSIDE |
 | A3 | Assets appear in the explorer; clicking one shows its hail and gust return levels | — |
+| A4 | Solar plant value: capacity × installed cost per watt by year and mounting type, from a published cost series recorded with its vintage and dollar year (proposed 2026-11-10) | OUTSIDE |
+| H1 | Hail at an asset by local report density: grow a circle around the asset until it holds N located hail reports; the reports give the size distribution, N over area and years gives the report rate (decided 2026-11-10) | EXTEND |
+| H2 | Guards: a minimum radius (cities reach 100 reports within 2–5 km, which measures population) and a maximum radius with a "too few reports" flag | EXTEND |
+| H3 | The area per report used to turn a report rate into a chance of hail at the asset is a stated placeholder and is varied | EXTEND |
+| H4 | Sensitivity note for N, the guards and the footprint, at the ten cities and the solar plants | — |
 
 The solar database is not a CRC source in the sense the hazards are. CRC defines only the shape of an asset table
 (identifier and location; other columns pass through) and has no asset loaders. A1 is therefore a loader in this
