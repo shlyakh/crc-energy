@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CRC Open explorer · Texas</title>
-<meta name="description" content="Texas map of Climate Risk Commons (CRC Open) hazard curves on H3 cells, with the full catalogue of the release.">
+<title>Texas climate data explorer</title>
+<meta name="description" content="Texas map of climate and weather data sources read through crc-sdk: cyclone tracks, storm reports, coastal water levels, station curves, a reanalysis baseline and CRC Open projections.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.css">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
@@ -15,49 +15,108 @@
 </head>
 <body>
 <header>
-  <h1>CRC Open explorer <span class="where">Texas</span></h1>
+  <h1>Texas climate data explorer</h1>
   <nav>
     <button class="tab on" data-view="map">Map</button>
-    <button class="tab" data-view="catalog">Catalogue</button>
+    <button class="tab" data-view="catalog">Sources</button>
+    <button class="tab" data-view="about">About</button>
+    <button id="demo-start" class="demo-btn" title="A 30-second guided tour of this page">▶ Play demo</button>
   </nav>
   <div id="release" class="release"></div>
 </header>
 
 <main id="view-map" class="view on">
   <aside id="controls">
-    <label>Hazard
-      <select id="hazard"></select>
-    </label>
-    <div class="row">
-      <label>Horizon <select id="horizon"></select></label>
-      <label>Return period <select id="rp"></select></label>
-    </div>
-    <section class="legend">
-      <div class="legend-head"><span id="legend-title"></span><span id="legend-unit" class="mute"></span></div>
-      <div id="legend-bar"></div>
-      <div class="legend-ends"><span id="legend-min"></span><span id="legend-max"></span></div>
-      <label class="check"><input type="checkbox" id="lock"> Keep this colour scale when switching</label>
-      <div id="legend-note" class="mute"></div>
-    </section>
     <section>
-      <h2>Layers</h2>
-      <div id="layers"></div>
-      <div id="events-controls" class="hidden">
+      <h2>Source</h2>
+      <div id="sources"></div>
+    </section>
+
+    <section id="source-panel">
+      <div id="source-blurb" class="blurb"></div>
+
+      <!-- IBTrACS -->
+      <div id="ctl-ibtracs" class="ctl hidden">
+        <div class="row">
+          <label>From season <input type="number" id="tracks-from"></label>
+          <label>To season <input type="number" id="tracks-to"></label>
+        </div>
+        <div class="row">
+          <label>Name contains <input type="search" id="tracks-name" placeholder="e.g. Harvey"></label>
+          <label>At least (knots) <input type="number" id="tracks-min-wind" min="0" step="5" value="0"></label>
+        </div>
+        <label>Colour by
+          <select id="tracks-color"><option value="wind">wind along the track</option><option value="category">Saffir-Simpson category</option></select>
+        </label>
+        <label class="check"><input type="checkbox" id="tracks-extent" checked> Show wind extent (34, 50, 64 kt radii) for the selected storm, or for all shown when 8 or fewer</label>
+        <div id="tracks-legend" class="legend-inline"></div>
+        <div id="tracks-status" class="mute small"></div>
+        <ol id="tracks-list" class="list"></ol>
+      </div>
+
+      <!-- Storm Events -->
+      <div id="ctl-storm_events" class="ctl hidden">
         <div class="row">
           <label>From year <input type="number" id="events-from" min="1950" max="2030"></label>
           <label>To year <input type="number" id="events-to" min="1950" max="2030"></label>
         </div>
+        <label class="check"><input type="checkbox" id="win-on"> Explore a date window with the timeline</label>
+        <div class="row" id="win-row">
+          <label>Start (UTC) <input type="date" id="win-start" value="2024-03-14"></label>
+          <label>Days <input type="number" id="win-days" min="1" max="14" value="3"></label>
+        </div>
         <div id="events-types"></div>
         <div id="events-status" class="mute small"></div>
       </div>
+
+      <!-- Station sources (CO-OPS, GHCNh) -->
+      <div id="ctl-stations" class="ctl hidden">
+        <div id="stations-status" class="mute small"></div>
+        <ol id="stations-list" class="list"></ol>
+      </div>
+
+      <!-- Cell sources (ERA5, CRC Open) -->
+      <div id="ctl-cells" class="ctl hidden">
+        <label id="hazard-label">Hazard <select id="hazard"></select></label>
+        <div class="row">
+          <label>Horizon <select id="horizon"></select></label>
+          <label>Return period <select id="rp"></select></label>
+        </div>
+        <div class="legend">
+          <div class="legend-head"><span id="legend-title"></span><span id="legend-unit" class="mute"></span></div>
+          <div id="legend-bar"></div>
+          <div class="legend-ends"><span id="legend-min"></span><span id="legend-max"></span></div>
+          <label class="check"><input type="checkbox" id="lock"> Keep this colour scale when switching</label>
+          <div id="legend-note" class="mute"></div>
+        </div>
+      </div>
     </section>
+
+    <section>
+      <h2>Also show</h2>
+      <div id="overlays"></div>
+    </section>
+
     <section class="caveats">
       <h2>Read this first</h2>
       <ul id="caveats"></ul>
     </section>
     <div id="status" class="mute"></div>
   </aside>
-  <div id="map"></div>
+  <div id="mapcol">
+    <div id="map"></div>
+    <div id="timebar" class="hidden">
+      <div class="timectl">
+        <button id="time-play" title="Play or pause">▶</button>
+        <select id="time-speed" title="Playback speed"><option value="1">1 h/s</option><option value="3">3 h/s</option><option value="6" selected>6 h/s</option><option value="12">12 h/s</option><option value="24">24 h/s</option></select>
+        <input type="range" id="time-slider" min="0" max="1000" value="0">
+        <span id="time-clock" class="clock"></span>
+      </div>
+      <div id="timeline"></div>
+      <div id="timeline-note" class="mute small"></div>
+      <div id="timeline-tip" class="tip hidden"></div>
+    </div>
+  </div>
   <aside id="detail" class="hidden">
     <button id="detail-close" title="Close">×</button>
     <h2 id="detail-title"></h2>
@@ -65,28 +124,47 @@
     <div id="chart"></div>
     <table id="detail-table"></table>
     <div id="detail-params" class="meta"></div>
-    <p class="mute small">Regional screening: a cell is an average, not a site. Values are the curve crc-sdk
-      evaluated at these return periods during the data build; the page draws them and interpolates between.</p>
+    <p id="detail-foot" class="mute small"></p>
   </aside>
 </main>
 
 <main id="view-catalog" class="view">
   <section>
-    <h2>Every hazard in the release</h2>
+    <h2>Sources in this explorer</h2>
+    <p class="mute">Two groups: sources crc-sdk already reaches, and sources new in this project. Each is shown as it is: observations stay observations, published levels stay published, and only the curves marked as fitted were fitted. Status: loaded = built and checked; prototype = a first cut; planned = not built.</p>
+    <table id="catalog-sources"></table>
+  </section>
+  <section>
+    <h2>CRC Open: every hazard in the release</h2>
     <p id="catalog-intro" class="mute"></p>
     <input id="catalog-filter" type="search" placeholder="Filter hazards…">
     <table id="catalog-table"></table>
   </section>
   <section>
     <h2>Other sources crc-sdk reaches</h2>
-    <p class="mute">From the crc-sdk 0.11.1 documentation. None of these are loaded in the explorer yet.</p>
+    <p class="mute">From the crc-sdk 0.11.1 documentation and the sources-track probes (<code>docs/sources-track/requirements.md</code>). Not in the explorer yet.</p>
     <table id="sources-table"></table>
   </section>
   <section>
-    <h2>Not in CRC Open</h2>
+    <h2>Not in any source here</h2>
     <ul id="not-in-crc"></ul>
   </section>
 </main>
+
+<main id="view-about" class="view">
+  <article id="about"></article>
+</main>
+
+<div id="demo-bar" class="hidden" role="status" aria-live="polite">
+  <div id="demo-caption"></div>
+  <div class="demo-ctl">
+    <div id="demo-progress"><i></i></div>
+    <span id="demo-step" class="mute small"></span>
+    <button id="demo-next" class="hidden">Next</button>
+    <button id="demo-pause">Pause</button>
+    <button id="demo-stop" title="Escape also exits">Stop</button>
+  </div>
+</div>
 
 <script type="module" src="app.js"></script>
 </body>

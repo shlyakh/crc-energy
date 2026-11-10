@@ -149,3 +149,46 @@ def test_listing_picks_newest_creation_per_year() -> None:
     assert plan.explain()["years"] == (2000, 2026)
     with pytest.raises(ValueError):
         StormEventsPlan(Path("/tmp/x"), mode="sometimes")
+
+
+def test_explorer_layer_packs_times_and_unlocated_events() -> None:
+    import math
+    import struct
+
+    from crc_lab.storm_events import explorer_layer as layer
+
+    assert layer.minutes_since_epoch(datetime(1950, 1, 1, 1, 30, tzinfo=UTC)) == 90
+    assert layer.minutes_since_epoch(None) == 0
+    point = shapely.to_wkb(shapely.Point(-95.83, 29.39))
+    rows = [
+        {
+            "event_id": 7,
+            "year": 2024,
+            "event_type": "Hail",
+            "magnitude": 2.75,
+            "damage_property_usd": None,
+            "geometry_kind": "point",
+            "geometry_wkb": point,
+            "begin_utc": datetime(2024, 3, 16, 8, 59, tzinfo=UTC),
+            "end_utc": datetime(2024, 3, 16, 9, 9, tzinfo=UTC),
+        },
+        {
+            "event_id": 8,
+            "year": 2024,
+            "event_type": "Drought",
+            "magnitude": None,
+            "damage_property_usd": 0.0,
+            "geometry_kind": "zone",
+            "geometry_wkb": None,
+            "begin_utc": datetime(2024, 3, 17, tzinfo=UTC),
+            "end_utc": None,
+        },
+    ]
+    data = layer.pack_events(rows, {"Drought": 0, "Hail": 1})
+    assert len(data) == 2 * layer.RECORD.size == 64
+    a = struct.unpack_from("<ffHBxfIfII", data, 0)
+    b = struct.unpack_from("<ffHBxfIfII", data, 32)
+    assert a[0] == pytest.approx(-95.83) and a[2:4] == (2024, 1) and a[8] - a[7] == 10
+    assert a[7] == layer.minutes_since_epoch(rows[0]["begin_utc"]) and math.isnan(a[6])
+    assert math.isnan(b[0]) and math.isnan(b[4]) and b[8] == b[7]  # no point, no duration
+    assert [f["offset"] for f in layer.FIELDS][-2:] == [24, 28]

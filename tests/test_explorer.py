@@ -113,6 +113,7 @@ def test_registry_and_sources_are_valid_json() -> None:
     assert {layer["id"] for layer in cells} - set(hazards.HAZARDS) == {
         "hail_size",
         "thunderstorm_gust",
+        "era5_txx",
     }
     for layer in crc_open:
         assert layer["licence"] == "CC BY-NC 4.0"

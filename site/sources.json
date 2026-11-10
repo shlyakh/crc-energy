@@ -1,5 +1,5 @@
 {
-  "about": "E2: the other sources crc-sdk 0.11.1 reaches, from its docs/sources/*.md and docs/data-licences.md. Hand-written; update when the pin changes.",
+  "about": "E2: the other sources crc-sdk 0.11.1 reaches, from its docs/sources/*.md and docs/data-licences.md. Hand-written; update when the pin changes. Texas coverage column from the sources-track probes of 2026-11-10 (docs/sources-track/requirements.md).",
   "sources": [
     { "name": "ERA5 reanalysis", "entry": "HazardDataset.era5(recipe)", "returns": "Annual extremes (txx, tnn, rx1day, rx5day) fitted to curves; the per-year samples behind them", "coverage": "Global, 1940 to the latest final month (0.25°) or 1959–2022 (1.5°)", "licence": "CC BY 4.0 (Copernicus)" },
     { "name": "CMIP6 and NEX-GDDP-CMIP6", "entry": "HazardDataset.cmip6(...), .nex_gddp(...)", "returns": "The same four recipes from model projections, per model, scenario and member", "coverage": "Global, model grids", "licence": "Per modelling centre; NEX-GDDP is CC0 plus the model licence" },

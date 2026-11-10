@@ -17,6 +17,10 @@ Status: Phases 1–3 (explorer, Storm Events, hail and gust curves) built 2026-1
 
 ## Explorer
 
+Branch `explorer-v2`: the page is organised by source (cyclone tracks, storm reports, hail and gust curves,
+coastal water levels, station curves, ERA5 baseline, CRC Open projections); see
+`docs/reports/E2-explorer-v2.md`. The text below describes version 1 on main.
+
 `site/` is a static page: a Texas map of eight CRC Open hazards on H3 cells (hazard, horizon and return
 period selectors; click a cell for its curve) and a catalogue of all 63 hazards in the release, generated
 from the release's own catalogue. No build step for the page; the data files under `site/data/` are
@@ -32,6 +36,11 @@ just curves-sensitivity    # plus the sensitivity note at ten cities
 just serve     # http://127.0.0.1:8000
 just up        # one container (Caddy) on http://127.0.0.1:8080
 ```
+
+Sources track (branch `sources-track`, under review): the other crc-sdk sources as schematic layers,
+switched off by default: tropical cyclone tracks (IBTrACS), coastal water levels (NOAA CO-OPS) and airport
+station temperature curves (GHCNh). `just sources` builds them into `site/data/sources/`; the probes behind
+the choice are in `docs/sources-track/requirements.md`.
 
 GitHub Pages builds the same data in CI (`.github/workflows/pages.yml`) and publishes `site/` at
 https://shlyakh.github.io/crc-lab/ (the explainers stay at `/explainers/`).

@@ -38,6 +38,9 @@ storm-events:
 # Same, plus the two-source comparison report (needs the Source Cooperative copy in the cache)
 storm-events-compare:
     uv run python -m crc_lab.storm_events.build --compare
+# Sources track: IBTrACS tracks, CO-OPS water-level stations, GHCNh station curves (network, ~10 min)
+sources:
+    uv run python -m crc_lab.explorer.sources --verify
 
 # Hail-size and thunderstorm-gust curves from the Storm Events table, into CRC and the explorer
 curves:
@@ -52,7 +55,7 @@ site:
     uv run python -m crc_lab.explorer.check_site
 
 # Everything: all data, then site
-all: data storm-events curves site
+all: data storm-events curves sources site
 
 # Serve the site locally (http://127.0.0.1:8000)
 serve:

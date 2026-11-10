@@ -6,6 +6,13 @@ curves built from it and brought into CRC (Phase 3); all built 2026-11-10, await
 asset sets (Phase 4). Branches: `sources-track` (other crc-sdk sources, `docs/sources-track/`) and
 `explorer-v2` (source-centric explorer redo, IBTrACS first).
 
+On this branch (`explorer-v2`) the explorer is source-centric: `site/layers.json` declares `sources` and every
+layer's `source_id`; the page lists sources (IBTrACS first, CRC Open as one of them) and shows per-source
+controls. `src/crc_lab/explorer/tracks.py` builds the IBTrACS storm records; `tools/smoke.mjs` walks every
+source. Sources carry an `origin` (crc-sdk adapter, or new in crc-lab) and the registry's `groups` and `demo`
+drive the grouping, the About tab and the 30-second demo (`?demo=1`; `tools/record-demo.mjs` records
+`site/demo.webm`). Reports: `docs/reports/E2-explorer-v2.md`, `E3-time-and-extent.md`, `E4-groups-about-demo.md`.
+
 Read first:
 
 - `docs/requirements.md` — what to build, with IDs
@@ -44,8 +51,15 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - `src/crc_lab/storm_events/` — `plan.py` (S1 snapshot), `parse.py` (S2), `geometry.py` (S3 cells),
   `table.py` (S4 event table + data card), `compare.py` (S5), `explorer_layer.py` (S6),
   `build.py` (`python -m crc_lab.storm_events.build [--compare]`)
+<<<<<<< HEAD
+  (per-hazard files, `for_assets` check), `build.py` (`python -m crc_lab.explorer.build`), `check_site.py`;
+  `sources.py` (sources track: IBTrACS, CO-OPS, GHCNh layers under `site/data/sources/`)
+- `docs/sources-track/` — requirements and plan for the other crc-sdk sources (probes in `tools/probes/`)
+- `tools/smoke.mjs` — headless Chrome smoke test of the page (`node tools/smoke.mjs <out dir> [url] [--sources]`)
+=======
 - `src/crc_lab/curves/` — `annual_maxima.py` (C1), `fit.py` (C2 pooling, C3 `from_table`, cards, `for_assets`
   checks), `sensitivity.py`, `build.py` (`python -m crc_lab.curves.build [--sensitivity] [--verify]`)
+>>>>>>> origin/main
 - `site/` — the static explorer: `index.html`, `app.js`, `style.css`, `layers.json` (E9 registry),
   `sources.json` (E2, hand-written); `site/data/` is generated and git-ignored
 - `tests/` — pytest, offline; `test_pins.py` guards the pins, `test_explorer.py` the build helpers,
@@ -58,6 +72,15 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 Explorer conventions: curves are evaluated in Python at return periods 2–500 years and shipped as values
 plus raw parameters; the page never re-implements a curve. Texas cells are those intersecting the state
 polygon. Browser libraries are pinned by URL in `index.html` (h3-js before deck.gl; MapLibre as ESM).
+
+## Releases and branches
+
+- One branch: `main`. Side work happens in short-lived branches and is merged; no long-lived preview branches.
+- `site/demo.webm` is re-recorded after each major release (`node tools/record-demo.mjs <work dir> <url>` against
+  `just serve`), not on every change.
+- `site/data/sources/` (IBTrACS, CO-OPS, GHCNh, ERA5 files built through crc-sdk) is committed; rebuild with
+  `just sources` when fresher data is wanted or a pin changes. Everything else under `site/data/` is built in CI.
+- Source groups in `site/layers.json`: "Reached through crc-sdk" and "Experimental new sources" (second).
 
 ## Checks
 

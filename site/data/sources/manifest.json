@@ -1,0 +1,152 @@
+{
+ "layers":{
+  "ibtracs":{
+   "layer":"ibtracs",
+   "file":"site/data/sources/ibtracs.json",
+   "basin":"NA",
+   "seasons":[
+    1950,
+    2025
+   ],
+   "rows_read":66444,
+   "storms_crossing_texas":91,
+   "storms_with_wind":91,
+   "storms_with_r34":30,
+   "storms_with_r64":14,
+   "storms_with_rmw":46,
+   "storms_with_roci":30,
+   "track_points":3872,
+   "source":{
+    "citation":"Schreck et al. (2024), IBTrACS v04r01, NOAA NCEI, doi:10.25921/82ty-9e16",
+    "retrieved_at":"2026-11-10T17:25:35.126974+00:00",
+    "sha256":"666681be5b12caf5bad7a511bae5f6e5fa8b03789f7f6dd00ee2f0aaa41c2c97",
+    "terms_url":"https://www.ncei.noaa.gov/products/international-best-track-archive",
+    "url":"https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.NA.list.v04r01.csv",
+    "version":"v04r01"
+   },
+   "licence":"U.S. government work; attribution requested",
+   "seconds":1.2,
+   "bytes":354195
+  },
+  "coops":{
+   "layer":"coops",
+   "file":"site/data/sources/coops.geojson",
+   "stations_tried":39,
+   "stations_with_levels":9,
+   "skipped":{
+    "8770475":"ValueError: NOAA station metadata missing or mismatched",
+    "8770520":"ValueError: NOAA station metadata missing or mismatched",
+    "8770777":"ValueError: NOAA station metadata missing or mismatched",
+    "8770808":"ValueError: NOAA station metadata missing or mismatched",
+    "8770971":"ValueError: NOAA station metadata missing or mismatched",
+    "8771013":"ValueError: NOAA station metadata missing or mismatched",
+    "8771367":"ValueError: NOAA station metadata missing or mismatched",
+    "8771486":"ValueError: NOAA station metadata missing or mismatched",
+    "8771972":"ValueError: NOAA station metadata missing or mismatched",
+    "8772985":"ValueError: NOAA station metadata missing or mismatched",
+    "8773037":"ValueError: NOAA station metadata missing or mismatched",
+    "8773146":"ValueError: NOAA station metadata missing or mismatched",
+    "8773259":"ValueError: NOAA station metadata missing or mismatched",
+    "8773701":"ValueError: NOAA station metadata missing or mismatched",
+    "8773767":"ValueError: NOAA station metadata missing or mismatched",
+    "8774230":"ValueError: NOAA station metadata missing or mismatched",
+    "8774513":"ValueError: NOAA station metadata missing or mismatched",
+    "8775132":"ValueError: NOAA station metadata missing or mismatched",
+    "8775222":"ValueError: NOAA station metadata missing or mismatched",
+    "8775237":"ValueError: NOAA station metadata missing or mismatched",
+    "8775241":"ValueError: NOAA station metadata missing or mismatched",
+    "8775283":"ValueError: NOAA station metadata missing or mismatched",
+    "8775296":"ValueError: NOAA station metadata missing or mismatched",
+    "8775792":"ValueError: NOAA station metadata missing or mismatched",
+    "8776139":"ValueError: NOAA station metadata missing or mismatched",
+    "8776604":"ValueError: NOAA station metadata missing or mismatched",
+    "8777812":"ValueError: NOAA station metadata missing or mismatched",
+    "8778490":"ValueError: NOAA station, metric units or datum missing or mismatched",
+    "8779280":"ValueError: NOAA station metadata missing or mismatched",
+    "8779749":"ValueError: NOAA station metadata missing or mismatched"
+   },
+   "source":"NOAA CO-OPS Extreme Water Levels product (api.tidesandcurrents.noaa.gov); station list from the CO-OPS metadata API, 2026-11-10",
+   "licence":"U.S. government work; attribution requested (NOAA CO-OPS)",
+   "seconds":24.7,
+   "bytes":8647
+  },
+  "ghcnh":{
+   "layer":"ghcnh",
+   "file":"site/data/sources/ghcnh.geojson",
+   "stations_in_texas_catalogue":699,
+   "stations_requested":40,
+   "stations_with_curves":8,
+   "years":[
+    2000,
+    2024
+   ],
+   "kinds":{
+    "fitted":8
+   },
+   "unit":"degC",
+   "tail":"upper",
+   "probability_semantics":"annual_exceedance",
+   "warnings":[],
+   "source":"provider='noaa-ghcnh' dataset='ghcnh_temperature_max:ghcnh_temperature_max' uri='https://noaa-ghcnh-pds.s3.amazonaws.com/hourly/access/by-year/#crc-request=%7B%22areas%22%3A%20%5B%5D%2C%20%22completeness%22%3A%20%7B%22minimum_day_fraction%22%3A%200.9%2C%20%22minimum_hour_fraction%22%3A%200.75%2C%20%22quality_codes%22%3A%20%5B%22%22%2C%20%221%22%2C%20%225%22%5D%7D%2C%20%22daily_boundary%22%3A%20%22",
+   "licence":"CC0-1.0 per the AWS registry; attribution requested (NOAA GHCNh)",
+   "seconds":251.9,
+   "bytes":4962
+  },
+  "era5":{
+   "layer":"era5_txx",
+   "files":[
+    "site/data/sources/era5_txx/2005.json"
+   ],
+   "years":[
+    1991,
+    2020
+   ],
+   "h3_resolution":4,
+   "horizons":[
+    2005
+   ],
+   "cells_per_horizon":{
+    "2005":1439
+   },
+   "unit":"degC",
+   "tail":"upper",
+   "probability_semantics":"annual_exceedance",
+   "temporal_window":"kind='window' start_year=1991 end_year=2020 reference_year=None baseline=None calendar='gregorian' minimum_complete_years=20",
+   "fitting":"method='sample_lmoments' initialization=None input_kind='samples' sample_resampling=None lower_bound=None censor_location=None residual_scale_floor_ratio=None platform='Darwin-arm64' crc_framework_ver",
+   "warnings":[],
+   "source":"provider='era5' dataset='txx:txx' uri='gs://weatherbench2/datasets/era5/1959-2022-1h-240x121_equiangular_with_poles_conservative.zarr' version='final-through-2022-12-31' licence='CC-BY-4.0' attribution='Contains modified Copernicus Climate Change Service information 2026 (ERA5 via wb2-1p5); annual maximum of daily maximum 2 m temperature (UTC days)' retrieved_at='2026-11-10T17:25:41.600385+00:00' ",
+   "licence":"CC BY 4.0 (Copernicus); 'Contains modified Copernicus Climate Change Service information'",
+   "seconds":0.0,
+   "bytes":180537
+  }
+ },
+ "verification":{
+  "ghcnh":{
+   "layer":"ghcnh",
+   "values_checked":24,
+   "mismatches":[]
+  }
+ },
+ "built_at":"2026-11-10T18:39:33+00:00",
+ "versions":{
+  "crc-sdk":"0.11.1",
+  "crc-framework":"0.6.0"
+ },
+ "return_periods":[
+  2,
+  5,
+  10,
+  20,
+  50,
+  100,
+  200,
+  500
+ ],
+ "texas_bounds":[
+  -106.645646,
+  25.837377,
+  -93.508292,
+  36.500704
+ ],
+ "seconds":1.3
+}

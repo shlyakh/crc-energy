@@ -35,6 +35,13 @@ def main(site: Path = Path("site")) -> int:
             missing.append(layer["file"])
         if layer["kind"] == "points-binary" and not (site / layer["index"]).exists():
             missing.append(layer["index"])
+    declared = {s["id"] for s in registry.get("sources", [])}
+    for layer in registry["layers"]:
+        if layer.get("source_id") and layer["source_id"] not in declared:
+            missing.append(f"source entry for layer {layer['id']} ({layer['source_id']})")
+    video = registry.get("demo", {}).get("video")
+    if video and not (site / video).exists():
+        missing.append(video)
     for path in missing:
         print(f"missing: {path}")
     if not missing:
