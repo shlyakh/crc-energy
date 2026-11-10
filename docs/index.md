@@ -4,3 +4,4 @@
   [Climate risk curves, animated](explainers/primer.html)
 - [Requirements](requirements.md)
 - [Implementation plan](implementation-plan.md)
+- [Candidate nuggets](nuggets.md)
