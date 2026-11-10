@@ -117,6 +117,23 @@
         "Value is a national benchmark cost per kW times capacity, not the plant's own cost or insured value."
       ],
       "origin": "crc-lab"
+    },
+    {
+      "id": "hail_compare",
+      "title": "Hail days: sources compared",
+      "provider": "NOAA NCEI Storm Events reports; NOAA MRMS radar hail size (MESH); NOAA NCEI Severe Weather Data Inventory radar hail signatures; reporting-bias model from crc-lab",
+      "short": "Four records of hail days per year for the same cells, side by side, by swipe or as a ratio.",
+      "returns": "Per H3 resolution-5 cell, hail days per year from storm reports (1 inch or more, 1996\u20132025), the same corrected for reporting bias, radar hail size of 30 mm or more (MRMS, 2020\u20132025) and radar hail signatures of 1.25 inches or more (NEXRAD, 1995\u20132025).",
+      "coverage": "2,566 Texas cells. The four records cover different years and measure different things.",
+      "licence": "U.S. government works (NOAA NCEI, NOAA MRMS open data); attribution requested",
+      "status": "prototype",
+      "caveats": [
+        "Storm reports need a person nearby: empty country looks calm. The corrected record divides by a fitted reporting rate from population and roads; it is a model, not an observation.",
+        "Radar hail size (MRMS MESH) sees everywhere but over-calls: it is built to exceed most observed stones, and five years is a short record.",
+        "Radar hail signatures come from single radars, scan by scan; their coverage and algorithm changed over the years, and early years carry missing values.",
+        "A hail day is counted per cell of about 253 km\u00b2, so every record is a regional figure, not a point value."
+      ],
+      "origin": "crc-lab"
     }
   ],
   "layers": [
@@ -507,6 +524,241 @@
         "width": 1,
         "hue": 80,
         "chroma": 0.14
+      },
+      "panel_groups": [
+        {
+          "title": "Plant",
+          "fields": [
+            [
+              "capacity_MW_AC",
+              "Capacity, MW AC"
+            ],
+            [
+              "capacity_MW_DC",
+              "Capacity, MW DC"
+            ],
+            [
+              "first_online",
+              "First online"
+            ],
+            [
+              "mounting",
+              "Mounting"
+            ],
+            [
+              "module",
+              "Module"
+            ],
+            [
+              "bifacial",
+              "Bifacial"
+            ],
+            [
+              "balancing_authority",
+              "Balancing authority"
+            ],
+            [
+              "plant_area_km2",
+              "Array area, km\u00b2"
+            ],
+            [
+              "polygon",
+              "Array polygon"
+            ],
+            [
+              "location_source",
+              "Position from"
+            ],
+            [
+              "asset_id",
+              "Asset id"
+            ]
+          ]
+        },
+        {
+          "title": "Value",
+          "fields": [
+            [
+              "replacement_value",
+              "Replacement value"
+            ],
+            [
+              "value_basis",
+              "Basis"
+            ]
+          ]
+        },
+        {
+          "title": "Hail from reports",
+          "fields": [
+            [
+              "annual_chance_hail_1in_or_more",
+              "Annual chance, 1 inch or more",
+              "percent"
+            ],
+            [
+              "annual_chance_hail_2in_or_more",
+              "Annual chance, 2 inches or more",
+              "percent"
+            ],
+            [
+              "hail_reports_used",
+              "Reports in the circle"
+            ],
+            [
+              "hail_radius_km",
+              "Circle radius, km"
+            ],
+            [
+              "hail_circle_share_inside_reporting_region",
+              "Share of circle where reports are possible",
+              "percent0"
+            ],
+            [
+              "hail_reports_per_100km2_per_year",
+              "Reports per 100 km\u00b2 per year"
+            ],
+            [
+              "hail_size_median_mm",
+              "Median size, mm"
+            ],
+            [
+              "hail_size_p90_mm",
+              "90th percentile size, mm"
+            ],
+            [
+              "hail_size_largest_mm",
+              "Largest size, mm"
+            ],
+            [
+              "hail_hit_area_km2",
+              "Hit area, km\u00b2"
+            ],
+            [
+              "footprint_km2_placeholder",
+              "Footprint per report, km\u00b2 (placeholder)"
+            ],
+            [
+              "hail_flag",
+              "Flag"
+            ]
+          ]
+        },
+        {
+          "title": "Hail from reports, bias-corrected",
+          "fields": [
+            [
+              "reporting_rate_fitted",
+              "Fitted reporting rate",
+              "percent0"
+            ],
+            [
+              "annual_chance_hail_1in_or_more_bias_corrected",
+              "Annual chance, 1 inch or more",
+              "percent"
+            ],
+            [
+              "annual_chance_hail_2in_or_more_bias_corrected",
+              "Annual chance, 2 inches or more",
+              "percent"
+            ]
+          ]
+        },
+        {
+          "title": "Radar",
+          "fields": [
+            [
+              "radar_period",
+              "Period"
+            ],
+            [
+              "radar_hail_days_30mm_or_more_over_plant",
+              "Hail days over the plant, 30 mm or more"
+            ],
+            [
+              "radar_hail_days_50mm_or_more_over_plant",
+              "Hail days over the plant, 50 mm or more"
+            ],
+            [
+              "radar_hail_days_per_year_30mm_local_25km",
+              "Hail days per year, 30 mm, 25 km average"
+            ],
+            [
+              "radar_largest_size_over_plant_mm",
+              "Largest radar size over the plant, mm"
+            ],
+            [
+              "radar_largest_size_day",
+              "On"
+            ]
+          ]
+        },
+        {
+          "title": "Thunderstorm wind",
+          "fields": [
+            [
+              "gust_return_levels_ms",
+              "Gust return levels, m/s"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hail_compare",
+      "source_id": "hail_compare",
+      "kind": "h3-compare",
+      "title": "Hail days per year, four sources",
+      "file": "data/hail_compare/cells.json",
+      "source": "NOAA Storm Events, MRMS, Severe Weather Data Inventory; crc-lab reporting-bias model",
+      "licence": "U.S. government works; attribution requested",
+      "caveat": "Different periods and different instruments: compare patterns, not exact values. The shared scale is the default so the eye can compare sources; switch to own-range to see the pattern inside one source.",
+      "style": {
+        "hue": 300,
+        "chroma": 0.14,
+        "series": {
+          "reports": [
+            42,
+            120,
+            214
+          ],
+          "reports_corrected": [
+            235,
+            104,
+            52
+          ],
+          "mrms": [
+            27,
+            175,
+            122
+          ],
+          "signatures": [
+            232,
+            123,
+            164
+          ]
+        },
+        "diverging": {
+          "low": [
+            42,
+            120,
+            214
+          ],
+          "mid": [
+            240,
+            239,
+            236
+          ],
+          "high": [
+            235,
+            104,
+            52
+          ]
+        }
+      },
+      "defaults": {
+        "a": "reports",
+        "b": "mrms"
       }
     }
   ],

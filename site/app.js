@@ -19,6 +19,7 @@ const state = {
   time: null,                // player: { key, mode, t0, t1, now, playing, speed, shade, range }
   baseLayers: [], series: null,
   map: null, overlay: null,
+  cmp: null,                 // hail comparison: { data, lon[], mode, a, b, ownScale, split }
 };
 
 // ---------- colour: one hue, light -> dark, built in OKLCH; fallback blue ramp ----------
@@ -116,6 +117,7 @@ function buildSourcePanel() {
   const show = (id) => $(id).classList.remove("hidden");
   if (state.source === "ibtracs") { show("ctl-ibtracs"); buildTracksControls(); }
   else if (state.source === "storm_events") { show("ctl-storm_events"); buildEventsControls(); }
+  else if (compareLayerOf(state.source)) { show("ctl-compare"); buildCompareControls(); }
   else if (cellSource(state.source)) { show("ctl-cells"); buildCellControls(); }
   else { show("ctl-stations"); buildStationsList(); }
 }
@@ -126,6 +128,7 @@ function buildOverlays() {
   for (const l of state.registry.layers) {
     if (l.kind === "h3-cells" && l.id !== state.hazard) continue;
     if (l.kind === "h3-cells" && !own.has(l.id)) continue; // cells only through their source
+    if (l.kind === "h3-compare" && !own.has(l.id)) continue;
     const lab = document.createElement("label");
     const cb = document.createElement("input"); cb.type = "checkbox";
     const forced = own.has(l.id);
@@ -484,9 +487,19 @@ function showFeature(l, feature) {
   $("detail").classList.remove("hidden");
   $("detail-title").textContent = p.label ? `${p.label}` : l.title;
   const skip = new Set(["curve", "label"]);
-  const meta = [["Layer", l.title], ["Source", l.source]];
-  for (const [k, v] of Object.entries(p)) if (!skip.has(k) && v !== null && typeof v !== "object") meta.push([k.replaceAll("_", " "), String(v)]);
-  $("detail-meta").innerHTML = meta.map(([k, v]) => `<b>${esc(k)}</b><span>${esc(v)}</span>`).join("");
+  if (Array.isArray(l.panel_groups)) { // grouping is declared on the layer in layers.json
+    const cell = (v, f) => (f === "percent" ? `${(100 * v).toFixed(v < 0.01 ? 3 : 2)}%` : f === "percent0" ? `${(100 * v).toFixed(0)}%` : typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
+    const html = [`<h3>Source</h3><b>Layer</b><span>${esc(l.title)}</span><b>From</b><span>${esc(l.source)}</span>`];
+    for (const g of l.panel_groups) {
+      const rows = g.fields.filter(([k]) => p[k] !== null && p[k] !== undefined && typeof p[k] !== "object").map(([k, label, f]) => `<b>${esc(label || k.replaceAll("_", " "))}</b><span>${esc(cell(p[k], f))}</span>`);
+      if (rows.length) html.push(`<h3>${esc(g.title)}</h3>`, ...rows);
+    }
+    $("detail-meta").innerHTML = html.join(""); $("detail-meta").dataset.groups = l.panel_groups.length;
+  } else {
+    const meta = [["Layer", l.title], ["Source", l.source]];
+    for (const [k, v] of Object.entries(p)) if (!skip.has(k) && v !== null && typeof v !== "object") meta.push([k.replaceAll("_", " "), String(v)]);
+    $("detail-meta").innerHTML = meta.map(([k, v]) => `<b>${esc(k)}</b><span>${esc(v)}</span>`).join(""); delete $("detail-meta").dataset.groups;
+  }
   $("detail-params").innerHTML = ""; $("detail-foot").textContent = l.caveat || "";
   const c = p.curve;
   if (c && Array.isArray(c.return_periods) && Array.isArray(c.values)) {
@@ -494,6 +507,127 @@ function showFeature(l, feature) {
     drawCurve(c.return_periods, c.values, c.unit || "", ramp(l.style && l.style.hue !== undefined ? l.style : { hue: 250, chroma: 0.14 }));
     if (c.note) $("detail-params").innerHTML = `<b>Curve</b><span>${esc(c.note)}</span>`;
   } else { $("detail-table").innerHTML = ""; $("chart").innerHTML = ""; }
+}
+
+// ---------- hail days: four sources compared (h3-compare) ----------
+const compareLayerOf = (sourceId) => layersOfSource(sourceId).find((l) => l.kind === "h3-compare");
+async function loadCompare(l) {
+  if (state.cmp) return state.cmp;
+  const data = await fetchJSON(l.file);
+  const lon = data.cells.map((c) => globalThis.h3.cellToLatLng(c)[1]);
+  const ids = Object.keys(data.sources);
+  const q = (arr, p) => quantile([...arr].sort((x, y) => x - y), p);
+  const own = Object.fromEntries(ids.map((k) => [k, q(data.sources[k].values, 0.98) || 1]));
+  const shared = q(ids.flatMap((k) => data.sources[k].values), 0.98) || 1;
+  const d = l.defaults || {};
+  state.cmp = { data, lon, ids, own, shared, mode: "single", a: d.a || ids[0], b: d.b || ids[1], ownScale: false, split: 0.5 };
+  return state.cmp;
+}
+function divergingAt(dv, t) { // t in [-1, 1]; neutral midpoint, one hue per side
+  const to = t < 0 ? dv.low : dv.high; const f = Math.min(1, Math.abs(t));
+  return [dv.mid[0] + (to[0] - dv.mid[0]) * f, dv.mid[1] + (to[1] - dv.mid[1]) * f, dv.mid[2] + (to[2] - dv.mid[2]) * f, 225];
+}
+const RATIO_SPAN = 4; // log2: colours saturate at 16 times either way
+function splitLon() { const r = $("map").getBoundingClientRect(); return state.map.unproject([state.cmp.split * r.width, r.height / 2]).lng; }
+function compareLayer(l) {
+  const c = state.cmp; const { data } = c; const stops = ramp(l.style); const A = data.sources[c.a].values, B = data.sources[c.b].values;
+  const top = (k) => (c.ownScale ? c.own[k] : c.shared);
+  let color; let trigger;
+  if (c.mode === "ratio") {
+    color = (i) => (A[i] > 0 && B[i] > 0 ? divergingAt(l.style.diverging, Math.log2(A[i] / B[i]) / RATIO_SPAN) : NODATA);
+    trigger = ["ratio", c.a, c.b];
+  } else if (c.mode === "swipe") {
+    const x = splitLon();
+    color = (i) => (c.lon[i] < x ? colorAt(stops, A[i] / top(c.a)) : colorAt(stops, B[i] / top(c.b)));
+    trigger = ["swipe", c.a, c.b, c.ownScale, x];
+  } else {
+    color = (i) => colorAt(stops, A[i] / top(c.a));
+    trigger = ["single", c.a, c.ownScale];
+  }
+  return new H3HexagonLayer({
+    id: "cmp", data: data.cells.map((_, i) => i), getHexagon: (i) => data.cells[i], getFillColor: color,
+    filled: true, stroked: false, extruded: false, highPrecision: false, pickable: true, opacity: 1,
+    updateTriggers: { getFillColor: trigger },
+    onClick: (info) => { showCompareCell(l, info.index); return true; },
+  });
+}
+function compareTooltip(i) {
+  const c = state.cmp; const s = c.data.sources;
+  return { text: `${c.data.cells[i]}\n` + c.ids.map((k) => `${fmt(s[k].values[i])}  ${s[k].title}`).join("\n") + `\n${c.data.unit}` };
+}
+function buildCompareControls() {
+  const l = compareLayerOf(state.source); const c = state.cmp; if (!c) return; const s = c.data.sources;
+  for (const id of ["cmp-a", "cmp-b"]) { const sel = $(id); sel.innerHTML = ""; for (const k of c.ids) sel.append(new Option(`${s[k].title} (${s[k].period})`, k)); }
+  $("cmp-mode").value = c.mode; $("cmp-a").value = c.a; $("cmp-b").value = c.b; $("cmp-own").checked = c.ownScale;
+  $("cmp-b-label").classList.toggle("hidden", c.mode === "single"); $("cmp-own-label").classList.toggle("hidden", c.mode === "ratio");
+  $("cmp-a-label").firstChild.textContent = c.mode === "ratio" ? "Numerator " : c.mode === "swipe" ? "Left of the line " : "Source ";
+  $("cmp-b-label").firstChild.textContent = c.mode === "ratio" ? "Denominator " : "Right of the line ";
+  const stops = ramp(l.style);
+  if (c.mode === "ratio") {
+    const dv = l.style.diverging; const css = (a) => `rgb(${a.join(",")})`;
+    $("cmp-legend-title").textContent = `${s[c.a].title} ÷ ${s[c.b].title}`; $("cmp-legend-unit").textContent = "ratio";
+    $("cmp-legend-bar").style.background = `linear-gradient(90deg, ${css(dv.low)}, ${css(dv.mid)}, ${css(dv.high)})`;
+    $("cmp-legend-min").textContent = "1/16 or less"; $("cmp-legend-mid").textContent = "equal"; $("cmp-legend-max").textContent = "16 times or more";
+    const both = c.data.cells.filter((_, i) => s[c.a].values[i] > 0 && s[c.b].values[i] > 0).length;
+    $("cmp-legend-note").textContent = `Log scale centred on equal. ${both.toLocaleString()} cells have a value in both; grey cells have none in one of them. The two records cover ${s[c.a].period} and ${s[c.b].period}.`;
+  } else {
+    const range = (k) => fmt(c.ownScale ? c.own[k] : c.shared);
+    $("cmp-legend-title").textContent = c.mode === "swipe" ? "Left and right of the line" : s[c.a].title; $("cmp-legend-unit").textContent = c.data.unit;
+    $("cmp-legend-bar").style.background = gradient(stops);
+    $("cmp-legend-min").textContent = "0"; $("cmp-legend-mid").textContent = "";
+    $("cmp-legend-max").textContent = c.ownScale && c.mode === "swipe" ? `≥ ${range(c.a)} left, ${range(c.b)} right` : `≥ ${range(c.a)}`;
+    $("cmp-legend-note").textContent = c.ownScale ? "Each source is scaled to its own 98th percentile: read the pattern, not the level." : "One scale for all four sources (98th percentile of all values), so levels can be compared across sources.";
+  }
+  const med = (k) => quantile([...s[k].values].sort((x, y) => x - y), 0.5);
+  $("cmp-summary").innerHTML = `<table><tr><th>Source</th><th>Period</th><th class="num">Median cell</th></tr>` + c.ids.map((k) => `<tr><td><span class="sw" style="background:rgb(${l.style.series[k].join(",")})"></span>${esc(s[k].title)}</td><td>${esc(s[k].period)}</td><td class="num">${fmt(med(k))}</td></tr>`).join("") + `</table>`;
+  drawSignatureYears(l);
+}
+function drawSignatureYears(l) {
+  const yrs = state.cmp.data.signatures_per_year || []; const box = $("cmp-years"); if (!yrs.length) { box.innerHTML = ""; return; }
+  const W = 290, H = 110, m = { l: 34, r: 4, t: 16, b: 18 }; const max = Math.max(...yrs.map((y) => y.rows_ge_threshold)) || 1;
+  const bw = (W - m.l - m.r) / yrs.length; const col = `rgb(${l.style.series.signatures.join(",")})`;
+  const y = (v) => m.t + (1 - v / max) * (H - m.t - m.b);
+  const parts = [`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Radar hail signatures per year"><text x="0" y="10" font-size="10.5" fill="#2a2a28" font-weight="600">Radar hail signatures of 1.25 in or more, per year</text>`];
+  for (const t of [0, max / 2, max]) parts.push(`<line x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}" stroke="#d9d7d2"/><text x="${m.l - 4}" y="${y(t) + 3}" text-anchor="end" font-size="9" fill="#7a7976">${t >= 1000 ? `${Math.round(t / 1000)}k` : Math.round(t)}</text>`);
+  yrs.forEach((d, i) => { const h = H - m.b - y(d.rows_ge_threshold); parts.push(`<rect x="${(m.l + i * bw + 1).toFixed(1)}" y="${y(d.rows_ge_threshold).toFixed(1)}" width="${Math.max(1, bw - 2).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="1" fill="${col}"><title>${d.year}: ${d.rows_ge_threshold.toLocaleString()} signatures, ${d.radars} radars</title></rect>`); if (d.year % 5 === 0) parts.push(`<text x="${(m.l + i * bw + bw / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="9" fill="#7a7976">${d.year}</text>`); });
+  parts.push(`</svg><div class="mute small">The swings are partly weather and partly the record itself: missing values in the first years, and changes in the radar network and algorithm.</div>`);
+  box.innerHTML = parts.join("");
+}
+function showCompareCell(l, i) {
+  const c = state.cmp; const s = c.data.sources; state.selected = null;
+  const centre = globalThis.h3.cellToLatLng(c.data.cells[i]); const rate = c.data.reporting_rate[i];
+  $("detail").classList.remove("hidden"); $("detail-title").textContent = "Hail days per year in this cell";
+  $("detail-meta").innerHTML = [["Cell", `${c.data.cells[i]} (H3 r${c.data.h3_resolution})`], ["Centre", `${centre[0].toFixed(3)}°N, ${(-centre[1]).toFixed(3)}°W`], ["Fitted reporting rate", rate === null || Number.isNaN(rate) ? "–" : `${(100 * rate).toFixed(0)}% of hail days reported (model)`]].map(([k, v]) => `<b>${k}</b><span>${esc(v)}</span>`).join("");
+  delete $("detail-meta").dataset.groups;
+  const vals = c.ids.map((k) => s[k].values[i]); const max = Math.max(...vals, 0.001);
+  const W = 348, row = 34, left = 8, barMax = W - 70; const parts = [`<svg viewBox="0 0 ${W} ${c.ids.length * row + 6}" role="img" aria-label="Hail days per year by source">`];
+  c.ids.forEach((k, j) => { const y = j * row; const w = (vals[j] / max) * barMax; parts.push(`<text x="${left}" y="${y + 12}" font-size="11.5" fill="#2a2a28">${esc(s[k].title)} · ${esc(s[k].period)}</text><rect class="bar" data-k="${k}" x="${left}" y="${y + 17}" width="${Math.max(1, w).toFixed(1)}" height="11" rx="3" fill="rgb(${l.style.series[k].join(",")})"/><text x="${(left + Math.max(1, w) + 6).toFixed(1)}" y="${y + 27}" font-size="11.5" fill="#2a2a28">${fmt(vals[j])}</text>`); });
+  parts.push("</svg>");
+  $("chart").innerHTML = `<div class="bars">${parts.join("")}</div>`;
+  $("detail-table").innerHTML = `<tr><th>Source</th><th>Period</th><th class="num">${esc(c.data.unit)}</th></tr>` + c.ids.map((k, j) => `<tr><td>${esc(s[k].title)}</td><td>${esc(s[k].period)}</td><td class="num">${fmt(vals[j])}</td></tr>`).join("");
+  $("detail-params").innerHTML = ""; $("detail-foot").textContent = c.data.notes || l.caveat || "";
+}
+function placeSwipe() {
+  const on = !!(state.cmp && compareLayerOf(state.source) && state.cmp.mode === "swipe"); const el = $("swipe"); el.classList.toggle("hidden", !on);
+  if (!on) return; const s = state.cmp.data.sources;
+  el.style.left = `${(state.cmp.split * 100).toFixed(2)}%`; $("swipe-a").textContent = `◀ ${s[state.cmp.a].title}`; $("swipe-b").textContent = `${s[state.cmp.b].title} ▶`;
+}
+function refreshCompareLayer() { // re-colour only the comparison layer (swipe drag, map move)
+  const l = compareLayerOf(state.source); if (!l || !state.cmp) return;
+  state.baseLayers = state.baseLayers.map((x) => (x.id === "cmp" ? compareLayer(l) : x)); drawFrame(); placeSwipe();
+}
+function wireCompare() {
+  const set = (patch) => { Object.assign(state.cmp, patch); render(); };
+  $("cmp-mode").onchange = (e) => set({ mode: e.target.value });
+  $("cmp-a").onchange = (e) => set({ a: e.target.value });
+  $("cmp-b").onchange = (e) => set({ b: e.target.value });
+  $("cmp-own").onchange = (e) => set({ ownScale: e.target.checked });
+  const el = $("swipe"); let drag = false;
+  el.addEventListener("pointerdown", (e) => { drag = true; el.setPointerCapture(e.pointerId); e.preventDefault(); e.stopPropagation(); });
+  el.addEventListener("pointermove", (e) => { if (!drag) return; const r = $("map").getBoundingClientRect(); state.cmp.split = Math.min(0.97, Math.max(0.03, (e.clientX - r.left) / r.width)); refreshCompareLayer(); });
+  el.addEventListener("pointerup", () => { drag = false; });
+  document.addEventListener("crc:swipe", (e) => { if (state.cmp) { state.cmp.split = e.detail; refreshCompareLayer(); } });
+  state.map.on("move", () => { if (state.cmp && state.cmp.mode === "swipe" && compareLayerOf(state.source)) refreshCompareLayer(); });
 }
 
 // ---------- render ----------
@@ -513,6 +647,7 @@ async function render() {
       if (!wanted.has(l.id) || l.kind === "h3-cells" || l.kind === "geojson") continue;
       if (l.kind === "tracks") { await loadTracks(l); if (token !== rendering) return; layers.push(...tracksLayers(l)); if (l.source_id === src) count = `${tracksMatch().length} storms`; }
       else if (l.kind === "points-binary") { await loadEvents(l); if (token !== rendering) return; if (!(l.source_id === src && state.win.on)) layers.push(eventsLayer(l)); if (l.source_id === src) count = `${state.events.index.events.toLocaleString()} located reports`; }
+      else if (l.kind === "h3-compare") { await loadCompare(l); if (token !== rendering) return; layers.push(compareLayer(l)); count = `${state.cmp.data.cells.length.toLocaleString()} cells, ${state.cmp.ids.length} sources`; }
       else if (l.kind === "points" || l.kind === "lines") { const data = await loadGeo(l); if (token !== rendering) return; layers.push(geoLayer(l, data)); if (l.source_id === src) count = `${data.features.length} stations`; }
       if (fetched === started) fetched = performance.now();
     }
@@ -521,7 +656,7 @@ async function render() {
   try { await setupTime(); } catch (e) { $("status").textContent = `Could not load the timeline: ${e.message}`; }
   if (token !== rendering) return;
   state.baseLayers = layers; drawFrame();
-  buildSourcePanel(); buildOverlays(); buildCaveats(payload); buildTimebar();
+  buildSourcePanel(); buildOverlays(); buildCaveats(payload); buildTimebar(); placeSwipe();
   if (state.selected && (state.selected.hazard !== state.hazard || state.selected.horizon !== state.horizon)) { state.selected = null; $("detail").classList.add("hidden"); }
   else if (state.selected && cellSource(src)) showDetail(state.selected.index);
   requestAnimationFrame(() => {
@@ -742,6 +877,7 @@ function initMap() {
     getTooltip: (info) => {
       if (info.object === undefined || !info.layer) return null;
       if (info.layer.id === "cells") return cellTooltip(info.index);
+      if (info.layer.id === "cmp") return compareTooltip(info.index);
       if (info.layer.id === "tracks") return trackTooltip(info.object);
       if ((info.layer.id === "events" || info.layer.id === "window-events") && state.events) return eventTooltip(info.object);
       if (info.layer.id.startsWith("geo:")) return geoTooltip(layerById(info.layer.id.slice(4)), info.object);
@@ -957,6 +1093,8 @@ async function main() {
   await initMap();
   document.addEventListener("crc:flyTo", (e) => state.map.jumpTo({ center: e.detail.center, zoom: e.detail.zoom }));
   document.addEventListener("crc:source", (e) => selectSource(e.detail));
+  document.addEventListener("crc:compare", (e) => { if (state.cmp) { Object.assign(state.cmp, e.detail); render(); } });
+  wireCompare();
   document.addEventListener("crc:time", (e) => { if (state.time) { stopPlay(); state.time.now = state.time.t0 + e.detail * (state.time.t1 - state.time.t0); drawFrame(); } });
   $("status").textContent = "Loading the first source…";
   await render();
