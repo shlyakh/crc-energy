@@ -142,7 +142,12 @@ def test_registry_lists_the_sources_layers() -> None:
     } == declared
     for layer in registry["layers"]:
         assert layer["source_id"] is None or layer["source_id"] in declared
+    groups = {g["id"] for g in registry["groups"]}
+    assert groups == {"crc-sdk", "crc-lab"}
+    new_here = {s["id"] for s in registry["sources"] if s["origin"] == "crc-lab"}
+    assert new_here == {"storm_events", "storm_curves"}
     for source in registry["sources"]:
+        assert source["origin"] in groups
         assert source["status"] in ("loaded", "prototype", "planned")
         assert source["licence"] and source["coverage"] and source["returns"]
 

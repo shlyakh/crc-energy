@@ -19,6 +19,8 @@
   <nav>
     <button class="tab on" data-view="map">Map</button>
     <button class="tab" data-view="catalog">Sources</button>
+    <button class="tab" data-view="about">About</button>
+    <button id="demo-start" class="demo-btn" title="A 30-second guided tour of this page">▶ Play demo</button>
   </nav>
   <div id="release" class="release"></div>
 </header>
@@ -129,7 +131,7 @@
 <main id="view-catalog" class="view">
   <section>
     <h2>Sources in this explorer</h2>
-    <p class="mute">Each source is read through crc-sdk 0.11.1 and shown as it is: observations stay observations, published levels stay published, and only the curves marked as fitted were fitted by crc-sdk. Status: loaded = built and checked; prototype = a first cut from the sources track; planned = not built.</p>
+    <p class="mute">Two groups: sources crc-sdk already reaches, and sources new in this project. Each is shown as it is: observations stay observations, published levels stay published, and only the curves marked as fitted were fitted. Status: loaded = built and checked; prototype = a first cut; planned = not built.</p>
     <table id="catalog-sources"></table>
   </section>
   <section>
@@ -148,6 +150,21 @@
     <ul id="not-in-crc"></ul>
   </section>
 </main>
+
+<main id="view-about" class="view">
+  <article id="about"></article>
+</main>
+
+<div id="demo-bar" class="hidden" role="status" aria-live="polite">
+  <div id="demo-caption"></div>
+  <div class="demo-ctl">
+    <div id="demo-progress"><i></i></div>
+    <span id="demo-step" class="mute small"></span>
+    <button id="demo-next" class="hidden">Next</button>
+    <button id="demo-pause">Pause</button>
+    <button id="demo-stop" title="Escape also exits">Stop</button>
+  </div>
+</div>
 
 <script type="module" src="app.js"></script>
 </body>

@@ -44,6 +44,9 @@ const centre = () => evaluate("(() => { const r = document.getElementById('map')
 await send("Page.navigate", { url: URL });
 const first = await waitReady("first view (default source)"); await sleep(1500); await shot("s1-first");
 first.sources_listed = await evaluate("document.querySelectorAll('#sources .src').length");
+first.groups = await evaluate("[...document.querySelectorAll('#sources .grp')].map((g) => g.dataset.group + ':' + g.querySelector('.badge').textContent)");
+first.header_badge = await evaluate("document.querySelector('#source-blurb .badge')?.textContent"); first.caveat_badge = await evaluate("document.querySelector('#caveats .badge')?.textContent");
+console.log(JSON.stringify({ groups: first.groups, header_badge: first.header_badge, caveat_badge: first.caveat_badge }));
 // IBTrACS: filters, list click, track detail
 await change("#tracks-min-wind", 100); const strong = await waitReady("tracks: at least 100 kt"); strong.list = await evaluate("document.querySelectorAll('#tracks-list li').length");
 await change("#tracks-name", "harvey", "input"); const harvey = await waitReady("tracks: name contains harvey"); harvey.list = await evaluate("document.querySelectorAll('#tracks-list li').length");
@@ -85,6 +88,22 @@ await reset(); await evaluate("(() => { const lab = [...document.querySelectorAl
 await evaluate("document.querySelector('.tab[data-view=catalog]').click()"); await sleep(500);
 report.catalog = { sources: await evaluate("document.querySelectorAll('#catalog-sources tr').length - 1"), hazards: await evaluate("document.querySelectorAll('#catalog-table tr').length - 1"), others: await evaluate("document.querySelectorAll('#sources-table tr').length - 1") };
 console.log(JSON.stringify(report.catalog)); await shot("s9-sources-tab");
+report.catalog.badges = await evaluate("document.querySelectorAll('#catalog-sources .badge').length");
+// About tab: numbers come from the data files
+await evaluate("document.querySelector('.tab[data-view=about]').click()"); await sleep(800);
+report.about = { built: await evaluate("document.body.dataset.about || ''"), headings: await evaluate("[...document.querySelectorAll('#about h2')].map((h) => h.textContent)"), storms_line: await evaluate("[...document.querySelectorAll('#about li')].find((l) => l.textContent.includes('Tropical cyclone'))?.textContent.slice(0, 200)"), version_line: (await evaluate("[...document.querySelectorAll('#about p')].find((p) => p.textContent.startsWith('Built '))?.textContent")).slice(0, 160), video: await evaluate("!!document.querySelector('#about video')") };
+console.log(JSON.stringify(report.about)); await shot("s10-about");
+if (!process.argv.includes("--no-demo")) {
+// demo: ?demo=1 must reach the end card in 27-33 s and leave the page usable
+await send("Page.navigate", { url: URL + "?demo=1" }); const d0 = Date.now(); let state_ = ""; let mid = false;
+while (Date.now() - d0 < 60000) { state_ = await evaluate("document.body ? (document.body.dataset.demo || '') : ''"); if (!mid && Date.now() - d0 > 12000) { mid = true; await shot("s11-demo-mid"); report.demo_mid_caption = await evaluate("document.getElementById('demo-caption').textContent"); } if (state_ && state_ !== "running" && await evaluate("document.body.dataset.demoMs || ''")) break; await sleep(250); }
+report.demo = { state: state_, tour_ms: Number(await evaluate("document.body.dataset.demoTourMs")), total_ms: Number(await evaluate("document.body.dataset.demoMs")), bar_hidden: await evaluate("document.getElementById('demo-bar').classList.contains('hidden')"), source_after: await evaluate("document.querySelector('#sources .src.on')?.dataset.id"), view_after: await evaluate("document.querySelector('.view.on').id"), timebar_hidden_after: await evaluate("document.getElementById('timebar').classList.contains('hidden')") };
+await reset(); await evaluate("document.dispatchEvent(new CustomEvent('crc:source', { detail: 'coops' }))"); report.demo.usable_after = (await waitReady("after demo: switch source")).source;
+console.log(JSON.stringify(report.demo)); console.log(JSON.stringify({ mid: report.demo_mid_caption }));
+// Escape exits a running demo
+await evaluate("document.getElementById('demo-start').click()"); await sleep(2500); await send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 }); await sleep(2500);
+report.demo_escape = { state: await evaluate("document.body.dataset.demo"), bar_hidden: await evaluate("document.getElementById('demo-bar').classList.contains('hidden')") }; console.log(JSON.stringify(report.demo_escape));
+}
 report.console = console_; report.errors = errors;
 writeFileSync(`${S}/smoke-report.json`, JSON.stringify(report, null, 1));
 console.log("console:", JSON.stringify(console_.slice(0, 10))); console.log("errors:", JSON.stringify(errors.slice(0, 10)));

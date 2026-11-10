@@ -58,3 +58,8 @@ console messages across the whole smoke run; 32 tests pass; `ruff` clean; `just 
 - The timeline draws at most 6,000 marks and says so when it cuts.
 - In storm mode every report in Texas in the window is shown, whether or not the storm caused it.
 - The player is measured only under software rendering; nothing was measured from the public URL.
+
+## Next iteration
+
+The five open questions from this round were deferred by Yuri on 2026-11-10; they are listed verbatim in
+[E4-groups-about-demo.md](E4-groups-about-demo.md#next-iteration-deferred-by-yuri-2026-11-10).

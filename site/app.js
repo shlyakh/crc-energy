@@ -56,6 +56,8 @@ const gradient = (stops) => `linear-gradient(90deg, ${stops.map((c) => `rgb(${c.
 // ---------- helpers ----------
 const layerById = (id) => state.registry.layers.find((l) => l.id === id);
 const sourceById = (id) => state.registry.sources.find((s) => s.id === id);
+const groupOf = (s) => state.registry.groups.find((g) => g.id === s.origin) || state.registry.groups[0];
+const badge = (s) => { const g = groupOf(s); return `<span class="badge" style="--g:${g.color}" title="${esc(g.title)}">${esc(g.badge)}</span>`; };
 const layersOfSource = (id) => state.registry.layers.filter((l) => l.source_id === id);
 const fileKey = (h, y) => `${h}/${y}`;
 function display(layer, v) { if (v === null || v === undefined) return null; const d = layer.display; return d ? v + (d.offset || 0) : v; }
@@ -81,16 +83,22 @@ const cellSource = (id) => layersOfSource(id).some((l) => l.kind === "h3-cells")
 // ---------- source list and per-source panel ----------
 function buildSourceList() {
   const box = $("sources"); box.innerHTML = "";
-  for (const s of state.registry.sources) {
-    const b = document.createElement("button"); b.className = "src" + (s.id === state.source ? " on" : ""); b.dataset.id = s.id;
-    b.innerHTML = `<span class="t">${esc(s.title)}</span><span class="s">${esc(s.short)}</span><span class="pills"><span class="pill ${s.status === "loaded" ? "on" : s.status === "prototype" ? "proto" : "plan"}">${s.status}</span><span class="pill">${esc(s.licence.split(";")[0].split("(")[0].trim())}</span></span>`;
-    b.onclick = () => selectSource(s.id);
-    box.append(b);
+  for (const g of state.registry.groups) {
+    const members = state.registry.sources.filter((s) => s.origin === g.id); if (!members.length) continue;
+    const head = document.createElement("div"); head.className = "grp"; head.style.setProperty("--g", g.color); head.dataset.group = g.id;
+    head.innerHTML = `<div class="gt"><span class="badge" style="--g:${g.color}">${esc(g.badge)}</span>${esc(g.title)}</div><div class="gb">${esc(g.blurb)}</div>`;
+    box.append(head);
+    for (const s of members) {
+      const b = document.createElement("button"); b.className = "src" + (s.id === state.source ? " on" : ""); b.dataset.id = s.id; b.style.setProperty("--g", g.color);
+      b.innerHTML = `<span class="t">${esc(s.title)}</span><span class="s">${esc(s.short)}</span><span class="pills"><span class="pill ${s.status === "loaded" ? "on" : s.status === "prototype" ? "proto" : "plan"}">${s.status}</span><span class="pill">${esc(s.licence.split(";")[0].split("(")[0].trim())}</span></span>`;
+      b.onclick = () => selectSource(s.id);
+      box.append(b);
+    }
   }
 }
 
-function selectSource(id) {
-  if (state.source === id) return;
+function selectSource(id, force = false) {
+  if (state.source === id && !force) return Promise.resolve();
   state.source = id; state.selected = null; state.storm = null; $("detail").classList.add("hidden");
   const cells = layersOfSource(id).filter((l) => l.kind === "h3-cells");
   if (cells.length) {
@@ -98,12 +106,12 @@ function selectSource(id) {
     const hs = horizonsOf(layerById(state.hazard)); if (!hs.includes(state.horizon)) state.horizon = hs[0];
     state.domain = null;
   }
-  buildSourceList(); render();
+  buildSourceList(); return render();
 }
 
 function buildSourcePanel() {
   const s = sourceById(state.source);
-  $("source-blurb").innerHTML = `<b>${esc(s.title)}</b> · ${esc(s.provider)}<br>${esc(s.returns)}<br><span>Coverage: ${esc(s.coverage)}. Licence: ${esc(s.licence)}.</span>`;
+  $("source-blurb").innerHTML = `${badge(s)} <b>${esc(s.title)}</b> · ${esc(s.provider)}<br>${esc(s.returns)}<br><span>Coverage: ${esc(s.coverage)}. Licence: ${esc(s.licence)}.</span>`;
   for (const el of document.querySelectorAll("#source-panel .ctl")) el.classList.add("hidden");
   const show = (id) => $(id).classList.remove("hidden");
   if (state.source === "ibtracs") { show("ctl-ibtracs"); buildTracksControls(); }
@@ -135,7 +143,8 @@ function buildOverlays() {
 
 function buildCaveats(payload) {
   const { catalog, manifest } = state; const s = sourceById(state.source);
-  const items = (s.caveats || []).map((t) => `<b>${esc(s.title)}:</b> ${esc(t)}`);
+  const g = groupOf(s);
+  const items = [`${badge(s)} <b>${esc(g.title)}.</b> ${esc(g.blurb)}`, ...(s.caveats || []).map((t) => `<b>${esc(s.title)}:</b> ${esc(t)}`)];
   for (const l of layersOfSource(state.source)) if (l.caveat) items.push(`<b>${esc(l.title)}:</b> ${esc(l.caveat)}`);
   if (payload && cellSource(state.source)) {
     const layer = layerById(state.hazard); const res = payload.h3_resolution;
@@ -748,9 +757,9 @@ function initMap() {
 function buildCatalog() {
   const { catalog, sources, registry } = state;
   const loaded = new Set(registry.layers.map((l) => l.id));
-  $("catalog-sources").innerHTML = `<tr><th>Source</th><th>Provider, via crc-sdk</th><th>What it returns</th><th>Coverage here</th><th>Licence</th><th>Status</th></tr>` +
-    registry.sources.map((s) => `<tr><td><b>${esc(s.title)}</b></td><td>${esc(s.provider)}</td><td>${esc(s.returns)}</td><td>${esc(s.coverage)}</td><td>${esc(s.licence)}</td><td><span class="pill ${s.status === "loaded" ? "on" : s.status === "prototype" ? "proto" : "plan"}">${s.status}</span></td></tr>`).join("") +
-    registry.planned.map((p) => `<tr><td>${esc(p.title)}</td><td colspan="3" class="mute">${esc(p.status)}</td><td></td><td><span class="pill plan">planned</span></td></tr>`).join("");
+  $("catalog-sources").innerHTML = `<tr><th>Group</th><th>Source</th><th>Provider</th><th>What it returns</th><th>Coverage here</th><th>Licence</th><th>Status</th></tr>` +
+    registry.groups.flatMap((g) => registry.sources.filter((s) => s.origin === g.id)).map((s) => `<tr data-origin="${s.origin}"><td>${badge(s)}</td><td><b>${esc(s.title)}</b></td><td>${esc(s.provider)}</td><td>${esc(s.returns)}</td><td>${esc(s.coverage)}</td><td>${esc(s.licence)}</td><td><span class="pill ${s.status === "loaded" ? "on" : s.status === "prototype" ? "proto" : "plan"}">${s.status}</span></td></tr>`).join("") +
+    registry.planned.map((p) => `<tr><td></td><td>${esc(p.title)}</td><td colspan="3" class="mute">${esc(p.status)}</td><td></td><td><span class="pill plan">planned</span></td></tr>`).join("");
   $("catalog-intro").textContent = `Release ${catalog.release} (schema ${catalog.schema_version}), retrieved ${catalog.retrieved_at}. Licence ${catalog.licence}; attribution “${catalog.attribution}”. ${Object.keys(catalog.hazards).length} hazards, pathway ${catalog.pathways.join(", ")}. Generated from the release's own catalogue; nothing here is hand-written.`;
   const rows = Object.entries(catalog.hazards).sort(([a], [b]) => (loaded.has(b) - loaded.has(a)) || a.localeCompare(b));
   const draw = (filter) => {
@@ -761,6 +770,159 @@ function buildCatalog() {
   draw(""); $("catalog-filter").oninput = (e) => draw(e.target.value);
   $("sources-table").innerHTML = `<tr><th>Source</th><th>Entry point</th><th>Returns</th><th>Coverage</th><th>Licence</th></tr>` + sources.sources.map((s) => `<tr><td>${esc(s.name)}</td><td><code>${esc(s.entry)}</code></td><td>${esc(s.returns)}</td><td>${esc(s.coverage)}</td><td>${esc(s.licence)}</td></tr>`).join("");
   $("not-in-crc").innerHTML = sources.not_in_crc.map((t) => `<li>${esc(t)}</li>`).join("");
+}
+
+// ---------- About (every number is read from the data files at load time) ----------
+async function buildAbout() {
+  const { registry, manifest, catalog } = state;
+  const [tracks, evIndex, srcManifest] = await Promise.all([
+    fetchJSON(layerById("ibtracs").file).catch(() => null), fetchJSON(layerById("storm_events").index).catch(() => null), fetchJSON("data/sources/manifest.json").catch(() => null),
+  ]);
+  const n = (v) => (v === null || v === undefined ? "–" : Number(v).toLocaleString());
+  const facts = {
+    ibtracs: tracks ? `${n(tracks.storms.length)} storms, seasons ${Math.min(...tracks.storms.map((s) => s.season))}–${Math.max(...tracks.storms.map((s) => s.season))}; ${n(tracks.storms.filter((s) => s.extent_points.r34).length)} with wind-radius estimates` : "",
+    storm_events: evIndex ? `${n(evIndex.records)} reports ${evIndex.years[0]}–${evIndex.years[1]}, ${n(evIndex.events)} with a point on the map; ${n(evIndex.counts_all.Hail)} hail and ${n(evIndex.counts_all["Thunderstorm Wind"])} thunderstorm-wind reports` : "",
+    storm_curves: `${layersOfSource("storm_curves").length} cell layers (${layersOfSource("storm_curves").map((l) => l.title.split(" (")[0].toLowerCase()).join("; ")})`,
+    coops: srcManifest && srcManifest.layers.coops ? `${n(srcManifest.layers.coops.stations_with_levels)} stations with published levels` : "",
+    ghcnh: srcManifest && srcManifest.layers.ghcnh ? `${n(srcManifest.layers.ghcnh.stations_with_curves)} stations with a fitted curve` : "",
+    era5: "",
+    crc_open: `${n(Object.keys(catalog.hazards).length)} hazards in the release, ${n(layersOfSource("crc_open").length)} loaded; horizons ${manifest.horizons.join(", ")}; ${n(manifest.texas.cells["5"])} resolution-5 cells over Texas`,
+  };
+  const groupHtml = registry.groups.map((g) => `<h3><span class="badge" style="--g:${g.color}">${esc(g.badge)}</span> ${esc(g.title)}</h3><p>${esc(g.blurb)}</p><ul>${registry.sources.filter((s) => s.origin === g.id).map((s) => `<li><b>${esc(s.title)}</b> (${esc(s.status)}). ${esc(s.short)} ${facts[s.id] ? `<span class="mute">Now: ${esc(facts[s.id])}.</span>` : ""}</li>`).join("")}</ul>`).join("");
+  const licences = `<table><tr><th>Source</th><th>Provider</th><th>Licence and attribution</th></tr>${registry.sources.map((s) => `<tr><td>${badge(s)} ${esc(s.title)}</td><td>${esc(s.provider)}</td><td>${esc(s.licence)}</td></tr>`).join("")}<tr><td>Basemap</td><td colspan="2">${esc(registry.basemap.attribution)}</td></tr></table>`;
+  const repo = "https://github.com/shlyakh/crc-lab"; const rep = (f, t) => `<a href="${repo}/blob/main/docs/reports/${f}" target="_blank" rel="noopener">${t}</a>`;
+  const video = Boolean(registry.demo && registry.demo.video);
+  $("about").innerHTML = `
+    <h2 style="margin-top:0">What this page is</h2>
+    <p class="lead">A map of Texas for looking at climate and severe-weather data sources side by side: where storms tracked, what was reported on the ground, and what fitted hazard curves say, each shown the way its source publishes it.</p>
+    <p>It is part of <a href="${repo}" target="_blank" rel="noopener">crc-lab</a>, a project by Yuri Shlyakhter that works with Climate Risk Commons data, Texas first. <button id="about-demo" class="demo-btn" style="margin-left:0">▶ Play the 30-second demo</button></p>
+    ${video ? `<p class="mute">Or watch a recording of the demo:</p><video src="${esc(registry.demo.video)}" controls preload="none" width="720"></video>` : ""}
+    <h2>Climate Risk Commons and crc-sdk</h2>
+    <p>Climate Risk Commons (CRC) is an open project that publishes climate hazard data as fitted curves: for a place and a period, the distribution of an annual value such as the hottest day. crc-sdk is its Python toolkit; it reads many public sources through one interface and keeps the licence, retrieval time and checksum of what it reads. This page was built with crc-sdk ${esc(manifest.versions["crc-sdk"])} and crc-framework ${esc(manifest.versions["crc-framework"])}.</p>
+    <h2>Two groups of sources</h2>
+    ${groupHtml}
+    <h2>How to use it</h2>
+    <ul>
+      <li><b>Pick a source</b> on the left of the Map tab. Its filters, legend and caveats appear below the list; "Also show" draws other sources on top.</li>
+      <li><b>Click</b> a track, a report, a station or a cell for its details and, where there is one, its curve.</li>
+      <li><b>Storm player:</b> select a cyclone to get a time bar under the map. Play it to watch the centre and its wind-radius outlines move while storm reports appear as the clock passes them.</li>
+      <li><b>Timeline:</b> the strip under the player has one row per report type; a tick is an instant, a bar a report with a duration. Click a mark to open the report, or empty space to move the clock.</li>
+      <li><b>Date window:</b> on Storm reports, "Explore a date window" gives the same timeline for any 1 to 14 days, for example a spring hail outbreak.</li>
+      <li><b>Sources tab:</b> every source with what it returns, its coverage and licence, and the full CRC Open hazard list.</li>
+    </ul>
+    <h2>What the numbers mean, and do not mean</h2>
+    <ul>
+      <li><b>Regional screening.</b> A cell value is the curve for a whole H3 cell (about 253 km² at resolution 5), not for any site inside it.</li>
+      <li><b>Reports follow people.</b> Storm reports come from the public, spotters and officials; an empty area may be unobserved, not calm. The hail and gust curves are built from those reports and inherit that bias.</li>
+      <li><b>CRC Open is one scenario.</b> RiskThinking.AI's CMIP6-based projections under the high-emissions pathway SSP5-8.5: a "what if", not a forecast, with no historical baseline in the release.</li>
+      <li><b>Wind radii are estimates.</b> The shaded bands around a cyclone are US agency estimates of how far 34, 50 and 64 kt winds reached in each quadrant, not damage footprints; older storms have none.</li>
+      <li><b>Track points are the storm centre,</b> with the agency's maximum sustained wind near it, not the wind at any place.</li>
+      <li><b>Times are UTC,</b> converted from the local standard time the National Weather Service records; summer times can be an hour off true local time, and many report times are rounded.</li>
+      <li><b>Return periods</b> ("1 in 100 years") are read from each curve as its source defines it; curves were evaluated by crc-sdk during the build and the page only draws them.</li>
+    </ul>
+    <h2>Licences and attribution</h2>
+    ${licences}
+    <h2>Versions and build</h2>
+    <p>Built ${esc(manifest.built_at)} with crc-sdk ${esc(manifest.versions["crc-sdk"])} and crc-framework ${esc(manifest.versions["crc-framework"])}. CRC Open release <code>${esc(catalog.release)}</code>${tracks ? `; IBTrACS snapshot retrieved ${esc((tracks.retrieved_at || "").slice(0, 10))} (SHA-256 ${esc((tracks.sha256 || "").slice(0, 12))}…)` : ""}${evIndex ? `; Storm Events snapshot retrieved ${esc((evIndex.retrieved_at || "").slice(0, 10))}` : ""}. Code: AGPL-3.0-or-later.</p>
+    <h2>Read more</h2>
+    <p>${rep("1-explorer.md", "Explorer v1")} · ${rep("2-storm-events.md", "Storm Events source")} · ${rep("2-storm-events-comparison.md", "two-source comparison")} · ${rep("3-curves.md", "hail and gust curves")} · <a href="${repo}/blob/explorer-v2/docs/reports/E2-explorer-v2.md" target="_blank" rel="noopener">explorer v2</a> · <a href="${repo}/blob/explorer-v2/docs/reports/E3-time-and-extent.md" target="_blank" rel="noopener">time and extent</a> · <a href="${repo}" target="_blank" rel="noopener">repository</a></p>`;
+  $("about-demo").onclick = () => runDemo();
+  document.body.dataset.about = "1";
+}
+
+// ---------- demo: a scripted tour that drives the real page ----------
+const demo = { running: false, abort: false, paused: false, next: null };
+function demoCaption(html, i, n) { $("demo-caption").innerHTML = html; $("demo-step").textContent = `${i} of ${n}`; }
+async function demoWait(ms, onFrame) {
+  // waits `ms` of un-paused time; calls onFrame(fraction) every animation frame
+  let elapsed = 0; let last = performance.now();
+  while (elapsed < ms) {
+    await new Promise((r) => requestAnimationFrame(r));
+    const now = performance.now(); if (demo.abort) throw new Error("demo stopped");
+    if (!demo.paused) { elapsed += now - last; demo.elapsed += now - last; if (onFrame) onFrame(Math.min(1, elapsed / ms)); $("demo-progress").firstElementChild.style.width = `${Math.min(100, (demo.elapsed / demo.total) * 100)}%`; }
+    last = now;
+  }
+}
+function demoNext() { return new Promise((resolve, reject) => { demo.next = () => { demo.next = null; if (demo.abort) reject(new Error("demo stopped")); else resolve(); }; }); }
+async function runDemo() {
+  if (demo.running || !state.map) return;
+  const spec = state.registry.demo; const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  Object.assign(demo, { running: true, abort: false, paused: false, elapsed: 0, total: spec.seconds * 1000 });
+  const t0 = performance.now(); document.body.dataset.demo = "running";
+  $("demo-bar").classList.remove("hidden"); $("demo-next").classList.toggle("hidden", !reduced); $("demo-pause").classList.toggle("hidden", reduced); $("demo-pause").textContent = "Pause";
+  $("demo-pause").onclick = () => { demo.paused = !demo.paused; $("demo-pause").textContent = demo.paused ? "Resume" : "Pause"; };
+  $("demo-stop").onclick = () => { demo.abort = true; if (demo.next) demo.next(); };
+  $("demo-next").onclick = () => { if (demo.next) demo.next(); };
+  const onKey = (e) => { if (e.key === "Escape") { demo.abort = true; if (demo.next) demo.next(); } }; document.addEventListener("keydown", onKey);
+  demoCaption("Loading what the tour needs…", 0, 8);
+  // preload so no step stalls; a failed file makes its step skip
+  const ok = {}; const pre = async (k, f) => { try { await f(); ok[k] = true; } catch (e) { ok[k] = false; } };
+  await Promise.all([pre("tracks", () => loadTracks(layerById("ibtracs"))), pre("events", () => loadEvents(layerById("storm_events"))), pre("curve", () => loadFile(spec.curve_layer, horizonsOf(layerById(spec.curve_layer))[0])), pre("crc", () => loadFile(state.registry.defaults.crc_hazard, state.registry.defaults.horizon))]);
+  const hold = (ms, onFrame) => (reduced ? (onFrame && onFrame(1), demoNext()) : demoWait(ms, onFrame));
+  const skipped = (what) => `<span class="mute">(${what} could not be loaded; step skipped)</span>`;
+  const b = state.manifest.texas.bounds; const texasView = () => { state.map.resize(); state.map.fitBounds([[b[0] - 1, b[1] - 1], [b[2] + 1, b[3] + 0.5]], { padding: 20, duration: reduced ? 0 : 600 }); };
+  const N = 8;
+  try {
+    // 1. overview of tracks
+    state.showView("map"); Object.assign(state.tracksFilter, { name: "", minWind: 0, colorBy: "wind" }); state.storm = null; state.win.on = false; state.extent = true;
+    await selectSource("ibtracs", true); texasView();
+    demoCaption(ok.tracks ? `<b>Tropical cyclone tracks.</b> ${state.tracks.storms.length} storms that crossed Texas since ${Math.min(...state.tracks.storms.map((s) => s.season))}, read through crc-sdk and coloured by wind.` : skipped("IBTrACS"), 1, N);
+    await hold(3000);
+    // 2. one storm with its wind extent
+    const storm = ok.tracks ? state.tracks.storms.find((s) => s.name === spec.storm.name && s.season === spec.storm.season) || state.tracks.storms.filter((s) => s.extent_points.r34).pop() : null;
+    if (storm) {
+      state.storm = storm.sid; await render(); showStorm(storm);
+      const xs = storm.points.map((p) => p[0]), ys = storm.points.map((p) => p[1]); const a = parseT(storm.first_texas_point) - 86400000, z = parseT(storm.last_texas_point) + 86400000; const near = storm.points.filter((p) => parseT(p[5]) >= a && parseT(p[5]) <= z);
+      const nx = near.map((p) => p[0]), ny = near.map((p) => p[1]);
+      state.map.fitBounds([[Math.min(...nx) - 2.5, Math.min(...ny) - 2], [Math.max(...nx) + 2.5, Math.max(...ny) + 2]], { padding: 30, duration: reduced ? 0 : 800 });
+      demoCaption(`<b>${esc(storm.label)}.</b> The shaded bands are agency estimates of how far 34, 50 and 64 kt winds reached${storm.extent_points.r34 ? "" : " (none exist for this storm)"}; peak wind ${storm.max_wind_kt} kt.`, 2, N);
+      await hold(4000);
+      // 3. play it with reports
+      const tm = state.time;
+      if (tm && ok.events) {
+        demoCaption(`<b>Playing the storm.</b> The centre moves along its track while National Weather Service storm reports appear as the clock passes them; the strip below is the timeline.`, 3, N);
+        await hold(7000, (f) => { tm.now = tm.t0 + f * (tm.t1 - tm.t0); drawFrame(); });
+      } else { demoCaption(skipped("Storm reports"), 3, N); await hold(1500); demo.total -= 5500; }
+    } else { demoCaption(skipped("IBTrACS"), 2, N); await hold(1500); demo.total -= 9500; }
+    // 4. hail outbreak window
+    if (ok.events) {
+      state.storm = null; $("detail").classList.add("hidden"); Object.assign(state.win, { on: true, start: spec.window.start, days: spec.window.days });
+      state.eventsFilter.types = new Set(["Hail", "Thunderstorm Wind"]);
+      await selectSource("storm_events", true); texasView();
+      const tm = state.time; const hail = state.events.index.types.indexOf("Hail"); let nh = 0; for (let i = tm.range[0]; i < tm.range[1]; i++) if (state.events.type[i] === hail) nh++;
+      demoCaption(`<b>Storm reports, new in this project.</b> ${state.win.days} days from ${state.win.start}: ${nh} hail reports across Texas, each placed at its time and size.`, 4, N);
+      await hold(5000, (f) => { tm.now = tm.t0 + Math.min(1, f * 1.15) * (tm.t1 - tm.t0); drawFrame(); });
+      state.win.on = false;
+    } else { demoCaption(skipped("Storm reports"), 4, N); await hold(1500); demo.total -= 3500; }
+    // 5. hail curve layer and one cell's curve
+    if (ok.curve) {
+      await selectSource("storm_curves", true); state.hazard = spec.curve_layer; state.horizon = horizonsOf(layerById(spec.curve_layer))[0]; state.domain = null; await render();
+      const payload = state.files.get(fileKey(state.hazard, state.horizon)); const k = state.manifest.return_periods.indexOf(state.rp); let best = 0; payload.values.forEach((v, i) => { if (v[k] !== null && v[k] > (payload.values[best][k] ?? -1)) best = i; });
+      showDetail(best);
+      demoCaption(`<b>Hail curves fitted from those reports.</b> Each cell gets a curve of the largest hail of the year; here the cell with the highest 1-in-${state.rp}-year value.`, 5, N);
+      await hold(4000);
+    } else { demoCaption(skipped("The hail curve layer"), 5, N); await hold(1500); demo.total -= 2500; }
+    // 6. CRC Open as one source
+    if (ok.crc) {
+      $("detail").classList.add("hidden"); state.selected = null; await selectSource("crc_open", true);
+      demoCaption(`<b>CRC Open, one source among the others.</b> RiskThinking.AI's CMIP6-based projections under SSP5-8.5: ${Object.keys(state.catalog.hazards).length} hazards on cells, a what-if, not a forecast.`, 6, N);
+      await hold(3000);
+    } else { demoCaption(skipped("CRC Open"), 6, N); await hold(1500); demo.total -= 1500; }
+    // 7. Sources tab
+    state.showView("catalog");
+    demoCaption(`<b>Sources.</b> Two groups: ${state.registry.groups.map((g) => `${esc(g.title.toLowerCase())} (${state.registry.sources.filter((s) => s.origin === g.id).length})`).join(" and ")}, each with what it returns, coverage and licence.`, 7, N);
+    await hold(2000);
+    // 8. end card
+    demoCaption(`<b>That is the tour.</b> Pick a source and explore; the About tab explains what the numbers mean.`, 8, N);
+    await hold(2000);
+    document.body.dataset.demoTourMs = (performance.now() - t0).toFixed(0); document.body.dataset.demo = "done";
+  } catch (e) { document.body.dataset.demo = demo.abort ? "stopped" : `error: ${e.message}`; }
+  // leave the page in its normal state
+  document.removeEventListener("keydown", onKey); $("demo-bar").classList.add("hidden");
+  state.win.on = false; state.storm = null; state.selected = null; $("detail").classList.add("hidden");
+  if (state.events) state.eventsFilter.types = new Set((layerById("storm_events").default_types || []).filter((t) => state.events.index.types.includes(t)));
+  state.showView("map"); await selectSource(state.registry.defaults.source, true); texasView();
+  demo.running = false; document.body.dataset.demoMs = (performance.now() - t0).toFixed(0);
 }
 
 // ---------- wiring ----------
@@ -774,6 +936,7 @@ async function main() {
   for (const l of registry.layers) state.overlays.set(l.id, l.on === true);
   $("release").innerHTML = `${registry.sources.length} sources read through crc-sdk ${esc(manifest.versions["crc-sdk"])} · built ${esc(manifest.built_at.slice(0, 10))}<br>Texas · every value shown as its source publishes it`;
   buildSourceList(); buildCatalog();
+  $("demo-start").onclick = () => runDemo();
   $("hazard").onchange = (e) => {
     state.hazard = e.target.value; state.selected = null;
     const horizons = horizonsOf(layerById(state.hazard)); if (!horizons.includes(state.horizon)) state.horizon = horizons[0];
@@ -788,6 +951,7 @@ async function main() {
     for (const v of document.querySelectorAll(".view")) v.classList.toggle("on", v.id === `view-${b.dataset.view}`);
     if (b.dataset.view === "map") state.map.resize();
   };
+  state.showView = (name) => document.querySelector(`.tab[data-view=${name}]`).click();
   let tlWidth = 0; new ResizeObserver(() => { const w = $("timeline").clientWidth; if (state.time && w && Math.abs(w - tlWidth) > 8) { tlWidth = w; drawTimeline(); if (state.map) state.map.resize(); } }).observe($("timeline"));
   $("status").textContent = "Loading the base map…";
   await initMap();
@@ -796,5 +960,7 @@ async function main() {
   document.addEventListener("crc:time", (e) => { if (state.time) { stopPlay(); state.time.now = state.time.t0 + e.detail * (state.time.t1 - state.time.t0); drawFrame(); } });
   $("status").textContent = "Loading the first source…";
   await render();
+  buildAbout().catch((e) => { $("about").innerHTML = `<p>Could not build this page: ${esc(e.message)}</p>`; });
+  if (new URLSearchParams(location.search).get("demo") === "1") runDemo();
 }
 main().catch((e) => { $("status").textContent = `Failed to start: ${e.message}`; document.body.dataset.error = e.message; console.error(e); });

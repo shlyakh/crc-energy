@@ -9,7 +9,9 @@ asset sets (Phase 4). Branches: `sources-track` (other crc-sdk sources, `docs/so
 On this branch (`explorer-v2`) the explorer is source-centric: `site/layers.json` declares `sources` and every
 layer's `source_id`; the page lists sources (IBTrACS first, CRC Open as one of them) and shows per-source
 controls. `src/crc_lab/explorer/tracks.py` builds the IBTrACS storm records; `tools/smoke.mjs` walks every
-source. Report: `docs/reports/E2-explorer-v2.md`.
+source. Sources carry an `origin` (crc-sdk adapter, or new in crc-lab) and the registry's `groups` and `demo`
+drive the grouping, the About tab and the 30-second demo (`?demo=1`; `tools/record-demo.mjs` records
+`site/demo.webm`). Reports: `docs/reports/E2-explorer-v2.md`, `E3-time-and-extent.md`, `E4-groups-about-demo.md`.
 
 Read first:
 

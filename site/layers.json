@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "about": "E9 registry: the single place a source or layer is declared. `sources` is what the page lists (one entry per data source, in display order); every layer names its `source_id`. kinds: h3-cells (file per horizon), tracks (IBTrACS storm records), points-binary (packed point records with an index.json), points / lines (GeoJSON), geojson (static outline).",
+  "about": "E9 registry: the single place a source or layer is declared. `groups` are the two origins (crc-sdk adapters, new in crc-lab); `sources` is what the page lists, each with an `origin` (one entry per data source, in display order); every layer names its `source_id`. kinds: h3-cells (file per horizon), tracks (IBTrACS storm records), points-binary (packed point records with an index.json), points / lines (GeoJSON), geojson (static outline).",
   "basemap": {
     "style": "https://tiles.openfreemap.org/styles/positron",
     "attribution": "Basemap © OpenFreeMap, © OpenMapTiles, data © OpenStreetMap contributors"
@@ -25,31 +25,8 @@
         "Observations, not a hazard model: a track point is where the centre was, not the wind at any place.",
         "Agency winds differ in averaging period (WMO 10-minute, US 1-minute) and are missing for older storms; the wind_source field says which was used.",
         "Tracks are clipped to a Gulf box, so Atlantic origins are cut off."
-      ]
-    },
-    {
-      "id": "storm_events",
-      "title": "Storm reports",
-      "provider": "NOAA NCEI Storm Events Database, cleaned by crc-lab (Phase 2)",
-      "short": "Hail, wind, tornado, flood and other reports from the National Weather Service, 1950 to date.",
-      "returns": "One record per report: type, time (UTC), magnitude (hail inches, wind knots), damage, location or county/zone.",
-      "coverage": "Texas, 1950–2026 (tornado only before 1955; hail and wind from 1955; all types from 1996).",
-      "licence": "U.S. government work; attribution requested",
-      "status": "loaded"
-    },
-    {
-      "id": "storm_curves",
-      "title": "Hail and gust curves from storm reports",
-      "provider": "crc-lab curves fitted from NOAA Storm Events reports (Phase 3), brought into CRC with crc-sdk from_table",
-      "short": "Largest hail and strongest thunderstorm wind of the year, 1996–2025, as a curve per H3 cell.",
-      "returns": "Per resolution-5 cell, a return-level curve of the annual maximum hail size and thunderstorm gust.",
-      "coverage": "Texas cells, reports 1996–2025; horizon 2025 is the end of the observed window.",
-      "licence": "Derived from U.S. government data; attribution to NOAA NCEI",
-      "status": "loaded",
-      "caveats": [
-        "Built from storm reports, not measurements: reports follow people and roads, so an empty or low cell may be unobserved rather than calm.",
-        "Regional screening: a value is the curve for a whole cell (about 253 km²)."
-      ]
+      ],
+      "origin": "crc-sdk"
     },
     {
       "id": "coops",
@@ -59,7 +36,8 @@
       "returns": "Per station, 22 published levels (1.01 to 100 years) relative to the station datum, plus the sea-level trend.",
       "coverage": "The 9 of 39 Texas water-level stations that publish the product.",
       "licence": "U.S. government work; attribution requested (NOAA CO-OPS)",
-      "status": "prototype"
+      "status": "prototype",
+      "origin": "crc-sdk"
     },
     {
       "id": "ghcnh",
@@ -69,7 +47,8 @@
       "returns": "Per station, a return-level curve of the annual maximum hourly temperature.",
       "coverage": "Texas airport (USW) stations with at least 15 valid years in 2000–2024; 8 so far.",
       "licence": "CC0-1.0 per the AWS registry; attribution requested (NOAA GHCNh)",
-      "status": "prototype"
+      "status": "prototype",
+      "origin": "crc-sdk"
     },
     {
       "id": "era5",
@@ -79,7 +58,8 @@
       "returns": "Cells with return levels of the annual maximum daily temperature from a historical reanalysis.",
       "coverage": "Texas and surroundings, 1,439 land cells of about 1,770 km².",
       "licence": "CC BY 4.0; contains modified Copernicus Climate Change Service information",
-      "status": "prototype"
+      "status": "prototype",
+      "origin": "crc-sdk"
     },
     {
       "id": "crc_open",
@@ -93,7 +73,34 @@
       "caveats": [
         "High-emissions case (SSP5-8.5), not a forecast. One pathway, pooled model ensemble, no historical baseline in the release.",
         "Regional screening: a value is the curve for a whole cell (about 253 km² at resolution 5), not any site in it."
-      ]
+      ],
+      "origin": "crc-sdk"
+    },
+    {
+      "id": "storm_events",
+      "title": "Storm reports",
+      "provider": "NOAA NCEI Storm Events Database, cleaned by crc-lab (Phase 2)",
+      "short": "Hail, wind, tornado, flood and other reports from the National Weather Service, 1950 to date.",
+      "returns": "One record per report: type, time (UTC), magnitude (hail inches, wind knots), damage, location or county/zone.",
+      "coverage": "Texas, 1950–2026 (tornado only before 1955; hail and wind from 1955; all types from 1996).",
+      "licence": "U.S. government work; attribution requested",
+      "status": "loaded",
+      "origin": "crc-lab"
+    },
+    {
+      "id": "storm_curves",
+      "title": "Hail and gust curves from storm reports",
+      "provider": "crc-lab curves fitted from NOAA Storm Events reports (Phase 3), brought into CRC with crc-sdk from_table",
+      "short": "Largest hail and strongest thunderstorm wind of the year, 1996–2025, as a curve per H3 cell.",
+      "returns": "Per resolution-5 cell, a return-level curve of the annual maximum hail size and thunderstorm gust.",
+      "coverage": "Texas cells, reports 1996–2025; horizon 2025 is the end of the observed window.",
+      "licence": "Derived from U.S. government data; attribution to NOAA NCEI",
+      "status": "loaded",
+      "caveats": [
+        "Built from storm reports, not measurements: reports follow people and roads, so an empty or low cell may be unobserved rather than calm.",
+        "Regional screening: a value is the curve for a whole cell (about 253 km²)."
+      ],
+      "origin": "crc-lab"
     }
   ],
   "layers": [
@@ -478,5 +485,34 @@
       "title": "CHIRPS monthly rainfall",
       "status": "planned (sources track; raster reader blocked on this Mac)"
     }
-  ]
+  ],
+  "groups": [
+    {
+      "id": "crc-sdk",
+      "title": "Reached through crc-sdk",
+      "badge": "crc-sdk",
+      "blurb": "Sources Climate Risk Commons' SDK already has adapters for; shown as the SDK returns them.",
+      "color": "#2a78d6"
+    },
+    {
+      "id": "crc-lab",
+      "title": "New in this project",
+      "badge": "new here",
+      "blurb": "Not in crc-sdk: fetched, cleaned and fitted in crc-lab, then brought into CRC's formats.",
+      "color": "#eb6834"
+    }
+  ],
+  "demo": {
+    "storm": {
+      "name": "Harvey",
+      "season": 2017
+    },
+    "window": {
+      "start": "2024-03-14",
+      "days": 3
+    },
+    "curve_layer": "hail_size",
+    "seconds": 30,
+    "video": "demo.webm"
+  }
 }
