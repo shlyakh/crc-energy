@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import asdict, dataclass
+from pathlib import Path
 
 import duckdb
 import numpy as np
@@ -49,7 +50,7 @@ class Reports:
         return self.end - self.start + 1
 
 
-def load_reports(events: str, start: int, end: int) -> Reports:
+def load_reports(events: str, start: int, end: int, extra: str | Path | None = None) -> Reports:
     """Located hail reports (first point of a path) with a size, inside the window."""
     con = duckdb.connect()
     con.execute("INSTALL spatial; LOAD spatial;")
@@ -61,8 +62,75 @@ def load_reports(events: str, start: int, end: int) -> Reports:
                    CASE WHEN ST_GeometryType(g) = 'LINESTRING' THEN ST_Y(ST_StartPoint(g)) ELSE ST_Y(g) END,
                    hail_size_mm FROM e"""
     ).fetchall()
+    if extra is not None and Path(extra).exists():
+        rows += con.execute(
+            f"SELECT lon, lat, hail_size_mm FROM read_parquet('{extra}') WHERE year BETWEEN {start} AND {end}"
+        ).fetchall()
     data = np.asarray(rows, dtype=np.float64).reshape(-1, 3)
     return Reports(data[:, 0], data[:, 1], data[:, 2], start, end)
+
+
+NEIGHBOURS = {"OKLAHOMA": "OK", "NEW MEXICO": "NM", "ARKANSAS": "AR", "LOUISIANA": "LA"}
+
+
+def build_neighbour_hail(
+    detail_paths: dict[int, Path], out: Path, start: int, end: int
+) -> dict[str, int]:
+    """Located hail reports in the states bordering Texas, from the cached NCEI details files.
+
+    Only what the exposure needs (first point, size, year): the full cleaned event table stays
+    Texas-only. With these, a circle near the state line counts reports on both sides.
+    """
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from crc_lab.storm_events import parse
+
+    rows: list[dict[str, object]] = []
+    for year in range(start, end + 1):
+        if year not in detail_paths:
+            continue
+        table = parse.parse_details(detail_paths[year], states=tuple(NEIGHBOURS))
+        for r in table.to_pylist():
+            if (
+                r["event_type"] == parse.HAIL
+                and r["begin_lat"] is not None
+                and r["begin_lon"] is not None
+                and r["hail_size_mm"] is not None
+            ):
+                rows.append(
+                    {
+                        "state": r["state"],
+                        "year": r["year"],
+                        "lon": r["begin_lon"],
+                        "lat": r["begin_lat"],
+                        "hail_size_mm": r["hail_size_mm"],
+                        "event_id": r["event_id"],
+                    }
+                )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(pa.Table.from_pylist(rows), out, compression="zstd")
+    counts: dict[str, int] = {}
+    for r in rows:
+        counts[r["state"]] = counts.get(r["state"], 0) + 1
+    return counts
+
+
+def reporting_region(
+    tiger_zip: Path, states: tuple[str, ...] = ("TX", "OK", "NM", "AR", "LA")
+) -> object:
+    """Union of the state polygons that the report set covers (Census cartographic boundaries)."""
+    import shapely
+
+    con = duckdb.connect()
+    con.execute("INSTALL spatial; LOAD spatial;")
+    name = tiger_zip.stem
+    placeholders = ", ".join("?" for _ in states)
+    rows = con.execute(
+        f"SELECT ST_AsWKB(geom) FROM ST_Read('/vsizip/{tiger_zip}/{name}.shp') WHERE STUSPS IN ({placeholders})",
+        list(states),
+    ).fetchall()
+    return shapely.union_all([shapely.from_wkb(bytes(r[0])) for r in rows])
 
 
 def distances_km(lon: float, lat: float, reports: Reports) -> np.ndarray:

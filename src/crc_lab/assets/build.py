@@ -14,10 +14,11 @@ from typing import Any
 
 import duckdb
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 from crc_lab import PINNED
-from crc_lab.assets import exposure, solar, value
+from crc_lab.assets import eia, exposure, solar, value
 from crc_lab.curves import annual_maxima as am_mod
 from crc_lab.curves import fit
 from crc_lab.curves.sensitivity import CITIES
@@ -34,6 +35,24 @@ SENSITIVITY_RULES = [
     exposure.Rule(footprint_km2=50.0),
     exposure.Rule(footprint_km2=100.0),
 ]
+
+
+def mounting(r: dict[str, Any]) -> str | None:
+    if r["single_axis"]:
+        return "single-axis"
+    if r["dual_axis"]:
+        return "dual-axis"
+    if r["fixed_tilt"]:
+        return "fixed-tilt"
+    return r["uspvdb_axis"]
+
+
+def module(r: dict[str, Any]) -> str | None:
+    if r["crystalline_silicon"]:
+        return "crystalline silicon"
+    if r["thin_film_cdte"]:
+        return "thin-film CdTe"
+    return r["uspvdb_module_tech"]
 
 
 def return_levels(assets: pa.Table, curves_dir: Path) -> dict[str, dict[str, list[float | None]]]:
@@ -190,20 +209,35 @@ def main(argv: list[str] | None = None) -> int:
     started = time.time()
 
     manifest = solar.fetch(args.cache)
-    assets = solar.load(args.cache, manifest)
+    uspvdb = solar.load(args.cache, manifest)
+    eia_manifest = eia.fetch(args.cache)
+    eia_plants = eia.plants(args.cache)
+    comparison = eia.compare(eia_plants, uspvdb)
+    assets, join_info = eia.join_uspvdb(eia_plants, uspvdb)
+    no_location = assets.filter(pc.is_null(assets["latitude"])).num_rows
+    assets = assets.filter(pc.is_valid(assets["latitude"]))
     occ, cost = value.cost_per_kw()
     assets = value.add_value(assets, occ)
     print(
-        f"solar: {assets.num_rows} Texas plants from {manifest['release_file']}; OCC {occ} $/kW ({cost['cost_year']})"
+        f"solar: {assets.num_rows} Texas plants from EIA ({eia_manifest['generators']['report_date']}), {no_location} dropped without coordinates; OCC {occ} $/kW ({cost['cost_year']})"
     )
 
     window = am_mod.Window(
         am_mod.FIRST_FULL_YEAR, am_mod.last_complete_year(str(args.events), duckdb.connect())
     )
-    reports = exposure.load_reports(str(args.events), window.start, window.end)
+    neighbours = args.events.parent / "hail_neighbours.parquet"
+    if not neighbours.exists():
+        from crc_lab.storm_events.plan import StormEventsPlan
+
+        plan = StormEventsPlan(args.cache, mode="offline")
+        details = {y: path for (kind, y), path in plan.paths().items() if kind == "details"}
+        counts = exposure.build_neighbour_hail(details, neighbours, window.start, window.end)
+        print(f"neighbour hail reports: {counts}")
+    reports = exposure.load_reports(str(args.events), window.start, window.end, neighbours)
     rule = exposure.Rule()
     rows = assets.to_pylist()
-    region = texas_boundary(args.cache).geometry
+    texas_boundary(args.cache)  # ensures the Census state file is cached
+    region = exposure.reporting_region(args.cache / "cb_2024_us_state_500k.zip")
     hail = [
         exposure.at_point(
             r["longitude"],
@@ -220,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     flat = {
         "hail_radius_km": [h["radius_km"] for h in hail],
         "hail_reports_in_radius": [h["reports_in_radius"] for h in hail],
-        "hail_circle_share_in_texas": [h["circle_share_inside_region"] for h in hail],
+        "hail_circle_share_in_region": [h["circle_share_inside_region"] for h in hail],
         "hail_hit_area_km2": [h["hit_area_km2"] for h in hail],
         "hail_flag": [h["flag"] for h in hail],
         "hail_report_rate_per_100km2_year": [h["report_rate_per_100km2_year"] for h in hail],
@@ -238,10 +272,20 @@ def main(argv: list[str] | None = None) -> int:
         "name": "Texas utility-scale solar plants with replacement value and local hail exposure",
         "built_at": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         "versions": {name: version(name) for name in PINNED},
-        "assets": {"source": solar.CITATION, "licence": solar.LICENCE}
-        | {
-            k: manifest[k]
-            for k in ("url", "sha256", "release_file", "last_modified", "retrieved_at")
+        "assets": {
+            "plant_list": {"source": eia.CITATION, "licence": eia.LICENCE} | eia_manifest,
+            "polygons": {"source": solar.CITATION, "licence": solar.LICENCE}
+            | {
+                k: manifest[k]
+                for k in ("url", "sha256", "release_file", "last_modified", "retrieved_at")
+            },
+            "join": join_info
+            | {
+                "with_polygon": sum(1 for r in rows if r["has_polygon"]),
+                "area_estimated_from_capacity": sum(1 for r in rows if not r["has_polygon"]),
+                "dropped_without_coordinates": no_location,
+            },
+            "comparison": comparison,
         },
         "value": cost
         | {
@@ -251,7 +295,8 @@ def main(argv: list[str] | None = None) -> int:
         | {
             "window": [window.start, window.end],
             "located_reports": int(len(reports.lon)),
-            "source": "NOAA NCEI Storm Events, cleaned by crc-lab (Phase 2)",
+            "region": "Texas, Oklahoma, New Mexico, Arkansas, Louisiana",
+            "source": "NOAA NCEI Storm Events, cleaned by crc-lab (Phase 2); neighbouring states from the same snapshot",
         },
         "return_levels": "hail (mm) and gust (m/s) at the plant centroid from the Phase 3 curves via for_assets; return periods "
         + ", ".join(map(str, RETURN_PERIODS)),
@@ -265,7 +310,8 @@ def main(argv: list[str] | None = None) -> int:
             "Report-based hail: rates follow where people report. A minimum radius limits, but does not remove, that bias.",
             "The footprint that turns a report rate into a chance at the plant is a placeholder with no source.",
             "Value is a national benchmark cost per kW AC times capacity, not the plant's own cost or insured value.",
-            "The circle is clipped to Texas, because the event table has no reports from Mexico, the Gulf or other states.",
+            "The circle counts reports in Texas and its four neighbouring states and is clipped to them: there are no reports from Mexico or the Gulf.",
+            "Plants are EIA plants; most 2025-2026 plants have no polygon yet, so their area is estimated from capacity.",
             "A plant is a disc of its USPVDB array area; the chance of a hit uses a disc of footprint plus plant radius.",
         ],
     }
@@ -284,16 +330,21 @@ def main(argv: list[str] | None = None) -> int:
             "asset_id": r["asset_id"],
             "capacity_MW_AC": r["capacity_ac_mw"],
             "capacity_MW_DC": r["capacity_dc_mw"],
-            "year_online": r["year"],
-            "mounting": r["axis"],
-            "module_technology": r["module_tech"],
+            "first_online": str(r["first_operating_date"])[:7]
+            if r["first_operating_date"]
+            else None,
+            "balancing_authority": r["balancing_authority"],
+            "mounting": mounting(r),
+            "module": module(r),
+            "bifacial": r["bifacial"],
+            "polygon": "USPVDB" if r["has_polygon"] else "none yet (area estimated from capacity)",
             "replacement_value": f"${r['value_usd'] / 1e6:,.1f} million"
             if r["value_usd"] is not None
             else None,
             "value_basis": f"NREL ATB 2025 overnight capital cost {occ:,.0f} $/kW AC ({cost['cost_year']}) x capacity",
             "hail_reports_used": h["reports_in_radius"],
             "hail_radius_km": h["radius_km"],
-            "hail_circle_share_inside_Texas": h["circle_share_inside_region"],
+            "hail_circle_share_inside_reporting_region": h["circle_share_inside_region"],
             "plant_area_km2": h["plant_area_km2"],
             "hail_hit_area_km2": h["hit_area_km2"],
             "hail_flag": h["flag"],
