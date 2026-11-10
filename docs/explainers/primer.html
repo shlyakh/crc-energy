@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Climate risk curves, animated</title>
+<style>
+  :root{--ink:#2a2a28;--mute:#7a7976;--line:#d9d7d2;--bg:#faf9f6;--card:#fff;--blue:#2a78d6;--orange:#eb6834;--grey:#52514e;--light:#f0efec}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,Helvetica,Arial,sans-serif}
+  header{padding:22px 28px 6px}
+  h1{margin:0;font-size:22px;font-weight:650}
+  header p{margin:6px 0 0;color:var(--mute);max-width:880px}
+  code{background:#eeede9;padding:1px 5px;border-radius:4px;font-size:.92em}
+  .wrap{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.9fr);gap:18px;padding:14px 28px 28px}
+  @media (max-width:900px){.wrap{grid-template-columns:1fr}}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+  svg{width:100%;height:auto;display:block}
+  .ax{stroke:#cfcdc7;stroke-width:1}
+  .tick{font-size:11px;fill:var(--mute)}
+  .lab{font-size:12px;fill:var(--mute)}
+  .ttl{font-size:14px;font-weight:650;fill:var(--ink)}
+  .panel{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .card h2{margin:0 0 6px;font-size:15px}
+  .card p{margin:0 0 8px}
+  pre{margin:8px 0 0;background:#1e1f22;color:#e8e6e1;padding:10px 12px;border-radius:8px;font:12.5px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap}
+  .ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer}
+  button:hover{background:#f2f1ee}
+  .prog{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden;min-width:120px}
+  .prog i{display:block;height:100%;background:var(--ink);width:0;transition:width .3s}
+  .step{font-size:12.5px;color:var(--mute);min-width:50px;text-align:right}
+  .key{background:#fff8e1;border-left:3px solid var(--orange);padding:8px 10px;border-radius:6px;font-size:13.5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Climate risk curves, animated</h1>
+  <p>The five ideas in crc-docs' <code>climate_risk_curves_primer.ipynb</code>, drawn live. The curve is a synthetic wettest-day (rx1day) GEV with the same shape as a CRC Open curve for a mid-latitude city; the sampling and fitting are done in the page, so every run of scene 2–3 is a new set of rolls.</p>
+</header>
+<div class="wrap">
+  <div class="stage"><svg id="svg" viewBox="0 0 760 460" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div class="panel">
+    <div class="card ctl">
+      <button id="prev">◀ Back</button><button id="play">▶ Play</button><button id="next">Next ▶</button>
+      <button id="reroll" title="New random record">🎲 Re-roll</button>
+      <div class="prog"><i id="bar"></i></div><span class="step" id="counter"></span>
+    </div>
+    <div class="card"><h2 id="title"></h2><div id="body"></div></div>
+  </div>
+</div>
+<script>
+// ---------- maths ----------
+function lgamma(z){const g=7,c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];if(z<0.5)return Math.log(Math.PI/Math.sin(Math.PI*z))-lgamma(1-z);z-=1;let x=c[0];for(let i=1;i<g+2;i++)x+=c[i]/(z+i);const t=z+g+0.5;return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x);}
+const G=z=>Math.exp(lgamma(z));
+// GEV (scipy sign convention: shape c; here k = c, Hosking k)
+function gevQ(p,xi,a,k){ if(Math.abs(k)<1e-9) return xi-a*Math.log(-Math.log(p)); return xi+a*(1-Math.pow(-Math.log(p),k))/k; }
+function fitGEV(x){ // Hosking L-moments
+  const n=x.length, s=[...x].sort((a,b)=>a-b); let b0=0,b1=0,b2=0;
+  for(let j=0;j<n;j++){b0+=s[j]; b1+=s[j]*j/(n-1); b2+=s[j]*j*(j-1)/((n-1)*(n-2));}
+  b0/=n;b1/=n;b2/=n; const l1=b0,l2=2*b1-b0,l3=6*b2-6*b1+b0,t3=l3/l2;
+  const c=2/(3+t3)-Math.log(2)/Math.log(3), k=7.8590*c+2.9554*c*c;
+  const a=l2*k/((1-Math.pow(2,-k))*G(1+k)), xi=l1-a*(1-G(1+k))/k; return {xi,a,k};
+}
+// "true die": rx1day-like curve. 1-in-2 ≈ 40 mm, 1-in-10 ≈ 60, 1-in-100 ≈ 95
+const TRUE={xi:40,a:12,k:-0.08};
+const Q=(rp,d=TRUE)=>gevQ(1-1/rp,d.xi,d.a,d.k);
+let seed=7; function rnd(){seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296;}
+const roll=n=>Array.from({length:n},()=>gevQ(0.001+0.998*rnd(),TRUE.xi,TRUE.a,TRUE.k));
+
+// ---------- plotting helpers ----------
+const svg=document.getElementById('svg'); const NS='http://www.w3.org/2000/svg';
+const W=760,H=460,L=70,R=30,T=50,B=60;
+const el=(t,a={},txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;svg.appendChild(e);return e;};
+const clear=()=>{while(svg.firstChild)svg.removeChild(svg.firstChild);};
+const xRP=rp=>L+(Math.log10(rp)-Math.log10(1.05))/(Math.log10(200)-Math.log10(1.05))*(W-L-R);
+const yMM=(v,max=140)=>H-B-(v/max)*(H-T-B);
+function axesRP(title){
+  el('text',{x:L,y:26,class:'ttl'},title);
+  el('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,class:'ax'}); el('line',{x1:L,y1:T,x2:L,y2:H-B,class:'ax'});
+  [1,2,5,10,20,50,100,200].forEach(t=>{const x=xRP(Math.max(t,1.05));el('line',{x1:x,y1:H-B,x2:x,y2:H-B+5,class:'ax'});el('text',{x:x,y:H-B+18,class:'tick','text-anchor':'middle'},t);});
+  [0,40,80,120].forEach(v=>{el('line',{x1:L-5,y1:yMM(v),x2:L,y2:yMM(v),class:'ax'});el('text',{x:L-9,y:yMM(v)+4,class:'tick','text-anchor':'end'},v);});
+  el('text',{x:(L+W-R)/2,y:H-14,class:'lab','text-anchor':'middle'},'Return period (years, log scale)');
+  el('text',{x:16,y:(T+H-B)/2,class:'lab','text-anchor':'middle',transform:`rotate(-90 16 ${(T+H-B)/2})`},'Wettest day of the year (mm)');
+}
+function curvePath(d=TRUE,color='#2a78d6',width=3){
+  const pts=[];for(let i=0;i<=300;i++){const rp=Math.pow(10,Math.log10(1.05)+i/300*(Math.log10(200)-Math.log10(1.05)));pts.push(`${xRP(rp).toFixed(1)},${yMM(Q(rp,d)).toFixed(1)}`);}
+  const p=el('path',{d:'M'+pts.join(' L'),fill:'none',stroke:color,'stroke-width':width,'stroke-linejoin':'round'});
+  const len=p.getTotalLength();p.style.strokeDasharray=len;p.style.strokeDashoffset=len;p.style.transition='stroke-dashoffset 1.4s ease';requestAnimationFrame(()=>requestAnimationFrame(()=>p.style.strokeDashoffset=0));return p;
+}
+function mark(rp,color,text,dy=-12,anchor='start',dx=8){const x=xRP(rp),y=yMM(Q(rp));const c=el('circle',{cx:x,cy:y,r:0,fill:color});c.style.transition='r .4s';setTimeout(()=>c.setAttribute('r',6),900);const t=el('text',{x:x+dx,y:y+dy,class:'lab','text-anchor':anchor,fill:'#2a2a28','font-weight':600,opacity:0},text);t.style.transition='opacity .5s';setTimeout(()=>t.setAttribute('opacity',1),1100);}
+
+// ---------- scenes ----------
+let rec1=roll(30),rec2=roll(30),est=null;
+const scenes=[
+ {title:'1 · A curve is a die for one year',
+  body:`<p>A climate risk curve lists every possible wettest day together with <b>how often</b> it comes around. "How often" is a <b>return period</b>: a 1-in-10-year day is one a year has a 10% chance of reaching or beating — a roll of 10 on a 10-sided die.</p><p>Read left to right: common on the left, rare on the right.</p><pre>curve.quantiles([1 - 1/rp])   # rp = 2, 10, 100</pre>`,
+  draw(){axesRP('CRC-style curve: wettest day vs return period');curvePath();
+    mark(2,'#2a78d6',`1-in-2: ${Q(2).toFixed(0)} mm (50% a year)`,16);mark(10,'#2a78d6',`1-in-10: ${Q(10).toFixed(0)} mm (10% a year)`,-12,'end',-8);mark(100,'#2a78d6',`1-in-100: ${Q(100).toFixed(0)} mm (1% a year)`,-12,'end',-8);}},
+ {title:'2 · Thirty years of records is only thirty rolls',
+  body:`<p>Pretend the blue curve is the true die and roll it for 30 years, like a station with a 30-year record. Do it twice.</p><p>Same die, different luck: the two records disagree most about the <b>rare days on the right</b>, because 30 rolls rarely include a 1-in-100 roll. Press 🎲 to roll again.</p><pre>values = sorted(curve.quantiles(rng.uniform(size=30)))
+plotting_rp = (30 + 1) / arange(30, 0, -1)</pre>`,
+  draw(){axesRP('Two imaginary 30-year records from the same curve');curvePath();
+    [[rec1,'#52514e'],[rec2,'#eb6834']].forEach(([rec,col],ri)=>{const s=[...rec].sort((a,b)=>a-b);s.forEach((v,j)=>{const rp=31/(30-j);const c=el('circle',{cx:xRP(rp),cy:yMM(v),r:0,fill:col,stroke:'#fff','stroke-width':1});c.style.transition='r .3s';setTimeout(()=>c.setAttribute('r',5),300+j*45+ri*200);});
+      el('rect',{x:W-R-205,y:T+8+ri*18,width:10,height:10,fill:col});el('text',{x:W-R-190,y:T+17+ri*18,class:'lab'},`Imaginary 30-year record #${ri+1}`);});}},
+ {title:'3 · Fit 200 records, read off 1-in-100',
+  body:`<p>Repeat the experiment 200 times: each time fit a GEV to the 30 rolls (L-moments, exactly what <code>fit_distribution(..., "genextreme", method="lmoments")</code> does) and read its 1-in-100-year value.</p><div class="key"><b>Key idea:</b> a single 30-year record can easily be off by a lot about the once-a-century day. CRC Open curves are built from many models and many simulated years — thousands of rolls instead of thirty. Still estimates, but far less at the mercy of one lucky stretch.</div>`,
+  draw(){ if(!est){est=[];for(let r=0;r<200;r++){const f=fitGEV(roll(30));est.push(gevQ(0.99,f.xi,f.a,f.k));}}
+    const t100=Q(100);const lo=Math.min(...est,t100)-5,hi=Math.max(...est,t100)+5,nb=30,bw=(hi-lo)/nb;const bins=new Array(nb).fill(0);est.forEach(v=>bins[Math.min(nb-1,Math.floor((v-lo)/bw))]++);
+    const mx=Math.max(...bins);const sx=v=>L+(v-lo)/(hi-lo)*(W-L-R);const sy=n=>H-B-n/mx*(H-T-B);
+    el('text',{x:L,y:26,class:'ttl'},'200 fitted 1-in-100-year values from 30-year records');
+    el('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,class:'ax'});
+    for(let v=Math.ceil(lo/20)*20;v<=hi;v+=20){el('text',{x:sx(v),y:H-B+18,class:'tick','text-anchor':'middle'},v);}
+    el('text',{x:(L+W-R)/2,y:H-14,class:'lab','text-anchor':'middle'},'Fitted 1-in-100-year wettest day (mm)');el('text',{x:16,y:(T+H-B)/2,class:'lab','text-anchor':'middle',transform:`rotate(-90 16 ${(T+H-B)/2})`},'Number of records');
+    bins.forEach((n,i)=>{const r=el('rect',{x:sx(lo+i*bw)+1,y:H-B,width:(W-L-R)/nb-2,height:0,fill:'#52514e',opacity:.85});r.style.transition='all .5s';setTimeout(()=>{r.setAttribute('y',sy(n));r.setAttribute('height',H-B-sy(n));},200+i*40);});
+    const s=[...est].sort((a,b)=>a-b),p5=s[10],p95=s[189];
+    setTimeout(()=>{el('line',{x1:sx(t100),y1:T,x2:sx(t100),y2:H-B,stroke:'#2a78d6','stroke-width':3});el('text',{x:sx(t100)+6,y:T+14,class:'lab',fill:'#2a2a28','font-weight':600},`True 1-in-100: ${t100.toFixed(0)} mm`);
+      el('rect',{x:sx(p5),y:T+22,width:sx(p95)-sx(p5),height:10,fill:'#eb6834',opacity:.5});el('text',{x:sx(p5),y:T+46,class:'lab',fill:'#eb6834'},`90% of records land between ${p5.toFixed(0)} and ${p95.toFixed(0)} mm`);},1600);}},
+ {title:'4 · Rare is not the same as "not in my lifetime"',
+  body:`<p>A 1-in-100-year day sounds remote. But a building, a mortgage or a career lasts decades, and each year is a fresh roll. The chance of <b>at least one</b> such day in N years is 1 − (1 − 1/RP)<sup>N</sup>.</p><p>More than a 1-in-4 chance of a 1-in-100-year day during a 30-year mortgage. That is why the rare end of the curve matters.</p><pre>chance = 1 - (1 - 1/rp) ** 30</pre>`,
+  draw(){const rps=[10,25,50,100,500],ch=rps.map(rp=>100*(1-Math.pow(1-1/rp,30)));el('text',{x:L,y:26,class:'ttl'},'Chance of at least one such day during a 30-year span');
+    el('line',{x1:L,y1:H-B,x2:W-R,y2:H-B,class:'ax'});const bw=(W-L-R)/rps.length;
+    rps.forEach((rp,i)=>{const x=L+i*bw+bw*0.22,w=bw*0.56;const r=el('rect',{x:x,y:H-B,width:w,height:0,fill:'#eb6834',rx:4});r.style.transition='all .7s';const y=H-B-ch[i]/110*(H-T-B);setTimeout(()=>{r.setAttribute('y',y);r.setAttribute('height',H-B-y);},200+i*180);
+      el('text',{x:x+w/2,y:H-B+18,class:'tick','text-anchor':'middle'},`1-in-${rp}`);const t=el('text',{x:x+w/2,y:y-8,class:'lab','text-anchor':'middle',fill:'#2a2a28','font-weight':600,opacity:0},`${ch[i].toFixed(0)}%`);t.style.transition='opacity .4s';setTimeout(()=>t.setAttribute('opacity',1),900+i*180);});
+    el('text',{x:(L+W-R)/2,y:H-14,class:'lab','text-anchor':'middle'},'Kind of day (return period in years)');}},
+ {title:'5 · One recipe, more than 60 hazards',
+  body:`<p>Every CRC curve has the same format with its units and meaning attached, so the code that read the rain curve reads heat, wind, fire weather or drought unchanged. The same few lines: choose the area, the hazards, the years, read the curves.</p><pre>plan = (HazardDataset.crc_open()
+  .for_area(bbox).hazards([h]).horizons(hs))
+plan.for_assets(city).return_periods([2])
+rows → curve_parameters_from_row(row).to_distribution()</pre><p style="color:var(--mute);font-size:13px">Values below are illustrative, not computed.</p>`,
+  draw(){el('text',{x:L,y:26,class:'ttl'},'Same function, six hazards (1-in-10 value, early vs late century)');
+    const rows=[['tx_max','hottest day','°C','34.1','38.6'],['rx1day','wettest day','mm','62','71'],['rx5day','wettest 5 days','mm','98','112'],['wind_max_daily_max','windiest day','m/s','17.9','18.2'],['fwi','fire weather index','—','21','27'],['hot_days','days ≥ 30 °C','days','14','41']];
+    const cols=[L,L+170,L+300,L+380,L+470,L+570];['hazard','what it measures','unit','2025–35','2070–80','change'].forEach((h,i)=>el('text',{x:cols[i],y:T+16,class:'lab','font-weight':600,fill:'#2a2a28'},h));
+    el('line',{x1:L,y1:T+24,x2:W-R,y2:T+24,class:'ax'});
+    rows.forEach((r,i)=>{const y=T+52+i*46;const g=el('g',{opacity:0});g.style.transition='opacity .5s';setTimeout(()=>g.setAttribute('opacity',1),300+i*350);
+      const add=(x,t,extra={})=>{const e=document.createElementNS(NS,'text');e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('class','lab');e.setAttribute('fill','#2a2a28');for(const k in extra)e.setAttribute(k,extra[k]);e.textContent=t;g.appendChild(e);};
+      add(cols[0],r[0],{'font-family':'ui-monospace, Menlo, monospace','font-size':'12px'});add(cols[1],r[1]);add(cols[2],r[2]);add(cols[3],r[3]);add(cols[4],r[4]);const d=(parseFloat(r[4])-parseFloat(r[3]));add(cols[5],(d>0?'+':'')+d.toFixed(1),{fill:'#eb6834','font-weight':600});
+      const ln=document.createElementNS(NS,'line');ln.setAttribute('x1',L);ln.setAttribute('y1',y+14);ln.setAttribute('x2',W-R);ln.setAttribute('y2',y+14);ln.setAttribute('class','ax');g.appendChild(ln);});
+    el('text',{x:L,y:H-18,class:'lab'},'CRC Open public release: SSP5-8.5 only, no historical baseline, H3 r5 cells, CC BY-NC 4.0.');}},
+];
+let i=0,timer=null;const $=id=>document.getElementById(id);
+function render(){clear();const s=scenes[i];s.draw();$('title').textContent=s.title;$('body').innerHTML=s.body;$('counter').textContent=`${i+1} / ${scenes.length}`;$('bar').style.width=((i+1)/scenes.length*100)+'%';$('reroll').style.visibility=(i===1||i===2)?'visible':'hidden';}
+function stop(){if(timer){clearInterval(timer);timer=null;$('play').textContent='▶ Play';}}
+function go(d){i=(i+d+scenes.length)%scenes.length;render();}
+$('next').onclick=()=>{stop();go(1)};$('prev').onclick=()=>{stop();go(-1)};
+$('reroll').onclick=()=>{rec1=roll(30);rec2=roll(30);est=null;render();};
+$('play').onclick=()=>{if(timer){stop();return;}$('play').textContent='❚❚ Pause';timer=setInterval(()=>{if(i===scenes.length-1){stop();return;}go(1);},6000);};
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stop();go(1);}if(e.key==='ArrowLeft'){stop();go(-1);}if(e.key===' '){e.preventDefault();$('play').click();}});
+render();
+</script>
+</body>
+</html>

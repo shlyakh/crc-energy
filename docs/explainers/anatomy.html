@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anatomy of one CRC question</title>
+<style>
+  :root{--ink:#2a2a28;--mute:#7a7976;--line:#d9d7d2;--bg:#faf9f6;--card:#ffffff;
+        --a:#2a78d6;--b:#eb6834;--c:#52514e;--out:#1f9d6c;--hl:#fff3c4;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,Helvetica,Arial,sans-serif}
+  header{padding:22px 28px 6px}
+  h1{margin:0;font-size:22px;font-weight:650}
+  header p{margin:6px 0 0;color:var(--mute);max-width:900px}
+  header code{background:#eeede9;padding:1px 5px;border-radius:4px}
+  .wrap{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,0.9fr);gap:18px;padding:14px 28px 28px}
+  @media (max-width:900px){.wrap{grid-template-columns:1fr}}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+  svg{width:100%;height:auto;display:block}
+  .node rect{fill:#fff;stroke:var(--line);stroke-width:1.3;rx:9;transition:all .35s}
+  .node text{font-size:12.5px;fill:var(--ink)}
+  .node .sub{font-size:10.5px;fill:var(--mute)}
+  .node.on rect{stroke-width:2.4;fill:var(--hl)}
+  .node.A.on rect{stroke:var(--a)} .node.B.on rect{stroke:var(--b)} .node.C.on rect{stroke:var(--c)} .node.O.on rect{stroke:var(--out)}
+  .node.done rect{fill:#f3f8ff}
+  .edge{fill:none;stroke:var(--line);stroke-width:1.6}
+  .edge.on{stroke-width:2.2}
+  .edge.A.on{stroke:var(--a)} .edge.B.on{stroke:var(--b)} .edge.C.on{stroke:var(--c)} .edge.O.on{stroke:var(--out)}
+  .pkt{r:6;opacity:0}
+  .lane{font-size:13px;font-weight:650}
+  .layer{font-size:10.5px;fill:var(--mute);letter-spacing:.04em}
+  .panel{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .card h2{margin:0 0 4px;font-size:15px}
+  .card .where{color:var(--mute);font-size:12.5px;margin-bottom:8px}
+  pre{margin:0;background:#1e1f22;color:#e8e6e1;padding:10px 12px;border-radius:8px;font:12.5px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word}
+  .shape{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px;margin-top:10px}
+  .shape b{color:var(--mute);font-weight:500}
+  .ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer}
+  button:hover{background:#f2f1ee}
+  .prog{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden;min-width:120px}
+  .prog i{display:block;height:100%;background:var(--ink);width:0;transition:width .3s}
+  .step{font-size:12.5px;color:var(--mute);min-width:70px;text-align:right}
+  .pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;color:#fff;margin-right:6px}
+  .pill.A{background:var(--a)} .pill.B{background:var(--b)} .pill.C{background:var(--c)} .pill.O{background:var(--out)}
+  .legend{font-size:12px;color:var(--mute);padding:0 4px}
+  .legend span{display:inline-block;margin-right:14px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Anatomy of one CRC question</h1>
+  <p>How <code>pipelines/which_sites_are_most_at_risk.py</code> (crc-docs) turns a CSV of sites into <code>summary.json</code>, call by call. Three routes run side by side; the animation follows the data through each one and names the package and object at every step. Pinned: crc-sdk 0.11.1, crc-framework 0.6.0.</p>
+</header>
+<div class="wrap">
+  <div class="stage">
+    <svg viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" aria-label="Pipeline diagram">
+      <!-- layer bands -->
+      <text class="layer" x="12" y="88">INPUT</text>
+      <text class="layer" x="12" y="178">PROVIDER</text>
+      <text class="layer" x="12" y="268">CONTRACT</text>
+      <text class="layer" x="12" y="358">CURVE</text>
+      <text class="layer" x="12" y="448">ANSWER</text>
+      <line x1="12" y1="98" x2="748" y2="98" stroke="#ecebe7"/>
+      <line x1="12" y1="188" x2="748" y2="188" stroke="#ecebe7"/>
+      <line x1="12" y1="278" x2="748" y2="278" stroke="#ecebe7"/>
+      <line x1="12" y1="368" x2="748" y2="368" stroke="#ecebe7"/>
+      <line x1="12" y1="458" x2="748" y2="458" stroke="#ecebe7"/>
+
+      <!-- lane titles -->
+      <text class="lane" x="150" y="28" text-anchor="middle" fill="#2a78d6">A · ERA5 (free reanalysis)</text>
+      <text class="lane" x="380" y="28" text-anchor="middle" fill="#eb6834">B · CRC Open (ready-made curves)</text>
+      <text class="lane" x="610" y="28" text-anchor="middle" fill="#52514e">C · CDT (licensed API)</text>
+
+      <!-- sites input -->
+      <g id="n_sites" class="node O"><rect x="300" y="44" width="160" height="44"/>
+        <text x="380" y="62" text-anchor="middle">sites.csv</text>
+        <text x="380" y="78" text-anchor="middle" class="sub">site, latitude, longitude</text></g>
+
+      <!-- edges from sites -->
+      <path id="e_sA" class="edge A" d="M330 88 C 250 110, 200 110, 150 134"/>
+      <path id="e_sB" class="edge B" d="M380 88 L380 134"/>
+      <path id="e_sC" class="edge C" d="M430 88 C 510 110, 560 110, 610 134"/>
+
+      <!-- Route A -->
+      <g id="nA1" class="node A"><rect x="70" y="134" width="160" height="44"/>
+        <text x="150" y="152" text-anchor="middle">HazardDataset.era5()</text>
+        <text x="150" y="168" text-anchor="middle" class="sub">.for_area .years .cache</text></g>
+      <path id="eA1" class="edge A" d="M150 178 L150 224"/>
+      <g id="nA2" class="node A"><rect x="70" y="224" width="160" height="44"/>
+        <text x="150" y="242" text-anchor="middle">.canonicalize(policy)</text>
+        <text x="150" y="258" text-anchor="middle" class="sub">BlockExtremaPolicy · H3 r3</text></g>
+      <path id="eA2" class="edge A" d="M150 268 L150 314"/>
+      <g id="nA3" class="node A"><rect x="70" y="314" width="160" height="44"/>
+        <text x="150" y="332" text-anchor="middle">fit_distribution()</text>
+        <text x="150" y="348" text-anchor="middle" class="sub">genextreme · L-moments</text></g>
+      <path id="eA3" class="edge A" d="M150 358 L150 404"/>
+      <g id="nA4" class="node A"><rect x="70" y="404" width="160" height="44"/>
+        <text x="150" y="422" text-anchor="middle">.quantiles([0.9])</text>
+        <text x="150" y="438" text-anchor="middle" class="sub">1-in-10 hottest / wettest day</text></g>
+
+      <!-- Route B -->
+      <g id="nB1" class="node B"><rect x="300" y="134" width="160" height="44"/>
+        <text x="380" y="152" text-anchor="middle">HazardDataset.crc_open()</text>
+        <text x="380" y="168" text-anchor="middle" class="sub">.hazards .horizons .cache</text></g>
+      <path id="eB1" class="edge B" d="M380 178 L380 224"/>
+      <g id="nB2" class="node B"><rect x="300" y="224" width="160" height="44"/>
+        <text x="380" y="242" text-anchor="middle">partitions → cell_index</text>
+        <text x="380" y="258" text-anchor="middle" class="sub">H3 r5 · checksum-verified</text></g>
+      <path id="eB2" class="edge B" d="M380 268 L380 314"/>
+      <g id="nB3" class="node B"><rect x="300" y="314" width="160" height="44"/>
+        <text x="380" y="332" text-anchor="middle">.for_assets(table)</text>
+        <text x="380" y="348" text-anchor="middle" class="sub">.return_periods([10])</text></g>
+      <path id="eB3" class="edge B" d="M380 358 L380 404"/>
+      <g id="nB4" class="node B"><rect x="300" y="404" width="160" height="44"/>
+        <text x="380" y="422" text-anchor="middle">value_rp10 per horizon</text>
+        <text x="380" y="438" text-anchor="middle" class="sub">early vs late window · change</text></g>
+
+      <!-- Route C -->
+      <g id="nC1" class="node C"><rect x="530" y="134" width="160" height="44"/>
+        <text x="610" y="152" text-anchor="middle">velo_sdk APIClient()</text>
+        <text x="610" y="168" text-anchor="middle" class="sub">needs RISKTHINKING_API_KEY</text></g>
+      <path id="eC1" class="edge C" d="M610 178 L610 224"/>
+      <g id="nC2" class="node C"><rect x="530" y="224" width="160" height="44"/>
+        <text x="610" y="242" text-anchor="middle">GET /v4/climate/metrics/exposure</text>
+        <text x="610" y="258" text-anchor="middle" class="sub">risk_factor, pathway, horizon</text></g>
+      <path id="eC2" class="edge C" d="M610 268 L610 404"/>
+      <g id="nC3" class="node C"><rect x="530" y="404" width="160" height="44"/>
+        <text x="610" y="422" text-anchor="middle">exposure_return_periods["10"]</text>
+        <text x="610" y="438" text-anchor="middle" class="sub">historic + 3 pathways · K → °C</text></g>
+
+      <!-- converge -->
+      <path id="eA4" class="edge A" d="M150 448 C 150 500, 300 500, 330 500"/>
+      <path id="eB4" class="edge B" d="M380 448 L380 494"/>
+      <path id="eC4" class="edge C" d="M610 448 C 610 500, 460 500, 430 500"/>
+      <g id="n_out" class="node O"><rect x="300" y="494" width="160" height="50"/>
+        <text x="380" y="513" text-anchor="middle">summary.json</text>
+        <text x="380" y="530" text-anchor="middle" class="sub">answer · a_era5 · b_crc_open · c_cdt</text></g>
+
+      <circle id="pkt" class="pkt" cx="0" cy="0" fill="#2a78d6"/>
+    </svg>
+    <div class="legend"><span><i style="background:#2a78d6"></i>crc-sdk provider + fitting</span><span><i style="background:#eb6834"></i>crc-sdk + ready-made curves</span><span><i style="background:#52514e"></i>commercial API (not part of the open standard)</span><span><i style="background:#1f9d6c"></i>files</span><br>Layers: INPUT → PROVIDER (crc_sdk.workflows plans) → CONTRACT (canonical rows / cells) → CURVE (crc_framework, Rust) → ANSWER (one number per site)</div>
+  </div>
+
+  <div class="panel">
+    <div class="card ctl">
+      <button id="prev">◀ Back</button>
+      <button id="play">▶ Play</button>
+      <button id="next">Next ▶</button>
+      <div class="prog"><i id="bar"></i></div>
+      <span class="step" id="counter">1 / 14</span>
+    </div>
+    <div class="card">
+      <h2 id="title"></h2>
+      <div class="where" id="where"></div>
+      <pre id="code"></pre>
+      <div class="shape" id="shape"></div>
+    </div>
+    <div class="card" style="font-size:13px;color:var(--mute)">
+      <b style="color:var(--ink)">What to notice.</b> Only route A touches the Rust core, and only through <code>fit_distribution</code> → <code>quantiles</code>. Route B never fits anything: it looks up a curve someone else fitted. Neither route calls <code>compute_risk</code>, microscores or the spanning set — no public crc-docs example does. The "framework" that aggregates risk sits unused above this plumbing.
+    </div>
+  </div>
+</div>
+
+<script>
+const steps = [
+ {n:'n_sites',e:null,lane:'O',title:'Start: a CSV of sites',where:'read_sites() · plain Python',
+  code:'site,latitude,longitude\nToronto DC,43.65,-79.38\n...  # default: 10 example warehouses',
+  shape:[['object','list[dict]'],['shape','N sites × 3 fields'],['package','stdlib csv']]},
+ {n:'nA1',e:'e_sA',lane:'A',title:'A1 · Plan an ERA5 fetch',where:'crc_sdk.workflows.HazardDataset — a lazy plan, nothing downloaded yet',
+  code:'plan = (HazardDataset.era5("txx", store="wb2-1p5")\n  .for_area(bounds)          # bbox around all sites, +2°\n  .years(1995, 2024)\n  .cache(cache/"era5", mode="reuse"))',
+  shape:[['object','HazardDataset plan'],['data','WeatherBench-2 ERA5, 1.5° grid, hourly→daily'],['licence','CC-BY-4.0 (Copernicus)']]},
+ {n:'nA2',e:'eA1',lane:'A',title:'A2 · Canonicalize to the contract',where:'BlockExtremaPolicy — the step that makes raw data "CRC-shaped"',
+  code:'plan.canonicalize(\n  policy=BlockExtremaPolicy.curated(h3_resolution=3,\n                                    minimum_years=4))\nannual = plan.annual_extremes().to_pylist()',
+  shape:[['object','Arrow rows: latitude, longitude, year, value'],['shape','grid points × years (one annual max each)'],['semantics','annual_value_distribution']]},
+ {n:'nA3',e:'eA2',lane:'A',title:'A3 · Fit a curve per site',where:'crc_sdk.fitting.fit_distribution → crc_framework (Rust) under the hood',
+  code:'sample = records[nearest_grid_point]   # ≥4 annual maxima\nfitted = fit_distribution(sample, "genextreme",\n                          method="lmoments")',
+  shape:[['object','FitResult → .distribution (GEV: loc, scale, shape)'],['input','~30 numbers'],['core','crc_framework._core (L-moments in Rust)']]},
+ {n:'nA4',e:'eA3',lane:'A',title:'A4 · Read one number off the curve',where:'Distribution.quantiles — non-exceedance q = 1 − 1/T',
+  code:'level = fitted.distribution.quantiles([0.9])[0]\n# 1-in-10-year hottest day, °C  (0.9 = 1 - 1/10)',
+  shape:[['object','float'],['meaning','1-in-10 hottest day, recent past'],['note','the only place route A touches the Rust core']]},
+ {n:'nB1',e:'e_sB',lane:'B',title:'B1 · Plan a CRC Open lookup',where:'crc_sdk.workflows.HazardDataset.crc_open — one hazard at a time',
+  code:'plan = (HazardDataset.crc_open()\n  .for_area((lon-0.05, lat-0.05, lon+0.05, lat+0.05))\n  .hazards(["tx_max"])\n  .horizons([2025,2030,2035,2070,2075,2080])\n  .cache(cache/"crc-open", mode="reuse"))',
+  shape:[['object','HazardDataset plan'],['data','CRC Open release, SSP5-8.5 only, no baseline'],['licence','CC-BY-NC-4.0']]},
+ {n:'nB2',e:'eB1',lane:'B',title:'B2 · Download only the partitions you need',where:'catalogue → H3 r5 partitions → checksum → materialise',
+  code:'# resolved lazily when the plan runs:\n# catalog.hazards["tx_max"].partitions  (83 r0 cells)\n# sha256-verified files, only the bbox area',
+  shape:[['object','canonical Parquet rows'],['key','(hazard_name, horizon, pathway, cell_index, source_id)'],['curve','curve_kind + parameters per row']]},
+ {n:'nB3',e:'eB2',lane:'B',title:'B3 · Evaluate curves at the asset',where:'AssetPortfolio — asset_id + longitude/latitude is all it needs',
+  code:'asset = pa.table({"asset_id":[site], "longitude":[lon],\n                  "latitude":[lat]})\nplan.for_assets(asset).return_periods([10])\\\n    .write_parquet(cache/"site.parquet")',
+  shape:[['object','Parquet: asset_id, hazard_name, horizon, cell_index, value_rp10'],['spatial','point → H3 r5 cell (~253 km²)'],['note','no fitting; the curve was fitted upstream']]},
+ {n:'nB4',e:'eB3',lane:'B',title:'B4 · Early vs late, in °C',where:'plain pandas/numpy on the returned rows',
+  code:'value = row["value_rp10"] - 273.15   # K → °C for tx_max\nearly = mean(2025, 2030, 2035); late = mean(2070, 2075, 2080)\nchange = late - early',
+  shape:[['object','dict site → hazard → {early, late, change}'],['rank','largest_change per hazard'],['caveat','SSP5-8.5 is a stress case, not a forecast']]},
+ {n:'nC1',e:'e_sC',lane:'C',title:'C1 · Only if a key is set',where:'velo_sdk — RiskThinking\'s commercial client; skipped otherwise',
+  code:'if not os.environ.get("RISKTHINKING_API_KEY"):\n    return {"available": False, "reason": "..."}\nclient = APIClient()',
+  shape:[['object','APIClient'],['status','not part of the open standard'],['route order','the skill tries C first, then B, then Colab']]},
+ {n:'nC2',e:'eC1',lane:'C',title:'C2 · One REST call per site × pathway',where:'GET /v4/climate/metrics/exposure',
+  code:'client.get("/v4/climate/metrics/exposure", params={\n  "latitude": lat, "longitude": lon,\n  "risk_factor": "tx_max,hot_days",  # singular key!\n  "pathway": "historic" | "ssp126" | ...,\n  "horizon": "2010" | "2070"..., "return_periods": "10"})',
+  shape:[['object','JSON results[]'],['extra','historical baseline + every pathway'],['gotcha','REST takes singular risk_factor; MCP takes arrays']]},
+ {n:'nC3',e:'eC2',lane:'C',title:'C3 · Read the 1-in-10 value',where:'plain Python',
+  code:'value = float(result["exposure_return_periods"]["10"])\nvalue -= 273.15 if hazard == "tx_max" else 0',
+  shape:[['object','dict site → hazard → {historic 2010, ssp.. 2070-2090}'],['note','same shape as route B so the summary can compare']]},
+ {n:'n_out',e:'eB4',lane:'O',title:'Write the answer atomically',where:'write_atomic — temp file then os.replace (a repo rule)',
+  code:'summary = {"question": ..., "answer": headline,\n           "a_era5": era5, "b_crc_open": crc_open, "c_cdt": cdt}\nwrite_atomic(output/"summary.json", json.dumps(summary))\nwrite_atomic(output/"site_hazards.csv", ...)',
+  shape:[['files','summary.json + site_hazards.csv'],['consumer','the SKILL.md tells an agent to read summary.json'],['missing','no JSON Schema for this file — your first contribution']]},
+ {n:'n_out',e:null,lane:'O',title:'What was used from CRC, and what was not',where:'the whole pipeline in one line',
+  code:'USED      crc_sdk.workflows (plans, canonicalize, for_assets)\n          crc_sdk.fitting.fit_distribution → crc_framework quantiles\nNOT USED  crc_sdk.impacts, generate_microscores, compute_risk,\n          spanning set, VaR/CVaR  (none of the 20 pipelines)',
+  shape:[['consume','routes A and B as they are'],['produce','new data in the canonical contract (ERA5 baseline, hail)'],['extend','impacts + the unused risk core + a dependence layer']]},
+];
+const colors={A:'#2a78d6',B:'#eb6834',C:'#52514e',O:'#1f9d6c'};
+let i=0, timer=null;
+const $=id=>document.getElementById(id);
+function render(){
+  const s=steps[i];
+  document.querySelectorAll('.node').forEach(n=>n.classList.remove('on'));
+  document.querySelectorAll('.edge').forEach(e=>e.classList.remove('on'));
+  for(let k=0;k<i;k++){const d=document.getElementById(steps[k].n); if(d) d.classList.add('done');}
+  for(let k=i;k<steps.length;k++){const d=document.getElementById(steps[k].n); if(d) d.classList.remove('done');}
+  const node=$(s.n); node.classList.add('on');
+  $('title').innerHTML=`<span class="pill ${s.lane}">${s.lane==='O'?'file':'route '+s.lane}</span>${s.title}`;
+  $('where').textContent=s.where; $('code').textContent=s.code;
+  $('shape').innerHTML=s.shape.map(([k,v])=>`<b>${k}</b><span>${v}</span>`).join('');
+  $('counter').textContent=`${i+1} / ${steps.length}`;
+  $('bar').style.width=((i+1)/steps.length*100)+'%';
+  const p=$('pkt'); p.setAttribute('fill',colors[s.lane]);
+  if(s.e){const e=$(s.e); e.classList.add('on'); animate(e);} else {p.style.opacity=0;}
+}
+function animate(path){
+  const p=$('pkt'); const L=path.getTotalLength(); let t0=null; p.style.opacity=1;
+  function f(ts){ if(!t0) t0=ts; const u=Math.min((ts-t0)/700,1); const pt=path.getPointAtLength(u*L);
+    p.setAttribute('cx',pt.x); p.setAttribute('cy',pt.y); if(u<1) requestAnimationFrame(f); else setTimeout(()=>p.style.opacity=0,250);}
+  requestAnimationFrame(f);
+}
+function go(d){ i=(i+d+steps.length)%steps.length; render(); }
+$('next').onclick=()=>{stop();go(1)}; $('prev').onclick=()=>{stop();go(-1)};
+function stop(){ if(timer){clearInterval(timer);timer=null;$('play').textContent='▶ Play';} }
+$('play').onclick=()=>{ if(timer){stop();return;} $('play').textContent='❚❚ Pause'; timer=setInterval(()=>{ if(i===steps.length-1){stop();return;} go(1); },3200); };
+document.addEventListener('keydown',e=>{ if(e.key==='ArrowRight'){stop();go(1);} if(e.key==='ArrowLeft'){stop();go(-1);} if(e.key===' '){e.preventDefault();$('play').click();} });
+render();
+</script>
+</body>
+</html>

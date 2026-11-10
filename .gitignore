@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+data/cache/
+data/*.parquet
+data/*.pmtiles
+pipeline_output/
+.ipynb_checkpoints/
+dist/
+*.egg-info/
+.env

@@ -1,0 +1,41 @@
+[project]
+name = "crc-energy"
+version = "0.0.1"
+description = "Present-day physical climate risk for energy infrastructure on Climate Risk Commons: ERA5 hazard layers, T&D impact functions, dependence-aware aggregation, validation harness"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = "AGPL-3.0-or-later"
+dependencies = [
+    "crc-sdk[geometry,zarr,raster,netcdf]==0.11.1",
+    "crc-framework==0.6.0",
+    "pandas>=2.2",
+    "pyarrow>=17",
+    "numpy>=1.26",
+    "scipy>=1.13",
+    "xarray>=2024.6",
+    "h3>=4.1",
+    "plotly>=5.22,<7",
+]
+
+[project.optional-dependencies]
+dependence = ["pyvinecopulib>=1.0.1", "networkx>=3.3"]
+assets = ["osmnx>=2.0", "geopandas>=1.0", "linkml>=1.8"]
+viz = ["lonboard>=0.10"]
+
+[dependency-groups]
+dev = ["pytest>=8", "hypothesis>=6.100", "ruff>=0.6", "lmoments3>=1.0", "jupyter>=1.1"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["notebooks"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/crc_energy"]
