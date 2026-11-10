@@ -23,6 +23,7 @@ site/data/*
 !site/data/sources/
 # radar-based files are built locally (the radar pulls are too heavy for CI) and committed
 !site/data/hail_compare/
+!site/data/assets/
 site/explainers/
 .DS_Store
 .claude/worktrees/
