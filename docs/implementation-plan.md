@@ -14,24 +14,45 @@ Status: **agreed 2026-11-10** · for a separate Claude Code effort · requiremen
 
 ## Phases
 
-| Phase | Output | Requirements | Hours |
-| --- | --- | --- | --- |
-| 0 | Repo ready; open items from requirements section 10 checked | G1 | 3 |
-| 1 | Explorer v1: catalogue page and Texas hazard map | E1–E9 | 20–30 |
-| 2 | Storm Events table and the two-source comparison | S1–S6 | 20–25 |
-| 3 | Hail and gust curves in CRC | C1–C6 | 10–15 |
-| 4 | Assets: solar farms; real-estate exploration | A1–A3 | 10–15 |
+| Phase | Output | Requirements | Hours | Status |
+| --- | --- | --- | --- | --- |
+| 0 | Repo ready; open items from requirements section 10 checked | G1 | 3 | in progress |
+| 1 | Explorer v1: catalogue page and Texas hazard map, eight CRC Open hazards | E1–E9 | 20–30 | next |
+| 2 | Storm Events table and the two-source comparison | S1–S6 | 20–25 | deferred |
+| 3 | Hail and gust curves in CRC | C1–C6 | 10–15 | deferred |
+| 4 | Assets: solar farms; real-estate exploration | A1–A3 | 10–15 | deferred |
+
+Decided 2026-11-10: Phases 2–4 do not start until Phase 1 is reviewed. Their steps stay here so the explorer
+is built to take them (E5, E9), and the explorer marks hail and gust as planned.
 
 ## Phase 0 — Setup and checks
 
 1. `uv sync`; run the pin test.
 2. Confirm current `crc-sdk` and `crc-framework` versions against the pins; update pins and `CHANGELOG-upstream.md`
    if a newer release is adopted.
-3. Check the items listed as not verified: Storm Events format PDF (magnitude types, coverage by year); National
-   Structure Inventory access and licence; deck.gl and MapLibre versions.
-4. Update `AGENTS.md` and `README.md` to the new scope.
+3. Check what Phase 1 depends on, and record each answer in the report ("could not verify" is an answer):
+   - which `curve_kind` (fitted, hurdle, point_mass, tabulated, no_data) CRC Open uses for the eight hazards, so
+     the browser can evaluate the curve on click (E4);
+   - how many resolution-5 cells Texas has once clipped to the state polygon (the 2,700 in the requirements is an
+     area estimate);
+   - which horizons the release actually holds (2030, 2050, 2080 assumed);
+   - MapLibre, deck.gl and pmtiles versions that work together, pinned.
+   Storm Events and National Structure Inventory checks move to Phase 2 and Phase 4.
+4. Bring the repo to the current scope: `pyproject.toml` (description, drop extras from the archived scope),
+   `AGENTS.md`, `README.md`, `CLAUDE.md`, `docs/reports/`, a `justfile` so that G5's "one command" has a home.
 
-Done when: a one-page report lists each check and its answer.
+Done when: `docs/reports/0-setup.md` lists each check and its answer.
+
+Conventions fixed in Phase 0:
+
+- **Texas is a polygon, not a box.** `for_area()` takes a bounding box, which also covers parts of New Mexico,
+  Oklahoma, Louisiana and Mexico. Clip cells with the Census TIGER state boundary through
+  `crc_sdk.geometry.vector.polyfill_wkb` at resolution 5.
+- **No front-end build step.** One `site/index.html` with ES modules from pinned CDN versions (MapLibre GL,
+  deck.gl's `H3HexagonLayer`, the pmtiles protocol), in the same style as the D0 explainers. The folder publishes
+  unchanged to GitHub Pages and to the container.
+- **Paths across cells** (S3, later) are already covered: `polyfill_wkb` handles LineStrings. Do not write a new one.
+- **One command** is `just all` (`just data`, `just site` underneath); each phase adds its targets.
 
 ## Phase 1 — Explorer v1
 
@@ -40,7 +61,8 @@ Done when: a one-page report lists each check and its answer.
 2. **Hazard values for Texas.** Choose eight hazards across families (suggested: `tx_max`, `tn_min`, `rx1day`,
    `rflood`, `wind_max_daily_max`, `fwi`, `spei`, `hot_days`). For each: every Texas cell, three horizons, return
    periods 10, 50, 100, plus curve parameters. One compact file per hazard. Horizons 2030, 2050 and 2080 (the
-   release runs 2025–2090). The selector lists all 63 hazards; the other 55 are marked "not loaded yet".
+   release runs 2025–2090). The selector lists all 63 hazards; the other 55 are marked "not loaded yet". The
+   "not in CRC Open" list shows hail and thunderstorm gust as "planned (Phase 3)".
 3. **Layer registry.** One file describing each layer: id, title, source, unit, licence, file, colour scale.
 4. **Page.** MapLibre base map; deck.gl H3 layer for cells; selectors for hazard, horizon, return period; legend;
    click panel with the curve; layer switcher; caveat panel; catalogue tab.

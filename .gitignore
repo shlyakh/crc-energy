@@ -11,3 +11,8 @@ pipeline_output/
 dist/
 *.egg-info/
 .env
+# machine-specific symlinks to ../upstream/crc-docs skills (see CLAUDE.md)
+.claude/skills/
+.claude/settings.local.json
+# explorer data outputs (Phase 1 decides the exact layout)
+site/data/

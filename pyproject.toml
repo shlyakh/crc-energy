@@ -1,7 +1,7 @@
 [project]
 name = "crc-lab"
 version = "0.0.1"
-description = "Present-day physical climate risk for energy infrastructure on Climate Risk Commons: ERA5 hazard layers, T&D impact functions, dependence-aware aggregation, validation harness"
+description = "Climate Risk Commons lab: a Texas data explorer for CRC Open hazards; later, storm-event sources, hail and gust curves, and asset sets"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "AGPL-3.0-or-later"
@@ -18,12 +18,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dependence = ["pyvinecopulib>=1.0.1", "networkx>=3.3"]
+# Phase 4 (deferred): solar-farm and building loaders.
 assets = ["osmnx>=2.0", "geopandas>=1.0", "linkml>=1.8"]
+# Notebook maps while exploring; the explorer itself uses MapLibre + deck.gl in the browser.
 viz = ["lonboard>=0.10"]
 
 [dependency-groups]
-dev = ["pytest>=8", "hypothesis>=6.100", "ruff>=0.6", "lmoments3>=1.0", "jupyter>=1.1"]
+dev = ["pytest>=8", "hypothesis>=6.100", "ruff>=0.6", "jupyter>=1.1"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -32,6 +33,9 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
 
 [build-system]
 requires = ["hatchling"]

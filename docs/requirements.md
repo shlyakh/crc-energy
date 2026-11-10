@@ -8,11 +8,14 @@ This is the brief for a separate Claude Code effort. Steps are in
 
 ## 1. Goals
 
-1. See what is in CRC data today, as a catalogue and as map layers, without writing code.
-2. Add NOAA Storm Events as a source, cleaned and placed on H3 cells.
-3. Derive hail and thunderstorm-gust hazard curves from it and bring them into CRC.
-4. Add two asset sets: solar farms and real estate.
+1. See what is in CRC data today, as a catalogue and as map layers, without writing code. **← current work**
+2. Add NOAA Storm Events as a source, cleaned and placed on H3 cells. *(coming; not started)*
+3. Derive hail and thunderstorm-gust hazard curves from it and bring them into CRC. *(coming; not started)*
+4. Add two asset sets: solar farms and real estate. *(coming; not started)*
 5. Show every result in the same explorer.
+
+Decided 2026-11-10: build goal 1 with the eight CRC Open hazards first and review it before goals 2–4
+begin. The explorer lists hail and gust in its "not in CRC Open" list, marked as planned.
 
 Region for everything: **Texas**. Later, not in this effort: MRMS radar hail; damage curves and loss results.
 

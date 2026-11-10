@@ -1,9 +1,10 @@
 # crc-lab documentation
 
-Current work (agreed 2026-11-10):
+Current work (agreed 2026-11-10; explorer first, storm sources and assets deferred):
 
 - [Requirements](requirements.md): CRC data explorer and severe-storm sources, Texas
 - [Implementation plan](implementation-plan.md)
+- [Reports](reports/): one per phase
 - [Primer: how an event source can be used in CRC](primers/event-sources-in-crc.md)
 
 Background:

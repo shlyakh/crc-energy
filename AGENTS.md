@@ -1,13 +1,23 @@
 # Agent guide — crc-lab
 
-Current work: a data explorer for Climate Risk Commons (CRC) data and a NOAA Storm Events source, for Texas.
-Then hail and thunderstorm-gust hazard curves brought into CRC, and two asset sets (solar farms, real estate).
+Current work: a data explorer for Climate Risk Commons (CRC) data, Texas, with eight CRC Open hazards
+(Phase 1). Deferred until that is reviewed: a NOAA Storm Events source, hail and thunderstorm-gust curves,
+and two asset sets (solar farms, real estate).
 
 Read first:
 
 - `docs/requirements.md` — what to build, with IDs
 - `docs/implementation-plan.md` — phases, steps, and the test for "done" in each
-- `docs/primers/event-sources-in-crc.md` — how event records relate to CRC's curves
+- `docs/primers/event-sources-in-crc.md` — how event records relate to CRC's curves (Phases 2–3)
+
+Reference clones, read-only, pinned to the versions this repo uses (see `../README.md`):
+
+- `../upstream/crc-sdk/` (v0.11.1) — `docs/README.md` indexes every page; `docs/concepts.md` for plans, the
+  canonical dataset and probability conventions; `docs/sources/crc-open.md` for the release layout;
+  `crc_sdk/workflows/*.py` docstrings are the parameter reference.
+- `../upstream/crc-docs/` — notebooks, pipelines, and the five end-user skills under `.agents/skills/`
+  (the pattern for any skill this repo ships later; not needed for building the explorer).
+- `../upstream/crc-framework-rs/` (v0.6.0) — the Rust numerical core; reference only.
 
 Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archive/` and is not current.
 
@@ -26,14 +36,14 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 
 ## Layout
 
-- `docs/` — requirements, plan, primers, explainers, archive
+- `docs/` — requirements, plan, reports (one per phase), primers, explainers, archive
 - `src/crc_lab/` — package
 - `tests/` — pytest; `test_pins.py` guards the pins
+- `justfile` — `just setup`, `just test`, `just lint`; data and site targets arrive with Phase 1
 
 ## Checks
 
 ```sh
-uv sync --all-extras --group dev
-uv run pytest -q
-uv run ruff check src tests
+just test     # uv run pytest -q
+just lint     # uv run ruff check src tests && uv run ruff format --check src tests
 ```

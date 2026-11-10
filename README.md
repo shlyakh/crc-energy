@@ -1,14 +1,18 @@
 # crc-lab
 
-Work on [Climate Risk Commons](https://climateriskcommons.org/) (CRC) data, for Texas:
+A lab for working with [Climate Risk Commons](https://climateriskcommons.org/) (CRC) data, Texas first.
 
-1. A data explorer: a catalogue of what CRC data holds, and a map of its hazard layers.
-2. NOAA Storm Events as a cleaned source on H3 cells, compared across two copies of the data.
-3. Hail and thunderstorm-gust hazard curves derived from it and brought into CRC.
-4. Asset sets: solar farms and real estate.
+**Now:** a data explorer — a catalogue of what CRC Open holds, and a map of Texas with eight of its hazard
+layers (hottest day, coldest night, wettest day, river flood, wind, fire weather, drought index, hot days).
 
-Status: requirements and plan agreed on 2026-11-10; no code yet. See `docs/requirements.md` and
-`docs/implementation-plan.md`. Earlier scope is in `docs/archive/`.
+**Coming, in this order, each after the previous is reviewed:**
+
+1. NOAA Storm Events as a cleaned source on H3 cells, compared across two copies of the data.
+2. Hail and thunderstorm-gust hazard curves derived from it and brought into CRC.
+3. Asset sets: solar farms (energy) and real estate.
+
+Status: requirements and plan agreed 2026-11-10; Phase 0 (setup) in progress. See `docs/requirements.md`
+and `docs/implementation-plan.md`. Earlier scope is in `docs/archive/`.
 
 ## Explainers (D0)
 
