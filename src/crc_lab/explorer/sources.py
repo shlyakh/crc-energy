@@ -18,7 +18,6 @@ import json
 import math
 import time
 import warnings
-from collections import defaultdict
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
@@ -28,8 +27,6 @@ from crc_lab.explorer.hazards import RETURN_PERIODS, _params, _round
 from crc_lab.explorer.texas import write_json_atomic
 
 TEXAS = (-106.645646, 25.837377, -93.508292, 36.500704)
-TRACK_BOX = (TEXAS[0] - 4.0, TEXAS[1] - 4.0, TEXAS[2] + 6.0, TEXAS[3] + 2.0)
-IBTRACS_YEARS = (1980, 2024)
 GHCNH_YEARS = (2000, 2024)
 
 # NOAA CO-OPS water-level stations in Texas (state == "TX"), listed 2026-11-10 from
@@ -89,102 +86,12 @@ def in_box(lon: float, lat: float, box: tuple[float, float, float, float]) -> bo
     return box[0] <= lon <= box[2] and box[1] <= lat <= box[3]
 
 
-# ---------------------------------------------------------------- IBTrACS (lines)
-def tracks_to_features(rows: list[dict[str, Any]], *, texas=TEXAS, box=TRACK_BOX) -> list[dict]:
-    """Group IBTrACS rows by storm; keep storms with a point inside Texas; clip to ``box``.
-
-    Pure function (tested offline). ``rows`` need SID, NAME, SEASON, ISO_TIME, LAT, LON,
-    WMO_WIND, WMO_PRES, NATURE as strings, as the IBTrACS CSV delivers them.
-    """
-    by_storm: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for r in rows:
-        by_storm[r["SID"]].append(r)
-    features = []
-    for sid, pts in by_storm.items():
-        pts.sort(key=lambda r: r.get("ISO_TIME") or "")
-        coords, winds, pres, hit, first_in, last_in = [], [], [], False, None, None
-        for r in pts:
-            lon, lat = _f(r.get("LON")), _f(r.get("LAT"))
-            if lon is None or lat is None or not in_box(lon, lat, box):
-                continue
-            coords.append([round(lon, 3), round(lat, 3)])
-            w, p = _f(r.get("WMO_WIND")), _f(r.get("WMO_PRES"))
-            if in_box(lon, lat, texas):
-                hit = True
-                first_in = first_in or r.get("ISO_TIME")
-                last_in = r.get("ISO_TIME")
-                if w is not None:
-                    winds.append(w)
-                if p is not None:
-                    pres.append(p)
-        if not hit or len(coords) < 2:
-            continue
-        head = pts[0]
-        name = (head.get("NAME") or "").strip() or "UNNAMED"
-        features.append(
-            {
-                "type": "Feature",
-                "geometry": {"type": "LineString", "coordinates": coords},
-                "properties": {
-                    "label": f"{name.title()} {head.get('SEASON')}",
-                    "sid": sid,
-                    "season": int(head["SEASON"])
-                    if str(head.get("SEASON", "")).isdigit()
-                    else head.get("SEASON"),
-                    "nature_at_first_texas_point": next(
-                        (
-                            r.get("NATURE")
-                            for r in pts
-                            if _f(r.get("LON")) is not None
-                            and in_box(_f(r["LON"]), _f(r["LAT"]), texas)
-                        ),
-                        None,
-                    ),
-                    "max_wmo_wind_kt_in_texas": max(winds) if winds else None,
-                    "min_wmo_pressure_mb_in_texas": min(pres) if pres else None,
-                    "first_texas_point": first_in,
-                    "last_texas_point": last_in,
-                    "points": len(coords),
-                },
-            }
-        )
-    features.sort(
-        key=lambda f: (
-            f["properties"]["season"] if isinstance(f["properties"]["season"], int) else 0,
-            f["properties"]["sid"],
-        )
-    )
-    return features
-
-
+# ---------------------------------------------------------------- IBTrACS (tracks)
 def build_ibtracs(cache_dir: Path, out: Path) -> dict[str, Any]:
-    from crc_sdk.workflows import IBTrACSPlan
+    """Explorer v2: storm records with per-point wind, from ``crc_lab.explorer.tracks``."""
+    from crc_lab.explorer.tracks import build_tracks
 
-    started = time.time()
-    plan = IBTrACSPlan("NA", cache_dir / "ibtracs").years(*IBTRACS_YEARS)
-    source = dict(plan.prefetch())
-    rows: list[dict[str, Any]] = []
-    for batch in plan.batches():
-        rows.extend(batch.to_pylist())
-    features = tracks_to_features(rows)
-    write_json_atomic(out, {"type": "FeatureCollection", "features": features})
-    return {
-        "layer": "ibtracs",
-        "file": str(out),
-        "basin": "NA",
-        "years": list(IBTRACS_YEARS),
-        "rows_read": len(rows),
-        "storms_crossing_texas": len(features),
-        "track_box": TRACK_BOX,
-        "source": {
-            k: str(v)[:200]
-            for k, v in source.items()
-            if k in ("url", "version", "sha256", "retrieved_at", "citation", "terms_url")
-        },
-        "licence": "U.S. government work; attribution requested (NOAA NCEI)",
-        "seconds": round(time.time() - started, 1),
-        "bytes": out.stat().st_size,
-    }
+    return build_tracks(cache_dir, out)
 
 
 # ---------------------------------------------------------------- NOAA CO-OPS (points)
@@ -541,10 +448,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     started = time.time()
     for name in args.only:
-        target = args.out / "era5_txx" if name == "era5" else args.out / f"{name}.geojson"
+        if name == "era5":
+            target = args.out / "era5_txx"
+        elif name == "ibtracs":
+            target = args.out / "ibtracs.json"
+        else:
+            target = args.out / f"{name}.geojson"
         record = BUILDERS[name](args.cache, target)
         manifest["layers"][name] = record
-        keys = ("storms_crossing_texas", "stations_with_levels", "stations_with_curves")
+        keys = (
+            "storms_crossing_texas",
+            "track_points",
+            "stations_with_levels",
+            "stations_with_curves",
+        )
         keys += ("kinds", "seconds", "bytes")
         print(f"{name}: {json.dumps({k: v for k, v in record.items() if k in keys})}")
         if args.verify and name == "ghcnh":

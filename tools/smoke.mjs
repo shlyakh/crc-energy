@@ -1,14 +1,14 @@
-// Headless smoke test of the explorer over the Chrome DevTools protocol (no npm dependencies).
-//   python3 -m http.server 8765 --bind 127.0.0.1 --directory site   (in another shell)
-//   node tools/smoke.mjs <out dir> [url] [--sources]
-// Writes screenshots and smoke-report.json to <out dir>; prints one JSON line per step.
+// Headless smoke test of the explorer (v2, source-centric) over the Chrome DevTools protocol (no npm dependencies).
+//   python3 -m http.server 8770 --bind 127.0.0.1 --directory site   (in another shell)
+//   node tools/smoke.mjs <out dir> [url]
+// Walks every source, filters, a click per source kind and the Sources tab; writes screenshots and
+// smoke-report.json to <out dir>; prints one JSON line per step.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 
 const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const [S, URL = "http://127.0.0.1:8765/"] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-const SOURCES = process.argv.includes("--sources");
-const port = 9333;
+const [S, URL = "http://127.0.0.1:8770/"] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+const port = 9334;
 mkdirSync(S, { recursive: true });
 const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", `--remote-debugging-port=${port}`, `--user-data-dir=${S}/cdp-profile`, "--window-size=1400,900", "about:blank"], { stdio: "ignore" });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -30,47 +30,46 @@ const report = { url: URL, steps: [] };
 async function waitReady(label, timeoutMs = 40000) {
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) { const r = await evaluate("document.body ? (document.body.dataset.ready || document.body.dataset.error || '') : ''"); if (r && r !== "Uncaught") break; await sleep(100); }
-  const step = { label, status: await evaluate("document.getElementById('status').textContent"), ms: await evaluate("document.body.dataset.ms"), error: await evaluate("document.body.dataset.error || ''"), wall_ms: Date.now() - t0 };
+  const step = { label, status: await evaluate("document.getElementById('status').textContent"), ms: await evaluate("document.body.dataset.ms"), source: await evaluate("document.body.dataset.source"), error: await evaluate("document.body.dataset.error || ''"), wall_ms: Date.now() - t0 };
   report.steps.push(step); console.log(JSON.stringify(step)); return step;
 }
 async function shot(name) { const r = await send("Page.captureScreenshot", { format: "png" }); writeFileSync(`${S}/${name}.png`, Buffer.from(r.result.data, "base64")); }
-async function change(selector, value) { await evaluate("document.body.dataset.ready=''"); await evaluate(`(() => { const el = document.querySelector('${selector}'); el.value = '${value}'; el.dispatchEvent(new Event('change')); })()`); }
-async function toggle(layerId) { await evaluate("document.body.dataset.ready=''"); await evaluate(`(() => { const lab = [...document.querySelectorAll('#layers label')].find((l) => l.textContent.includes(${JSON.stringify(layerId)})); const cb = lab.querySelector('input'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); })()`); }
+const reset = () => evaluate("document.body.dataset.ready=''");
+async function change(selector, value, event = "change") { await reset(); await evaluate(`(() => { const el = document.querySelector('${selector}'); el.value = ${JSON.stringify(String(value))}; el.dispatchEvent(new Event('${event}')); })()`); }
+async function source(id) { await reset(); await evaluate(`document.dispatchEvent(new CustomEvent('crc:source', { detail: ${JSON.stringify(id)} }))`); return waitReady(`source ${id}`); }
 async function click(x, y) { await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y }); await sleep(200); await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 }); await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 }); await sleep(600); }
-const detail = async () => ({ hidden: await evaluate("document.getElementById('detail').classList.contains('hidden')"), title: await evaluate("document.getElementById('detail-title').textContent"), meta: (await evaluate("document.getElementById('detail-meta').textContent")).slice(0, 200), rows: await evaluate("document.querySelectorAll('#detail-table tr').length"), svg: await evaluate("!!document.querySelector('#chart svg')") });
+const detail = async () => ({ hidden: await evaluate("document.getElementById('detail').classList.contains('hidden')"), title: await evaluate("document.getElementById('detail-title').textContent"), meta: (await evaluate("document.getElementById('detail-meta').textContent")).slice(0, 160), rows: await evaluate("document.querySelectorAll('#detail-table tr').length"), svg: await evaluate("!!document.querySelector('#chart svg')") });
+const centre = () => evaluate("(() => { const r = document.getElementById('map').getBoundingClientRect(); return [r.left + r.width/2, r.top + r.height/2]; })()");
 
 await send("Page.navigate", { url: URL });
-await waitReady("first view"); await sleep(1500); await shot("s1-first");
-await change("#rp", "500"); await waitReady("switch return period");
-await change("#hazard", "rflood"); await waitReady("switch hazard to rflood (r7)"); await sleep(800);
-await change("#hazard", "tx_max"); await waitReady("switch back to tx_max (cached)"); await sleep(800);
-const box = await evaluate("(() => { const r = document.getElementById('map').getBoundingClientRect(); return [r.left + r.width/2, r.top + r.height/2]; })()");
-await click(box[0], box[1]); report.cell_detail = await detail(); console.log(JSON.stringify(report.cell_detail)); await shot("s2-cell-detail");
-if (SOURCES) {
-  // switch on the three source layers, one at a time, and click a point
-  for (const [title, id] of [["Tropical cyclone tracks", "ibtracs"], ["Coastal water levels", "coops"], ["Hottest hour of the year", "ghcnh"]]) {
-    await toggle(title); const step = await waitReady(`toggle ${id}`); await sleep(1200);
-    step.features = await evaluate(`(async () => { const r = await fetch('data/sources/${id}.geojson'); const j = await r.json(); return j.features.length; })()`);
-    console.log(JSON.stringify({ id, features: step.features }));
-  }
-  await shot("s3-sources");
-  // click a CO-OPS station: project its coordinates through MapLibre
-  const pt = await evaluate(`(async () => { const r = await fetch('data/sources/coops.geojson'); const j = await r.json(); const f = j.features.find((f) => f.properties.station_id === '8771341') || j.features[0]; return f.geometry.coordinates; })()`);
-  // jump to the station through the page's test hook, then click the map centre
-  await evaluate(`(() => { document.dispatchEvent(new CustomEvent('crc:flyTo', { detail: { center: ${JSON.stringify(pt)}, zoom: 9 } })); })()`);
-  await sleep(2500);
-  const c = await evaluate("(() => { const r = document.getElementById('map').getBoundingClientRect(); return [r.left + r.width/2, r.top + r.height/2]; })()");
-  await click(c[0], c[1]); report.point_detail = await detail(); console.log(JSON.stringify(report.point_detail)); await shot("s4-point-detail");
-  // the ERA5 baseline is an h3-cells layer with its own horizon
-  await change("#hazard", "era5_txx"); const era5 = await waitReady("switch hazard to era5_txx (r4 baseline)"); await sleep(1200);
-  era5.horizon = await evaluate("document.getElementById('horizon').value"); era5.horizon_options = await evaluate("document.getElementById('horizon').options.length");
-  era5.caveat_first = (await evaluate("document.querySelector('#caveats li').textContent")).slice(0, 120);
-  console.log(JSON.stringify({ horizon: era5.horizon, options: era5.horizon_options, caveat: era5.caveat_first })); await shot("s4b-era5");
-  await change("#hazard", "tx_max"); await waitReady("back to tx_max from era5");
-}
+const first = await waitReady("first view (default source)"); await sleep(1500); await shot("s1-first");
+first.sources_listed = await evaluate("document.querySelectorAll('#sources .src').length");
+// IBTrACS: filters, list click, track detail
+await change("#tracks-min-wind", 100); const strong = await waitReady("tracks: at least 100 kt"); strong.list = await evaluate("document.querySelectorAll('#tracks-list li').length");
+await change("#tracks-name", "harvey", "input"); const harvey = await waitReady("tracks: name contains harvey"); harvey.list = await evaluate("document.querySelectorAll('#tracks-list li').length");
+await reset(); await evaluate("document.querySelector('#tracks-list li').click()"); await waitReady("tracks: click Harvey in the list"); await sleep(800);
+report.track_detail = await detail(); console.log(JSON.stringify(report.track_detail)); await shot("s2-track");
+await change("#tracks-name", "", "input"); await waitReady("tracks: clear name");
+await change("#tracks-min-wind", 0); await waitReady("tracks: clear wind"); await change("#tracks-color", "category"); await waitReady("tracks: colour by category"); await sleep(800); await shot("s3-tracks-category");
+// Storm Events
+await source("storm_events"); await sleep(800); report.events = { status: await evaluate("document.getElementById('events-status').textContent"), types: await evaluate("document.querySelectorAll('#events-types label').length") }; console.log(JSON.stringify(report.events)); await shot("s4-events");
+await change("#events-from", 2020); await waitReady("events from 2020");
+// CO-OPS: list click -> detail with levels
+await source("coops"); await sleep(600); await reset(); await evaluate("document.querySelector('#stations-list li').click()"); await sleep(1200);
+report.coops_detail = await detail(); console.log(JSON.stringify(report.coops_detail)); await shot("s5-coops");
+// GHCNh
+await source("ghcnh"); await sleep(600); report.ghcnh_stations = await evaluate("document.querySelectorAll('#stations-list li').length"); console.log(JSON.stringify({ ghcnh_stations: report.ghcnh_stations }));
+// ERA5 baseline (cells) and CRC Open (cells) with a cell click
+await source("era5"); report.era5 = { horizon: await evaluate("document.getElementById('horizon').value"), options: await evaluate("document.getElementById('horizon').options.length") }; console.log(JSON.stringify(report.era5)); await sleep(800); await shot("s6-era5");
+await source("crc_open"); await sleep(800);
+await change("#hazard", "rflood"); await waitReady("crc_open: rflood"); await change("#hazard", "tx_max"); await waitReady("crc_open: tx_max"); await sleep(600);
+const c = await centre(); await click(c[0], c[1]); report.cell_detail = await detail(); console.log(JSON.stringify(report.cell_detail)); await shot("s7-crc-cell");
+// overlay: tracks over cells
+await reset(); await evaluate("(() => { const lab = [...document.querySelectorAll('#overlays label')].find((l) => l.textContent.includes('Tropical cyclone')); const cb = lab.querySelector('input'); cb.checked = true; cb.dispatchEvent(new Event('change')); })()"); await waitReady("overlay: tracks over CRC Open cells"); await sleep(800); await shot("s8-overlay");
+// Sources tab
 await evaluate("document.querySelector('.tab[data-view=catalog]').click()"); await sleep(500);
-report.catalog = { rows: await evaluate("document.querySelectorAll('#catalog-table tr').length - 1"), loaded: await evaluate("document.querySelectorAll('#catalog-table tr.loaded').length"), sources: await evaluate("document.querySelectorAll('#sources-table tr').length - 1") };
-console.log(JSON.stringify(report.catalog)); await shot("s5-catalog");
+report.catalog = { sources: await evaluate("document.querySelectorAll('#catalog-sources tr').length - 1"), hazards: await evaluate("document.querySelectorAll('#catalog-table tr').length - 1"), others: await evaluate("document.querySelectorAll('#sources-table tr').length - 1") };
+console.log(JSON.stringify(report.catalog)); await shot("s9-sources-tab");
 report.console = console_; report.errors = errors;
 writeFileSync(`${S}/smoke-report.json`, JSON.stringify(report, null, 1));
 console.log("console:", JSON.stringify(console_.slice(0, 10))); console.log("errors:", JSON.stringify(errors.slice(0, 10)));

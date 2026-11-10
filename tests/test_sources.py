@@ -7,44 +7,57 @@ from pathlib import Path
 
 import shapely
 
-from crc_lab.explorer import sources
+from crc_lab.explorer import sources, tracks
 
 
 def _track_row(
-    sid: str, lon: float, lat: float, when: str, wind: str = "", name: str = "ALPHA"
+    sid: str,
+    lon,
+    lat,
+    when: str,
+    wind: str = "",
+    name: str = "ALPHA",
+    season: str = "2017",
+    **extra,
 ) -> dict:
     return {
         "SID": sid,
         "NAME": name,
-        "SEASON": "2017",
+        "SEASON": season,
         "ISO_TIME": when,
         "LAT": str(lat),
         "LON": str(lon),
         "WMO_WIND": wind,
         "WMO_PRES": "",
         "NATURE": "TS",
+        **extra,
     }
 
 
-def test_tracks_keep_only_storms_touching_texas_and_clip_to_box() -> None:
+def test_storm_records_keep_storms_touching_texas_and_clip() -> None:
     rows = [
-        _track_row("A", -90.0, 25.0, "2017-08-24T00:00:00"),  # Gulf, inside the clip box
-        _track_row("A", -97.0, 28.0, "2017-08-25T00:00:00", wind="115"),  # Texas
-        _track_row("A", -98.0, 30.0, "2017-08-26T00:00:00", wind="40"),  # Texas
+        _track_row(
+            "A", -90.0, 25.0, "2017-08-24T00:00:00", wind="100"
+        ),  # Gulf, inside the clip box
+        _track_row("A", -97.0, 28.0, "2017-08-25T00:00:00", wind="115", USA_SSHS="4"),  # Texas
+        _track_row("A", -98.0, 30.0, "2017-08-26T00:00:00", wind="", USA_WIND="40"),  # US wind only
         _track_row("A", -60.0, 20.0, "2017-08-20T00:00:00"),  # far away: clipped
         _track_row("B", -80.0, 25.0, "2017-09-10T00:00:00", name="BETA"),  # never in Texas
         _track_row("B", -81.0, 26.0, "2017-09-11T00:00:00", name="BETA"),
         _track_row("C", "x", -97.0, "2017-01-01T00:00:00"),  # bad coordinates ignored
+        _track_row("D", -97.0, 28.0, "1900-08-25T00:00:00", season="1900"),  # before the window
     ]
-    features = sources.tracks_to_features(rows)
-    assert [f["properties"]["sid"] for f in features] == ["A"]
-    f = features[0]
-    assert f["geometry"]["type"] == "LineString"
-    assert f["geometry"]["coordinates"] == [[-90.0, 25.0], [-97.0, 28.0], [-98.0, 30.0]]
-    assert f["properties"]["label"] == "Alpha 2017"
-    assert f["properties"]["max_wmo_wind_kt_in_texas"] == 115
-    assert f["properties"]["first_texas_point"] == "2017-08-25T00:00:00"
-    assert f["properties"]["points"] == 3
+    storms = tracks.storm_records(rows)
+    assert [s["sid"] for s in storms] == ["A"]
+    a = storms[0]
+    assert a["label"] == "Alpha 2017" and a["season"] == 2017
+    assert [p[:2] for p in a["points"]] == [[-90.0, 25.0], [-97.0, 28.0], [-98.0, 30.0]]
+    assert a["max_wind_kt"] == 115 and a["max_wind_kt_in_texas"] == 115
+    assert a["max_category"] == 4 and a["wind_source"] == "usa+wmo"
+    assert (
+        a["first_texas_point"] == "2017-08-25T00:00" and a["last_texas_point"] == "2017-08-26T00:00"
+    )
+    assert a["points"][2][2] == 40.0  # US wind filled the gap
 
 
 def test_coops_feature_orders_published_levels_by_return_period() -> None:
