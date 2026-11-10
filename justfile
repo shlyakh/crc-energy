@@ -31,12 +31,16 @@ data:
 verify:
     uv run python -m crc_lab.explorer.build --verify
 
+# Sources track: IBTrACS tracks, CO-OPS water-level stations, GHCNh station curves (network, ~10 min)
+sources:
+    uv run python -m crc_lab.explorer.sources --verify
+
 # Check that the static site is complete: every registry layer has its files
 site:
     uv run python -m crc_lab.explorer.check_site
 
-# Everything: data, then site
-all: data site
+# Everything: data, sources, then site
+all: data sources site
 
 # Serve the site locally (http://127.0.0.1:8000)
 serve:

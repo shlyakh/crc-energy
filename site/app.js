@@ -71,6 +71,9 @@ async function loadFile(hazard, horizon) {
   return state.files.get(key);
 }
 
+// A layer may carry its own horizons (sources track: ERA5 baseline has one window centre).
+const horizonsOf = (layer) => (layer && layer.horizons) || state.manifest.horizons;
+
 // ---------- UI build ----------
 function buildSelectors() {
   const { catalog, registry } = state;
@@ -87,7 +90,7 @@ function buildSelectors() {
   sel.value = state.hazard;
 
   const hz = $("horizon"); hz.innerHTML = "";
-  for (const y of state.manifest.horizons) hz.append(new Option(String(y), y));
+  for (const y of horizonsOf(layerById(state.hazard))) hz.append(new Option(String(y), y));
   hz.value = state.horizon;
   const rp = $("rp"); rp.innerHTML = "";
   for (const t of state.manifest.return_periods) rp.append(new Option(`1 in ${t} years`, t));
@@ -112,17 +115,24 @@ function buildSelectors() {
 function buildCaveats(payload) {
   const { catalog, manifest } = state; const layer = layerById(state.hazard);
   const res = payload.h3_resolution; const km2 = res === 5 ? "about 253 km²" : res === 7 ? "about 5.2 km²" : `resolution ${res}`;
-  const items = [
+  const crcOpen = layer.source === "CRC Open";
+  const items = crcOpen ? [
     `<b>High-emissions case (SSP5-8.5), not a forecast.</b> One pathway, pooled model ensemble, no historical baseline in the release.`,
     `<b>Regional screening.</b> Each cell is ${km2} (H3 resolution ${res}); a value is the curve for the whole cell, not any site in it.`,
     `<b>Source:</b> CRC Open release <code>${catalog.release}</code>, licence ${catalog.licence} (non-commercial, with attribution). Attribution: ${catalog.attribution}.`,
     `<b>Curve:</b> ${payload.value_semantics}; probability semantics ${payload.probability_semantics || "unspecified"}; return periods read on the ${payload.tail} tail (1 in T years = non-exceedance ${payload.tail === "upper" ? "1 − 1/T" : "1/T"}).`,
     `<b>Cells:</b> every resolution-${res} cell that intersects the Texas boundary (${manifest.texas.cells[res]} cells); cells with no curve in the release are not drawn.`,
+  ] : [
+    `<b>${layer.title}.</b> ${layer.caveat || ""}`,
+    `<b>Source:</b> ${layer.source}; licence ${layer.licence}.`,
+    `<b>Curve:</b> ${payload.value_semantics}; probability semantics ${payload.probability_semantics || "unspecified"}; return periods read on the ${payload.tail} tail.`,
+    `<b>Cells:</b> ${payload.cells.length} cells at H3 resolution ${res} inside the Texas box (land only).`,
   ];
-  const note = catalog.hazards[state.hazard].notes; if (note) items.push(`<b>Release note for ${state.hazard}:</b> ${note}`);
+  const note = crcOpen && catalog.hazards[state.hazard] ? catalog.hazards[state.hazard].notes : null; if (note) items.push(`<b>Release note for ${state.hazard}:</b> ${note}`);
   const build = manifest.hazards.find((h) => h.hazard === state.hazard);
   if (build && build.outside_tabulated_support) items.push(`<b>Tabulated curves:</b> ${build.kinds.tabulated || 0} cells per horizon carry only a few knots near the rare end; return periods outside those knots show as no value (${build.outside_tabulated_support} values across horizons).`);
   if (build && build.warnings.length) for (const w of build.warnings) items.push(`<b>crc-sdk warning:</b> ${w}`);
+  for (const l of state.registry.layers) if ((l.kind === "points" || l.kind === "lines") && state.layersOn.get(l.id) === true) items.push(`<b>${l.title}:</b> ${l.caveat || ""} Source: ${l.source}; licence ${l.licence}.`);
   items.push(`<b>Built</b> ${manifest.built_at} with crc-sdk ${manifest.versions["crc-sdk"]}, crc-framework ${manifest.versions["crc-framework"]}. Displayed unit: ${unitOf(layer, payload)}${layer.display ? ` (source ${payload.unit})` : ""}.`);
   $("caveats").innerHTML = items.map((t) => `<li>${t}</li>`).join("");
 }
@@ -138,7 +148,12 @@ function initMap() {
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   const overlay = new MapboxOverlay({
     interleaved: false, layers: [],
-    getTooltip: (info) => info.object !== undefined && info.layer && info.layer.id === "cells" ? tooltip(info.index) : null,
+    getTooltip: (info) => {
+      if (info.object === undefined || !info.layer) return null;
+      if (info.layer.id === "cells") return tooltip(info.index);
+      if (info.layer.id.startsWith("geo:")) return geoTooltip(layerById(info.layer.id.slice(4)), info.object);
+      return null;
+    },
   });
   map.addControl(overlay);
   state.map = map; state.overlay = overlay;
@@ -183,6 +198,14 @@ async function render() {
   if (state.layersOn.get("texas") !== false) layers.push(new GeoJsonLayer({
     id: "texas", data: state.texas, stroked: true, filled: false, getLineColor: layerById("texas").style.line, lineWidthMinPixels: layerById("texas").style.width, pickable: false,
   }));
+  // sources track: generic GeoJSON layers (kind "points" or "lines"), loaded only when switched on
+  for (const l of state.registry.layers) {
+    if ((l.kind === "points" || l.kind === "lines") && state.layersOn.get(l.id) === true) {
+      try { layers.push(geoLayer(l, await loadGeo(l))); }
+      catch (e) { $("status").textContent = `Could not load ${l.id}: ${e.message}`; }
+    }
+  }
+  if (token !== rendering) return;
   state.overlay.setProps({ layers });
   // legend
   $("legend-title").textContent = `${layer.title}, ${state.horizon}, 1 in ${state.rp} years`;
@@ -200,6 +223,46 @@ async function render() {
     $("status").textContent = `${payload.cells.length} cells · ${(fetched - started).toFixed(0)} ms load, ${total.toFixed(0)} ms to view`;
     document.body.dataset.ready = "1"; document.body.dataset.ms = total.toFixed(0);
   });
+}
+
+// ---------- sources track: GeoJSON layers (points, lines) ----------
+async function loadGeo(l) {
+  const key = `geo:${l.id}`;
+  if (!state.files.has(key)) state.files.set(key, await fetchJSON(l.file));
+  return state.files.get(key);
+}
+function geoLayer(l, data) {
+  const s = l.style || {};
+  return new GeoJsonLayer({
+    id: `geo:${l.id}`, data, pickable: true, autoHighlight: true,
+    pointType: "circle", pointRadiusUnits: "pixels", getPointRadius: s.radius || 5,
+    getFillColor: s.fill || [42, 120, 214, 200], getLineColor: s.line || [255, 255, 255, 220],
+    lineWidthUnits: "pixels", getLineWidth: s.width || 1, lineWidthMinPixels: s.width || 1,
+    stroked: true, filled: true,
+    onClick: (info) => { showFeature(l, info.object); return true; },
+  });
+}
+function geoTooltip(l, feature) {
+  const p = feature.properties || {};
+  return { text: p.label ? `${p.label}\n${l.title}` : l.title };
+}
+function showFeature(l, feature) {
+  const p = feature.properties || {}; state.selected = null;
+  $("detail").classList.remove("hidden");
+  $("detail-title").textContent = p.label ? `${p.label}` : l.title;
+  const skip = new Set(["curve", "label"]);
+  const meta = [["Layer", l.title], ["Source", l.source]];
+  for (const [k, v] of Object.entries(p)) if (!skip.has(k) && v !== null && typeof v !== "object") meta.push([k.replaceAll("_", " "), String(v)]);
+  $("detail-meta").innerHTML = meta.map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join("");
+  $("detail-params").innerHTML = "";
+  const c = p.curve;
+  if (c && Array.isArray(c.return_periods) && Array.isArray(c.values)) {
+    $("detail-table").innerHTML = `<tr><th>Return period</th><th class="num">${c.unit || ""}</th></tr>` + c.return_periods.map((t, i) => `<tr><td>1 in ${t} years</td><td class="num">${fmt(c.values[i])}</td></tr>`).join("");
+    drawCurve(c.return_periods, c.values, c.unit || "", ramp(l.style && l.style.hue !== undefined ? l.style : { hue: 250, chroma: 0.14 }));
+    if (c.note) $("detail-params").innerHTML = `<b>Curve</b><span>${c.note}</span>`;
+  } else {
+    $("detail-table").innerHTML = ""; $("chart").innerHTML = "";
+  }
 }
 
 // ---------- detail panel: curve on click ----------
@@ -232,7 +295,8 @@ function drawCurve(rps, vals, unit, stops) {
   const ticks = 4; const yt = Array.from({ length: ticks + 1 }, (_, k) => vmin + ((vmax - vmin) * k) / ticks);
   const svg = [`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Value against return period">`];
   svg.push(`<g class="axis">`, ...yt.map((v) => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}"/><text x="${m.l - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`));
-  svg.push(...rps.map((t) => `<text x="${x(t)}" y="${H - m.b + 16}" text-anchor="middle">${t}</text>`), `<text x="${(m.l + W - m.r) / 2}" y="${H - 4}" text-anchor="middle">return period, years (log scale)</text>`, `<text x="${m.l - 6}" y="${m.t - 10}" text-anchor="end">${unit}</text>`, `</g>`);
+  const every = Math.ceil(rps.length / 9); // at most nine tick labels (published tables can hold 20+)
+  svg.push(...rps.filter((_, i) => i % every === 0 || i === rps.length - 1).map((t) => `<text x="${x(t)}" y="${H - m.b + 16}" text-anchor="middle">${t}</text>`), `<text x="${(m.l + W - m.r) / 2}" y="${H - 4}" text-anchor="middle">return period, years (log scale)</text>`, `<text x="4" y="${m.t - 10}" text-anchor="start">${unit}</text>`, `</g>`);
   svg.push(`<polyline class="curve" stroke="${line}" points="${pts.map((d) => `${x(d.t)},${y(d.v)}`).join(" ")}"/>`);
   svg.push(...pts.map((d) => `<circle class="dot" cx="${x(d.t)}" cy="${y(d.v)}" r="${d.t === state.rp ? 6 : 4}" fill="${line}" data-i="${d.i}"/>`));
   svg.push(`<g id="hover" style="display:none"><line class="cross" y1="${m.t}" y2="${H - m.b}"/><rect fill="#fff" stroke="#d9d7d2" rx="4"/><text class="tip"></text></g>`);
@@ -276,7 +340,11 @@ async function main() {
   for (const l of registry.layers) state.layersOn.set(l.id, l.on !== false);
   $("release").innerHTML = `CRC Open <code>${catalog.release}</code> · crc-sdk ${manifest.versions["crc-sdk"]} · built ${manifest.built_at.slice(0, 10)}<br>${catalog.licence} · high-emissions case SSP5-8.5, not a forecast`;
   buildSelectors(); buildCatalog();
-  $("hazard").onchange = (e) => { state.hazard = e.target.value; state.selected = null; render(); };
+  $("hazard").onchange = (e) => {
+    state.hazard = e.target.value; state.selected = null;
+    const horizons = horizonsOf(layerById(state.hazard)); if (!horizons.includes(state.horizon)) state.horizon = horizons[0];
+    render();
+  };
   $("horizon").onchange = (e) => { state.horizon = Number(e.target.value); render(); };
   $("rp").onchange = (e) => { state.rp = Number(e.target.value); render(); };
   $("lock").onchange = (e) => { state.locked = e.target.checked; if (!state.locked) render(); };
@@ -288,9 +356,11 @@ async function main() {
   };
   $("status").textContent = "Loading the base map…";
   await initMap();
+  // test hook (tools/smoke.mjs): fly the map somewhere without animation
+  document.addEventListener("crc:flyTo", (e) => state.map.jumpTo({ center: e.detail.center, zoom: e.detail.zoom }));
   $("status").textContent = "Loading hazard cells…";
   await render();
   // warm the other horizons of the current hazard so switching is instant
-  for (const y of manifest.horizons) if (y !== state.horizon) loadFile(state.hazard, y).catch(() => {});
+  for (const y of horizonsOf(layerById(state.hazard))) if (y !== state.horizon) loadFile(state.hazard, y).catch(() => {});
 }
 main().catch((e) => { $("status").textContent = `Failed to start: ${e.message}`; document.body.dataset.error = e.message; console.error(e); });

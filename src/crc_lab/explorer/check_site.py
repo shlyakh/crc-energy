@@ -27,7 +27,7 @@ def main(site: Path = Path("site")) -> int:
             missing.append(name)
     for layer in registry["layers"]:
         if layer["kind"] == "h3-cells":
-            for horizon in manifest["horizons"]:
+            for horizon in layer.get("horizons", manifest["horizons"]):
                 path = layer["file"].replace("{horizon}", str(horizon))
                 if not (site / path).exists():
                     missing.append(path)
