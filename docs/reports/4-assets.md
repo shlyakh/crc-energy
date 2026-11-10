@@ -80,6 +80,22 @@ larger target. Median annual chance of hail of 2 inches or more rose from 0.38% 
 asset table. The footprint stays a placeholder, now bracketed by published sizes: see
 [../plan-hail-exposure.md](../plan-hail-exposure.md), which also plans the reporting-bias correction and radar.
 
+## Update, 2026-11-10 evening: EIA plant list, neighbouring states, bias correction, radar
+
+The tables above describe the first build (187 plants). The current build differs:
+
+- **Plants:** EIA's list, 250 plants, 34,779 MW AC, $45.2 billion; polygons for 185. See
+  [../decisions.md](../decisions.md) section 1 for what the first list missed.
+- **Reports:** hail reports from Oklahoma, New Mexico, Arkansas and Louisiana are counted; circles are clipped
+  only at Mexico and the Gulf.
+- **Bias correction:** every plant has corrected chances beside the uncorrected ones
+  ([5-reporting-bias.md](5-reporting-bias.md)). Median annual chance of hail of 2 inches or more: 0.73%
+  uncorrected, 2.16% corrected. Fighting Jays: 0.37% and 0.71%.
+- **Radar:** five years of radar hail size at every plant ([4-radar-hail.md](4-radar-hail.md)). At the median
+  plant radar gives 2.7 times the uncorrected report-based figure and 0.9 times the corrected one.
+
+The whole chain is described in [../hail-data-processing.md](../hail-data-processing.md).
+
 ## For review
 
 - Is 25 km² a reasonable placeholder footprint, or do you have a better figure? It scales every annual chance.

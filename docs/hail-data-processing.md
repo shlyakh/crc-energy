@@ -137,7 +137,7 @@ Hail days per year in each of the 2,566 Texas cells:
 | Storm reports, 1 inch or more | 1996–2025 | 0.17 | 0.00–0.63 |
 | Storm reports, bias-corrected | 1996–2025 | 0.72 | 0.00–2.63 |
 | Radar hail size, 30 mm or more | 2020–2025 | 1.73 | 0.58–2.97 |
-| Radar hail signatures, 1.25 inches or more | 1996–2025 | 3.10 | 1.39–4.74 |
+| Radar hail signatures, 1.25 inches or more | 1995–2025 (sizes from August 1996; averaged over 31 years) | 3.10 | 1.39–4.74 |
 
 They do not measure the same thing: a report is hail someone saw; a radar hail day is a 253 km² cell in which
 the radar estimate reached the threshold anywhere. That is why radar counts are higher per cell, while at a
