@@ -164,8 +164,10 @@ stops at hazard return levels at each asset; damage and loss numbers follow once
 
 - Storm Events magnitude-type codes; exact pre-1996 coverage.
 - National Structure Inventory access and licence.
-- deck.gl and MapLibre version compatibility; Martin's DuckDB backend maturity.
-- The cell count for Texas is an area estimate.
+- Martin's DuckDB backend maturity (not needed in version 1).
+- Verified in Phase 1 (2026-11-10): deck.gl 9.4.0 with MapLibre 6.16.0 and h3-js 4.5.0 work together; Texas has
+  2,566 resolution-5 cells intersecting the state polygon (118,482 at resolution 7, of which 16,892 carry river
+  flood curves).
 
 ## Appendix: all hazards in CRC Open
 

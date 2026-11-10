@@ -1,8 +1,8 @@
 # Agent guide — crc-lab
 
 Current work: a data explorer for Climate Risk Commons (CRC) data, Texas, with eight CRC Open hazards
-(Phase 1). Deferred until that is reviewed: a NOAA Storm Events source, hail and thunderstorm-gust curves,
-and two asset sets (solar farms, real estate).
+(Phase 1, built 2026-11-10, awaiting review). Deferred until that is reviewed: a NOAA Storm Events source,
+hail and thunderstorm-gust curves, and two asset sets (solar farms, real estate).
 
 Read first:
 
@@ -37,9 +37,17 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 ## Layout
 
 - `docs/` — requirements, plan, reports (one per phase), primers, explainers, archive
-- `src/crc_lab/` — package
-- `tests/` — pytest; `test_pins.py` guards the pins
-- `justfile` — `just setup`, `just test`, `just lint`; data and site targets arrive with Phase 1
+- `src/crc_lab/explorer/` — data build: `texas.py` (boundary, cells), `catalog.py` (E1), `hazards.py`
+  (per-hazard files, `for_assets` check), `build.py` (`python -m crc_lab.explorer.build`), `check_site.py`
+- `site/` — the static explorer: `index.html`, `app.js`, `style.css`, `layers.json` (E9 registry),
+  `sources.json` (E2, hand-written); `site/data/` is generated and git-ignored
+- `tests/` — pytest, offline; `test_pins.py` guards the pins, `test_explorer.py` the build helpers
+- `justfile` — `just data`, `just verify`, `just site`, `just all`, `just serve`, `just up`, `just test`, `just lint`
+- `Dockerfile`, `Caddyfile`, `compose.yaml` — one container serving `site/` (E8); `.github/workflows/pages.yml`
+
+Explorer conventions: curves are evaluated in Python at return periods 2–500 years and shipped as values
+plus raw parameters; the page never re-implements a curve. Texas cells are those intersecting the state
+polygon. Browser libraries are pinned by URL in `index.html` (h3-js before deck.gl; MapLibre as ESM).
 
 ## Checks
 

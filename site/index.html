@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRC Open explorer · Texas</title>
+<meta name="description" content="Texas map of Climate Risk Commons (CRC Open) hazard curves on H3 cells, with the full catalogue of the release.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.css">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<!-- No build step. deck.gl's standalone bundle exposes the global `deck` and expects h3-js as the global `h3`
+     (its H3HexagonLayer calls it); load h3-js first. Pinned 2026-11-10: h3-js 4.5.0, deck.gl 9.4.0, maplibre-gl 6.16.0. -->
+<script src="https://cdn.jsdelivr.net/npm/h3-js@4.5.0/dist/h3-js.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.4.0/dist.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>CRC Open explorer <span class="where">Texas</span></h1>
+  <nav>
+    <button class="tab on" data-view="map">Map</button>
+    <button class="tab" data-view="catalog">Catalogue</button>
+  </nav>
+  <div id="release" class="release"></div>
+</header>
+
+<main id="view-map" class="view on">
+  <aside id="controls">
+    <label>Hazard
+      <select id="hazard"></select>
+    </label>
+    <div class="row">
+      <label>Horizon <select id="horizon"></select></label>
+      <label>Return period <select id="rp"></select></label>
+    </div>
+    <section class="legend">
+      <div class="legend-head"><span id="legend-title"></span><span id="legend-unit" class="mute"></span></div>
+      <div id="legend-bar"></div>
+      <div class="legend-ends"><span id="legend-min"></span><span id="legend-max"></span></div>
+      <label class="check"><input type="checkbox" id="lock"> Keep this colour scale when switching</label>
+      <div id="legend-note" class="mute"></div>
+    </section>
+    <section>
+      <h2>Layers</h2>
+      <div id="layers"></div>
+    </section>
+    <section class="caveats">
+      <h2>Read this first</h2>
+      <ul id="caveats"></ul>
+    </section>
+    <div id="status" class="mute"></div>
+  </aside>
+  <div id="map"></div>
+  <aside id="detail" class="hidden">
+    <button id="detail-close" title="Close">×</button>
+    <h2 id="detail-title"></h2>
+    <div id="detail-meta" class="meta"></div>
+    <div id="chart"></div>
+    <table id="detail-table"></table>
+    <div id="detail-params" class="meta"></div>
+    <p class="mute small">Regional screening: a cell is an average, not a site. Values are the curve crc-sdk
+      evaluated at these return periods during the data build; the page draws them and interpolates between.</p>
+  </aside>
+</main>
+
+<main id="view-catalog" class="view">
+  <section>
+    <h2>Every hazard in the release</h2>
+    <p id="catalog-intro" class="mute"></p>
+    <input id="catalog-filter" type="search" placeholder="Filter hazards…">
+    <table id="catalog-table"></table>
+  </section>
+  <section>
+    <h2>Other sources crc-sdk reaches</h2>
+    <p class="mute">From the crc-sdk 0.11.1 documentation. None of these are loaded in the explorer yet.</p>
+    <table id="sources-table"></table>
+  </section>
+  <section>
+    <h2>Not in CRC Open</h2>
+    <ul id="not-in-crc"></ul>
+  </section>
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

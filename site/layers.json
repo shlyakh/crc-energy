@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "about": "E9 layer registry. Adding a layer is an entry here, not code. kind: h3-cells (file per horizon from the data build), geojson (static outline), pmtiles-points (later phases).",
+  "basemap": {
+    "style": "https://tiles.openfreemap.org/styles/positron",
+    "attribution": "Basemap © OpenFreeMap, © OpenMapTiles, data © OpenStreetMap contributors"
+  },
+  "defaults": { "hazard": "tx_max", "horizon": 2050, "return_period": 100 },
+  "layers": [
+    {
+      "id": "texas",
+      "kind": "geojson",
+      "title": "Texas boundary",
+      "file": "data/texas.geojson",
+      "source": "U.S. Census Bureau, TIGER/Line cartographic boundary cb_2024_us_state_500k",
+      "licence": "Public domain (U.S. government work)",
+      "style": { "line": [42, 42, 40, 255], "width": 1.5 },
+      "on": true
+    },
+    {
+      "id": "tx_max",
+      "kind": "h3-cells",
+      "title": "Hottest day of the year",
+      "file": "data/hazards/tx_max/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "display": { "unit": "°C", "offset": -273.15 },
+      "style": { "hue": 30, "chroma": 0.16 },
+      "on": true
+    },
+    {
+      "id": "tn_min",
+      "kind": "h3-cells",
+      "title": "Coldest night of the year",
+      "file": "data/hazards/tn_min/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "display": { "unit": "°C", "offset": -273.15 },
+      "style": { "hue": 265, "chroma": 0.14 },
+      "on": true
+    },
+    {
+      "id": "rx1day",
+      "kind": "h3-cells",
+      "title": "Wettest day of the year",
+      "file": "data/hazards/rx1day/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": { "hue": 235, "chroma": 0.14 },
+      "on": true
+    },
+    {
+      "id": "rflood",
+      "kind": "h3-cells",
+      "title": "River flood depth",
+      "file": "data/hazards/rflood/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": { "hue": 215, "chroma": 0.13 },
+      "on": true
+    },
+    {
+      "id": "wind_max_daily_max",
+      "kind": "h3-cells",
+      "title": "Strongest daily wind",
+      "file": "data/hazards/wind_max_daily_max/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": { "hue": 300, "chroma": 0.13 },
+      "on": true
+    },
+    {
+      "id": "fwi",
+      "kind": "h3-cells",
+      "title": "Fire weather index, annual maximum",
+      "file": "data/hazards/fwi/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": { "hue": 15, "chroma": 0.16 },
+      "on": true
+    },
+    {
+      "id": "spei",
+      "kind": "h3-cells",
+      "title": "Drought index (SPEI)",
+      "file": "data/hazards/spei/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": { "hue": 150, "chroma": 0.12 },
+      "on": true
+    },
+    {
+      "id": "hot_days",
+      "kind": "h3-cells",
+      "title": "Hot days per year",
+      "file": "data/hazards/hot_days/{horizon}.json",
+      "source": "CRC Open",
+      "licence": "CC BY-NC 4.0",
+      "style": { "hue": 45, "chroma": 0.15 },
+      "on": true
+    }
+  ],
+  "planned": [
+    { "id": "hail", "title": "Hail size", "status": "planned (Phase 3): curves from NOAA Storm Events" },
+    { "id": "gust", "title": "Thunderstorm gust", "status": "planned (Phase 3): curves from NOAA Storm Events" },
+    { "id": "storm_events", "title": "Storm Events (points)", "status": "planned (Phase 2): NOAA Storm Events as PMTiles" },
+    { "id": "solar_farms", "title": "Solar farms", "status": "planned (Phase 4): USGS / Berkeley Lab database" }
+  ]
+}

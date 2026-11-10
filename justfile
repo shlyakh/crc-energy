@@ -1,4 +1,4 @@
-# crc-lab task runner. `just` lists targets. G5: `just all` must rebuild every data file and the site.
+# crc-lab task runner. `just` lists targets. G5: `just all` rebuilds every data file and the site.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
@@ -23,13 +23,25 @@ fix:
     uv run ruff check --fix src tests
     uv run ruff format src tests
 
-# Rebuild every data file (targets arrive with Phase 1)
+# Rebuild every explorer data file from CRC Open and the Census boundary (needs the network)
 data:
-    @echo "no data targets yet (Phase 1)"
+    uv run python -m crc_lab.explorer.build
 
-# Rebuild the static site (targets arrive with Phase 1)
+# Same, then check shipped values against crc-sdk's for_assets at sampled cells
+verify:
+    uv run python -m crc_lab.explorer.build --verify
+
+# Check that the static site is complete: every registry layer has its files
 site:
-    @echo "no site targets yet (Phase 1)"
+    uv run python -m crc_lab.explorer.check_site
 
 # Everything: data, then site
 all: data site
+
+# Serve the site locally (http://127.0.0.1:8000)
+serve:
+    python3 -m http.server 8000 --bind 127.0.0.1 --directory site
+
+# Serve the site from one container (http://127.0.0.1:8080)
+up:
+    docker compose up --build

@@ -17,7 +17,7 @@ Status: **agreed 2026-11-10** · for a separate Claude Code effort · requiremen
 | Phase | Output | Requirements | Hours | Status |
 | --- | --- | --- | --- | --- |
 | 0 | Repo ready; open items from requirements section 10 checked | G1 | 3 | done, reviewed 2026-11-10 |
-| 1 | Explorer v1: catalogue page and Texas hazard map, eight CRC Open hazards | E1–E9 | 20–30 | in progress |
+| 1 | Explorer v1: catalogue page and Texas hazard map, eight CRC Open hazards | E1–E9 | 20–30 | built 2026-11-10, awaiting review |
 | 2 | Storm Events table and the two-source comparison | S1–S6 | 20–25 | deferred |
 | 3 | Hail and gust curves in CRC | C1–C6 | 10–15 | deferred |
 | 4 | Assets: solar farms; real-estate exploration | A1–A3 | 10–15 | deferred |
@@ -78,6 +78,8 @@ Conventions fixed in Phase 0:
 
 Done when: the page loads for Texas, all eight hazards switch within the time limit, a clicked cell shows a curve
 that matches `for_assets` at the cell centre, and the catalogue lists all hazards in the release.
+
+Report: [reports/1-explorer.md](reports/1-explorer.md).
 
 Decided: curve values at fixed return periods (and the parameters) are shipped to the browser; no API in
 version 1. The "matches `for_assets` at the cell centre" test compares the shipped values with a fresh

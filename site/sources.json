@@ -1,0 +1,27 @@
+{
+  "about": "E2: the other sources crc-sdk 0.11.1 reaches, from its docs/sources/*.md and docs/data-licences.md. Hand-written; update when the pin changes.",
+  "sources": [
+    { "name": "ERA5 reanalysis", "entry": "HazardDataset.era5(recipe)", "returns": "Annual extremes (txx, tnn, rx1day, rx5day) fitted to curves; the per-year samples behind them", "coverage": "Global, 1940 to the latest final month (0.25°) or 1959–2022 (1.5°)", "licence": "CC BY 4.0 (Copernicus)" },
+    { "name": "CMIP6 and NEX-GDDP-CMIP6", "entry": "HazardDataset.cmip6(...), .nex_gddp(...)", "returns": "The same four recipes from model projections, per model, scenario and member", "coverage": "Global, model grids", "licence": "Per modelling centre; NEX-GDDP is CC0 plus the model licence" },
+    { "name": "JRC EFAS and GloFAS river flood", "entry": "HazardDataset.efas(), .glofas()", "returns": "Flood depth curves from return-period rasters", "coverage": "Europe (EFAS), global (GloFAS)", "licence": "CC BY 4.0 (JRC)" },
+    { "name": "JRC EDO drought", "entry": "HazardDataset.edo(...)", "returns": "Drought indicator curves", "coverage": "Europe", "licence": "CC BY 4.0 (JRC)" },
+    { "name": "NOAA ISD and GHCNh stations", "entry": "HazardDataset.isd(...), .ghcnh(...)", "returns": "Curves at station points; no interpolation", "coverage": "Global station networks", "licence": "NOAA open data; GHCNh CC0" },
+    { "name": "ECCC IDF, daily climate, HYDAT", "entry": "HazardDataset.eccc_idf(...), ECCCDailyPlan, HYDATDailyPlan", "returns": "Design rainfall curves; daily observations; daily flow and level", "coverage": "Canada", "licence": "Open Government Licence – Canada" },
+    { "name": "USGS streamflow", "entry": "USGSStreamflowPlan", "returns": "Daily mean discharge (observations, not curves)", "coverage": "United States", "licence": "U.S. government work" },
+    { "name": "CHIRPS v3 monthly precipitation", "entry": "CHIRPSMonthlyPlan", "returns": "Pixel centres with monthly mm", "coverage": "60°S–60°N from 1981", "licence": "CC BY 4.0" },
+    { "name": "IBTrACS tropical cyclone tracks", "entry": "IBTrACSPlan", "returns": "Track points with source columns", "coverage": "Global basins", "licence": "U.S. government work" },
+    { "name": "NOAA CO-OPS water levels and sea level", "entry": "NOAAExtremeWaterLevelPlan, NOAASeaLevelPlan", "returns": "Annual exceedance levels; 2022 sea-level scenarios", "coverage": "U.S. tide stations", "licence": "U.S. government work" },
+    { "name": "USDA Cropland Data Layer, Fields of The World", "entry": "AgriculturalLayer.usda_cdl(), .ftw()", "returns": "Crop classes and field boundaries", "coverage": "United States (CDL); global (FTW)", "licence": "Public domain (CDL); per dataset (FTW)" },
+    { "name": "Your own tables, Zarr arrays, GeoTIFFs", "entry": "HazardDataset.from_table(...), from_zarr, from_raster", "returns": "Canonical curves fitted from your data (used for the hail and gust curves in Phase 3)", "coverage": "Whatever you bring", "licence": "Yours" }
+  ],
+  "not_in_crc": [
+    "Hail (planned here, Phase 3: curves from NOAA Storm Events)",
+    "Thunderstorm gust (planned here, Phase 3)",
+    "Lightning",
+    "Ice accretion",
+    "Wave height",
+    "Water temperature",
+    "Streamflow as a hazard curve (USGS daily values are observations only)",
+    "A historical baseline for CRC Open (all curves are SSP5-8.5 projections)"
+  ]
+}

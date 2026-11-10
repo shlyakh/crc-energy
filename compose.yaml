@@ -1,0 +1,7 @@
+# `docker compose up --build` then open http://127.0.0.1:8080 (E8).
+services:
+  explorer:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
