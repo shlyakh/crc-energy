@@ -25,6 +25,12 @@ jobs:
       - run: uv run python -m crc_lab.explorer.check_site
       # Keep the D0 explainers at their existing Pages URL (/explainers/...)
       - run: mkdir -p site/explainers && cp docs/explainers/*.html docs/explainers/README.md site/explainers/
+      # Preview of branch explorer-v2 at /v2/: a prebuilt static site kept on branch explorer-v2-site
+      - uses: actions/checkout@v4
+        with:
+          ref: explorer-v2-site
+          path: site/v2
+      - run: rm -rf site/v2/.git
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
