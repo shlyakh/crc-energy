@@ -31,12 +31,20 @@ data:
 verify:
     uv run python -m crc_lab.explorer.build --verify
 
+# NOAA Storm Events: snapshot (about 400 MB, cached), Texas event table, explorer layer
+storm-events:
+    uv run python -m crc_lab.storm_events.build
+
+# Same, plus the two-source comparison report (needs the Source Cooperative copy in the cache)
+storm-events-compare:
+    uv run python -m crc_lab.storm_events.build --compare
+
 # Check that the static site is complete: every registry layer has its files
 site:
     uv run python -m crc_lab.explorer.check_site
 
-# Everything: data, then site
-all: data site
+# Everything: all data, then site
+all: data storm-events site
 
 # Serve the site locally (http://127.0.0.1:8000)
 serve:

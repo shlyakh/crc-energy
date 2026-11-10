@@ -33,6 +33,8 @@ def main(site: Path = Path("site")) -> int:
                     missing.append(path)
         elif "file" in layer and not (site / layer["file"]).exists():
             missing.append(layer["file"])
+        if layer["kind"] == "points-binary" and not (site / layer["index"]).exists():
+            missing.append(layer["index"])
     for path in missing:
         print(f"missing: {path}")
     if not missing:

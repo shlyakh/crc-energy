@@ -162,7 +162,9 @@ stops at hazard return levels at each asset; damage and loss numbers follow once
 
 ## 10. Not yet verified
 
-- Storm Events magnitude-type codes; exact pre-1996 coverage.
+- Verified in Phase 2 (2026-11-10): magnitude-type codes are EG/MG (estimated/measured gust) and ES/MS
+  (sustained), from NCEI's bulk-format document; hail carries no type. Coverage: tornado only 1950–54; tornado,
+  thunderstorm wind and hail 1955–95; all types from 1996 (NCEI database details page, Earth Genome README).
 - National Structure Inventory access and licence.
 - Martin's DuckDB backend maturity (not needed in version 1).
 - Verified in Phase 1 (2026-11-10): deck.gl 9.4.0 with MapLibre 6.16.0 and h3-js 4.5.0 work together; Texas has

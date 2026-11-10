@@ -1,8 +1,9 @@
 # Agent guide — crc-lab
 
 Current work: a data explorer for Climate Risk Commons (CRC) data, Texas, with eight CRC Open hazards
-(Phase 1, built 2026-11-10, awaiting review). Deferred until that is reviewed: a NOAA Storm Events source,
-hail and thunderstorm-gust curves, and two asset sets (solar farms, real estate).
+(Phase 1) and NOAA Storm Events as a cleaned source on H3 cells (Phase 2); both built 2026-11-10, awaiting
+review. Deferred: hail and thunderstorm-gust curves (Phase 3), two asset sets (Phase 4). A separate sources
+track (branch `sources-track`, `docs/sources-track/`) scopes the other crc-sdk sources for the explorer.
 
 Read first:
 
@@ -39,10 +40,15 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - `docs/` — requirements, plan, reports (one per phase), primers, explainers, archive
 - `src/crc_lab/explorer/` — data build: `texas.py` (boundary, cells), `catalog.py` (E1), `hazards.py`
   (per-hazard files, `for_assets` check), `build.py` (`python -m crc_lab.explorer.build`), `check_site.py`
+- `src/crc_lab/storm_events/` — `plan.py` (S1 snapshot), `parse.py` (S2), `geometry.py` (S3 cells),
+  `table.py` (S4 event table + data card), `compare.py` (S5), `explorer_layer.py` (S6),
+  `build.py` (`python -m crc_lab.storm_events.build [--compare]`)
 - `site/` — the static explorer: `index.html`, `app.js`, `style.css`, `layers.json` (E9 registry),
   `sources.json` (E2, hand-written); `site/data/` is generated and git-ignored
-- `tests/` — pytest, offline; `test_pins.py` guards the pins, `test_explorer.py` the build helpers
-- `justfile` — `just data`, `just verify`, `just site`, `just all`, `just serve`, `just up`, `just test`, `just lint`
+- `tests/` — pytest, offline; `test_pins.py` guards the pins, `test_explorer.py` the build helpers,
+  `test_storm_events.py` the parser and cells on `tests/fixtures/` (a fixed 2024 sample)
+- `justfile` — `just data`, `just verify`, `just storm-events`, `just storm-events-compare`, `just site`,
+  `just all`, `just serve`, `just up`, `just test`, `just lint`
 - `Dockerfile`, `Caddyfile`, `compose.yaml` — one container serving `site/` (E8); `.github/workflows/pages.yml`
 
 Explorer conventions: curves are evaluated in Python at return periods 2–500 years and shipped as values

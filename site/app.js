@@ -1,7 +1,7 @@
 // CRC Open explorer, Texas. No build step: MapLibre (ESM) + deck.gl (UMD global `deck`).
 import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.mjs";
 
-const { MapboxOverlay, H3HexagonLayer, GeoJsonLayer } = globalThis.deck;
+const { MapboxOverlay, H3HexagonLayer, GeoJsonLayer, ScatterplotLayer } = globalThis.deck;
 const $ = (id) => document.getElementById(id);
 
 const state = {
@@ -12,6 +12,8 @@ const state = {
   layersOn: new Map(),       // layer id -> boolean
   selected: null,            // { hazard, horizon, index }
   map: null, overlay: null, texas: null,
+  events: null,              // decoded points-binary layer { index, lon, lat, year, type, mag, id, dmg }
+  eventsFilter: { from: null, to: null, types: null },
 };
 
 // ---------- colour: one hue, light -> dark, built in OKLCH; fallback blue ramp ----------
@@ -98,7 +100,7 @@ function buildSelectors() {
     if (l.kind === "h3-cells" && l.id !== state.hazard) continue; // one hazard layer at a time
     const lab = document.createElement("label");
     const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = state.layersOn.get(l.id) !== false;
-    cb.onchange = () => { state.layersOn.set(l.id, cb.checked); render(); };
+    cb.onchange = () => { state.layersOn.set(l.id, cb.checked); if (l.kind === "points-binary") toggleEventsControls(l); render(); };
     lab.append(cb, document.createTextNode(l.title), Object.assign(document.createElement("span"), { className: "mute", textContent: l.source }));
     box.append(lab);
   }
@@ -123,6 +125,12 @@ function buildCaveats(payload) {
   const build = manifest.hazards.find((h) => h.hazard === state.hazard);
   if (build && build.outside_tabulated_support) items.push(`<b>Tabulated curves:</b> ${build.kinds.tabulated || 0} cells per horizon carry only a few knots near the rare end; return periods outside those knots show as no value (${build.outside_tabulated_support} values across horizons).`);
   if (build && build.warnings.length) for (const w of build.warnings) items.push(`<b>crc-sdk warning:</b> ${w}`);
+  for (const l of state.registry.layers) {
+    if (l.kind === "points-binary" && state.layersOn.get(l.id) !== false && state.events) {
+      const ix = state.events.index;
+      items.push(`<b>${l.title}:</b> ${ix.source}; ${ix.licence}. Retrieved ${(ix.retrieved_at || "").slice(0, 10)}. ${ix.known_biases.slice(0, 3).join(" ")}`);
+    }
+  }
   items.push(`<b>Built</b> ${manifest.built_at} with crc-sdk ${manifest.versions["crc-sdk"]}, crc-framework ${manifest.versions["crc-framework"]}. Displayed unit: ${unitOf(layer, payload)}${layer.display ? ` (source ${payload.unit})` : ""}.`);
   $("caveats").innerHTML = items.map((t) => `<li>${t}</li>`).join("");
 }
@@ -138,7 +146,12 @@ function initMap() {
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   const overlay = new MapboxOverlay({
     interleaved: false, layers: [],
-    getTooltip: (info) => info.object !== undefined && info.layer && info.layer.id === "cells" ? tooltip(info.index) : null,
+    getTooltip: (info) => {
+      if (info.object === undefined || !info.layer) return null;
+      if (info.layer.id === "cells") return tooltip(info.index);
+      if (info.layer.id === "events" && state.events) { const ev = state.events; const i = info.object; const t = ev.index.types[ev.type[i]]; const m = Number.isNaN(ev.mag[i]) ? "" : ` · ${ev.mag[i]} ${ev.index.magnitude_units[t] || ""}`; return { text: `${t}, ${ev.year[i]}${m}` }; }
+      return null;
+    },
   });
   map.addControl(overlay);
   state.map = map; state.overlay = overlay;
@@ -180,6 +193,13 @@ async function render() {
     updateTriggers: { getFillColor: [state.hazard, state.horizon, state.rp, lo, hi], getHexagon: [state.hazard, state.horizon] },
     onClick: (info) => { showDetail(info.index); return true; },
   }));
+  for (const l of state.registry.layers) {
+    if (l.kind !== "points-binary" || state.layersOn.get(l.id) === false) continue;
+    try { await loadEvents(l); } catch (e) { $("events-status").textContent = `Could not load ${l.title}: ${e.message}`; continue; }
+    if (token !== rendering) return;
+    toggleEventsControls(l);
+    layers.push(eventsLayer(l));
+  }
   if (state.layersOn.get("texas") !== false) layers.push(new GeoJsonLayer({
     id: "texas", data: state.texas, stroked: true, filled: false, getLineColor: layerById("texas").style.line, lineWidthMinPixels: layerById("texas").style.width, pickable: false,
   }));
@@ -200,6 +220,84 @@ async function render() {
     $("status").textContent = `${payload.cells.length} cells · ${(fetched - started).toFixed(0)} ms load, ${total.toFixed(0)} ms to view`;
     document.body.dataset.ready = "1"; document.body.dataset.ms = total.toFixed(0);
   });
+}
+
+// ---------- points-binary layer (Storm Events) ----------
+async function loadEvents(layer) {
+  if (state.events) return state.events;
+  const [index, buffer] = await Promise.all([fetchJSON(layer.index), fetch(layer.file).then((r) => { if (!r.ok) throw new Error(`${layer.file}: ${r.status}`); return r.arrayBuffer(); })]);
+  const n = Math.floor(buffer.byteLength / index.record_bytes); const view = new DataView(buffer);
+  const lon = new Float32Array(n), lat = new Float32Array(n), mag = new Float32Array(n), dmg = new Float32Array(n);
+  const year = new Uint16Array(n), type = new Uint8Array(n), id = new Uint32Array(n);
+  const off = Object.fromEntries(index.fields.map((f) => [f.name, f.offset])); const rb = index.record_bytes;
+  for (let i = 0; i < n; i++) {
+    const b = i * rb;
+    lon[i] = view.getFloat32(b + off.lon, true); lat[i] = view.getFloat32(b + off.lat, true);
+    year[i] = view.getUint16(b + off.year, true); type[i] = view.getUint8(b + off.type);
+    mag[i] = view.getFloat32(b + off.magnitude, true); id[i] = view.getUint32(b + off.event_id, true);
+    dmg[i] = view.getFloat32(b + off.damage_usd, true);
+  }
+  state.events = { index, n, lon, lat, year, type, mag, id, dmg };
+  if (state.eventsFilter.from === null) {
+    state.eventsFilter.from = index.years[0]; state.eventsFilter.to = index.years[1];
+    state.eventsFilter.types = new Set((layer.default_types || index.types).filter((t) => index.types.includes(t)));
+  }
+  return state.events;
+}
+
+function eventColor(layer, typeName) { return layer.style.colors[typeName] || layer.style.other; }
+
+function toggleEventsControls(layer) {
+  const box = $("events-controls"); const on = state.layersOn.get(layer.id) !== false;
+  box.classList.toggle("hidden", !on);
+  if (!on || !state.events) return;
+  const { index } = state.events; const f = state.eventsFilter;
+  $("events-from").value = f.from; $("events-to").value = f.to;
+  $("events-from").min = index.years[0]; $("events-to").max = index.years[1];
+  $("events-from").onchange = (e) => { f.from = Number(e.target.value); render(); };
+  $("events-to").onchange = (e) => { f.to = Number(e.target.value); render(); };
+  const types = $("events-types"); types.innerHTML = "";
+  const order = [...index.types].sort((a, b) => (index.counts[b] || 0) - (index.counts[a] || 0));
+  for (const t of order) {
+    const lab = document.createElement("label"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = f.types.has(t);
+    cb.onchange = () => { if (cb.checked) f.types.add(t); else f.types.delete(t); render(); };
+    const sw = document.createElement("span"); sw.className = "swatch"; sw.style.background = `rgb(${eventColor(layer, t).join(",")})`;
+    lab.append(cb, sw, document.createTextNode(t), Object.assign(document.createElement("span"), { className: "mute", textContent: (index.counts[t] || 0).toLocaleString() }));
+    types.append(lab);
+  }
+}
+
+function eventsLayer(layer) {
+  const ev = state.events; const f = state.eventsFilter; const { index } = ev;
+  const typeOn = new Uint8Array(index.types.length); index.types.forEach((t, i) => { typeOn[i] = f.types.has(t) ? 1 : 0; });
+  const keep = []; for (let i = 0; i < ev.n; i++) if (typeOn[ev.type[i]] && ev.year[i] >= f.from && ev.year[i] <= f.to) keep.push(i);
+  $("events-status").textContent = `${keep.length.toLocaleString()} of ${ev.n.toLocaleString()} located events shown (${f.from}–${f.to}). ${index.events_without_point.toLocaleString()} county/zone events have no point and are not drawn.`;
+  const colors = index.types.map((t) => eventColor(layer, t));
+  return new ScatterplotLayer({
+    id: "events", data: keep, pickable: true, radiusUnits: "pixels", getRadius: 3, radiusMinPixels: 2, radiusMaxPixels: 6,
+    stroked: true, lineWidthMinPixels: 1, getLineColor: [255, 255, 255, 160], opacity: 0.85,
+    getPosition: (i) => [ev.lon[i], ev.lat[i]], getFillColor: (i) => colors[ev.type[i]],
+    updateTriggers: { getFillColor: [layer.id] },
+    onClick: (info) => { showEvent(layer, info.object); return true; },
+  });
+}
+
+function showEvent(layer, i) {
+  const ev = state.events; const { index } = ev; const t = index.types[ev.type[i]];
+  const unit = index.magnitude_units[t]; const mag = Number.isNaN(ev.mag[i]) ? null : ev.mag[i]; const dmg = Number.isNaN(ev.dmg[i]) ? null : ev.dmg[i];
+  state.selected = null;
+  $("detail").classList.remove("hidden");
+  $("detail-title").textContent = `${t}, ${ev.year[i]}`;
+  const url = layer.detail_url ? layer.detail_url.replace("{event_id}", ev.id[i]) : null;
+  $("detail-meta").innerHTML = [
+    ["Event", url ? `<a href="${url}" target="_blank" rel="noopener">${ev.id[i]} at NCEI</a>` : ev.id[i]],
+    ["Location", `${ev.lat[i].toFixed(3)}°N, ${(-ev.lon[i]).toFixed(3)}°W (first point)`],
+    ["Magnitude", mag === null ? "–" : `${mag} ${unit || ""}${t === "Hail" ? ` (${(mag * 25.4).toFixed(0)} mm)` : t === "Thunderstorm Wind" ? ` (${(mag * 0.514444).toFixed(1)} m/s)` : ""}`],
+    ["Property damage", dmg === null ? "not given" : `$${dmg.toLocaleString(undefined, { maximumFractionDigits: 0 })} (year-of-event dollars)`],
+    ["Source", layer.source],
+  ].map(([k, v]) => `<b>${k}</b><span>${v}</span>`).join("");
+  $("chart").innerHTML = ""; $("detail-table").innerHTML = "";
+  $("detail-params").innerHTML = `<b>Report</b><span>A storm report, not a measurement on a grid; the full record (narrative, end point, path) is in the event table.</span>`;
 }
 
 // ---------- detail panel: curve on click ----------

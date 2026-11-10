@@ -20,6 +20,7 @@ jobs:
       - run: uv sync --group dev
       - run: uv run pytest -q
       - run: uv run python -m crc_lab.explorer.build --verify
+      - run: uv run python -m crc_lab.storm_events.build
       - run: uv run python -m crc_lab.explorer.check_site
       # Keep the D0 explainers at their existing Pages URL (/explainers/...)
       - run: mkdir -p site/explainers && cp docs/explainers/*.html docs/explainers/README.md site/explainers/

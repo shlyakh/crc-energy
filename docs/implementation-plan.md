@@ -18,7 +18,7 @@ Status: **agreed 2026-11-10** · for a separate Claude Code effort · requiremen
 | --- | --- | --- | --- | --- |
 | 0 | Repo ready; open items from requirements section 10 checked | G1 | 3 | done, reviewed 2026-11-10 |
 | 1 | Explorer v1: catalogue page and Texas hazard map, eight CRC Open hazards | E1–E9 | 20–30 | built 2026-11-10, awaiting review |
-| 2 | Storm Events table and the two-source comparison | S1–S6 | 20–25 | deferred |
+| 2 | Storm Events table and the two-source comparison | S1–S6 | 20–25 | built 2026-11-10, awaiting review |
 | 3 | Hail and gust curves in CRC | C1–C6 | 10–15 | deferred |
 | 4 | Assets: solar farms; real-estate exploration | A1–A3 | 10–15 | deferred |
 
@@ -98,6 +98,10 @@ version 1. The "matches `for_assets` at the cell centre" test compares the shipp
 
 Done when: yearly row counts match the NCEI files; the comparison report exists; the Fort Bend County hail of
 15 March 2024 is found with its size and place; events show in the explorer.
+
+Report: [reports/2-storm-events.md](reports/2-storm-events.md); comparison:
+[reports/2-storm-events-comparison.md](reports/2-storm-events-comparison.md). Built 2026-11-10 in parallel with
+the sources track (branch `sources-track`, `docs/sources-track/`), at Yuri's request.
 
 ## Phase 3 — Hail and gust curves
 

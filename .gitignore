@@ -4,6 +4,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 data/cache/
+data/storm-events/
 data/*.parquet
 data/*.pmtiles
 pipeline_output/
@@ -18,3 +19,4 @@ dist/
 site/data/
 site/explainers/
 .DS_Store
+.claude/worktrees/
