@@ -46,6 +46,7 @@
         <label>Colour by
           <select id="tracks-color"><option value="wind">wind along the track</option><option value="category">Saffir-Simpson category</option></select>
         </label>
+        <label class="check"><input type="checkbox" id="tracks-extent" checked> Show wind extent (34, 50, 64 kt radii) for the selected storm, or for all shown when 8 or fewer</label>
         <div id="tracks-legend" class="legend-inline"></div>
         <div id="tracks-status" class="mute small"></div>
         <ol id="tracks-list" class="list"></ol>
@@ -56,6 +57,11 @@
         <div class="row">
           <label>From year <input type="number" id="events-from" min="1950" max="2030"></label>
           <label>To year <input type="number" id="events-to" min="1950" max="2030"></label>
+        </div>
+        <label class="check"><input type="checkbox" id="win-on"> Explore a date window with the timeline</label>
+        <div class="row" id="win-row">
+          <label>Start (UTC) <input type="date" id="win-start" value="2024-03-14"></label>
+          <label>Days <input type="number" id="win-days" min="1" max="14" value="3"></label>
         </div>
         <div id="events-types"></div>
         <div id="events-status" class="mute small"></div>
@@ -95,7 +101,20 @@
     </section>
     <div id="status" class="mute"></div>
   </aside>
-  <div id="map"></div>
+  <div id="mapcol">
+    <div id="map"></div>
+    <div id="timebar" class="hidden">
+      <div class="timectl">
+        <button id="time-play" title="Play or pause">▶</button>
+        <select id="time-speed" title="Playback speed"><option value="1">1 h/s</option><option value="3">3 h/s</option><option value="6" selected>6 h/s</option><option value="12">12 h/s</option><option value="24">24 h/s</option></select>
+        <input type="range" id="time-slider" min="0" max="1000" value="0">
+        <span id="time-clock" class="clock"></span>
+      </div>
+      <div id="timeline"></div>
+      <div id="timeline-note" class="mute small"></div>
+      <div id="timeline-tip" class="tip hidden"></div>
+    </div>
+  </div>
   <aside id="detail" class="hidden">
     <button id="detail-close" title="Close">×</button>
     <h2 id="detail-title"></h2>

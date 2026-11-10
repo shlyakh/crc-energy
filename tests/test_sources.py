@@ -145,3 +145,19 @@ def test_registry_lists_the_sources_layers() -> None:
     for source in registry["sources"]:
         assert source["status"] in ("loaded", "prototype", "planned")
         assert source["licence"] and source["coverage"] and source["returns"]
+
+
+def test_storm_records_carry_quadrant_radii() -> None:
+    radii = {"USA_R34_NE": "120", "USA_R34_SE": "90", "USA_R34_SW": "80", "USA_R34_NW": "70"}
+    rows = [
+        _track_row("A", -96.0, 27.0, "2017-08-25T00:00:00", wind="100", USA_RMW="15", **radii),
+        _track_row("A", -97.0, 28.0, "2017-08-25T03:00:00", wind="115", USA_R64_NE="35"),
+        _track_row("A", -98.0, 30.0, "2017-08-26T00:00:00", wind="40", USA_R34_NE="-1"),
+    ]
+    storm = tracks.storm_records(rows)[0]
+    first, second, third = storm["points"]
+    assert first[7] == [120.0, 90.0, 80.0, 70.0] and first[8] is None and first[9] is None
+    assert first[10] == 15.0 and first[11] is None
+    assert second[9] == [35.0, None, None, None]
+    assert third[7] is None  # negative fill values are not radii
+    assert storm["extent_points"] == {"r34": 1, "r50": 0, "r64": 1, "rmw": 1, "roci": 0}

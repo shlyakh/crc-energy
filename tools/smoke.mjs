@@ -49,11 +49,25 @@ await change("#tracks-min-wind", 100); const strong = await waitReady("tracks: a
 await change("#tracks-name", "harvey", "input"); const harvey = await waitReady("tracks: name contains harvey"); harvey.list = await evaluate("document.querySelectorAll('#tracks-list li').length");
 await reset(); await evaluate("document.querySelector('#tracks-list li').click()"); await waitReady("tracks: click Harvey in the list"); await sleep(800);
 report.track_detail = await detail(); console.log(JSON.stringify(report.track_detail)); await shot("s2-track");
+// storm player: scrub, then play; the marker must move and reports must appear
+const ds = (k) => evaluate(`document.body.dataset.${k} || ''`);
+const at = async (f) => { await evaluate(`document.dispatchEvent(new CustomEvent('crc:time', { detail: ${f} }))`); await sleep(300); return { f, now: await ds("now"), marker: await ds("marker"), shown: Number(await ds("shown")) }; };
+report.player = { timebar_hidden: await evaluate("document.getElementById('timebar').classList.contains('hidden')"), timeline_ms: await ds("timelineMs"), marks: await ds("timelineMarks"), rows: await ds("timelineRows"), steps: [await at(0.1), await at(0.4), await at(0.8)] };
+await evaluate("document.getElementById('time-play').click()"); await sleep(2500);
+report.player.after_play = { now: await ds("now"), marker: await ds("marker"), shown: Number(await ds("shown")), frame_ms: await ds("frameMs"), fps: await evaluate("new Promise((res) => { let n = 0; const t0 = performance.now(); const f = () => { n++; if (performance.now() - t0 < 1000) requestAnimationFrame(f); else res(n); }; requestAnimationFrame(f); })") };
+await evaluate("document.getElementById('time-play').click()"); await at(0.45); await sleep(600);
+console.log(JSON.stringify(report.player)); await shot("s2b-player");
 await change("#tracks-name", "", "input"); await waitReady("tracks: clear name");
 await change("#tracks-min-wind", 0); await waitReady("tracks: clear wind"); await change("#tracks-color", "category"); await waitReady("tracks: colour by category"); await sleep(800); await shot("s3-tracks-category");
 // Storm Events
 await source("storm_events"); await sleep(800); report.events = { status: await evaluate("document.getElementById('events-status').textContent"), types: await evaluate("document.querySelectorAll('#events-types label').length") }; console.log(JSON.stringify(report.events)); await shot("s4-events");
 await change("#events-from", 2020); await waitReady("events from 2020");
+// date window with the timeline: the Fort Bend hail days (default example)
+await reset(); await evaluate("(() => { const cb = document.getElementById('win-on'); cb.checked = true; cb.dispatchEvent(new Event('change')); })()"); await waitReady("events: date window 2024-03-14 + 3 days"); await sleep(800);
+report.window = { clock: await evaluate("document.getElementById('time-clock').textContent"), note: (await evaluate("document.getElementById('timeline-note').textContent")).slice(0, 90), timeline_ms: await evaluate("document.body.dataset.timelineMs"), marks: await evaluate("document.body.dataset.timelineMarks"), rows: await evaluate("document.body.dataset.timelineRows"), shown: await evaluate("document.body.dataset.shown") };
+await evaluate("(() => { const m = document.querySelector('#timeline .mark'); m.dispatchEvent(new MouseEvent('click', { bubbles: true })); })()"); await sleep(600);
+report.window.clicked = await detail(); console.log(JSON.stringify(report.window)); await shot("s4b-window");
+await reset(); await evaluate("(() => { const cb = document.getElementById('win-on'); cb.checked = false; cb.dispatchEvent(new Event('change')); })()"); await waitReady("events: window off");
 // CO-OPS: list click -> detail with levels
 await source("coops"); await sleep(600); await reset(); await evaluate("document.querySelector('#stations-list li').click()"); await sleep(1200);
 report.coops_detail = await detail(); console.log(JSON.stringify(report.coops_detail)); await shot("s5-coops");
