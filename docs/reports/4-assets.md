@@ -71,6 +71,15 @@ statewide assumption.
 - A plant is treated as its centroid. The largest plants cover several km², which is not added to the footprint.
 - Value is a national benchmark per kW, not a plant's own cost or insured value.
 
+## Update, same day: border clip, plant size, footprint evidence
+
+After review the exposure gained two corrections. The circle is clipped to Texas (the event table has no reports
+from Mexico, the Gulf or other states), and each plant is a disc of its own array area, so a large plant is a
+larger target. Median annual chance of hail of 2 inches or more rose from 0.38% to 0.74%; Fighting Jays from
+0.15% to 0.37%. The results table above predates this; current values are in the sensitivity note and the
+asset table. The footprint stays a placeholder, now bracketed by published sizes: see
+[../plan-hail-exposure.md](../plan-hail-exposure.md), which also plans the reporting-bias correction and radar.
+
 ## For review
 
 - Is 25 km² a reasonable placeholder footprint, or do you have a better figure? It scales every annual chance.

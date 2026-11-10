@@ -73,8 +73,44 @@ def distances_km(lon: float, lat: float, reports: Reports) -> np.ndarray:
     return 2 * EARTH_KM * np.arcsin(np.sqrt(a))
 
 
+def clipped_fraction(lon: float, lat: float, radius_km: float, region: object | None) -> float:
+    """Share of the circle that lies inside ``region`` (a shapely geometry in lon/lat), 1 if none.
+
+    Reports exist only where the event table covers: not in Mexico, the Gulf or other states. A
+    circle that crosses the edge has less reporting area than pi r^2, so the rate must use the
+    clipped area. Uses a local equal-distance projection centred on the point.
+    """
+    if region is None:
+        return 1.0
+    import shapely
+    from shapely import affinity
+
+    kx, ky = 111.32 * math.cos(math.radians(lat)), 110.57
+    circle = affinity.scale(
+        shapely.Point(lon, lat).buffer(1.0, quad_segs=32), radius_km / kx, radius_km / ky
+    )
+    inside = shapely.intersection(circle, region)
+    return float(inside.area / circle.area) if circle.area else 1.0
+
+
+def hit_area_km2(footprint_km2: float, plant_area_km2: float) -> float:
+    """Area in which a hail footprint's centre must fall to touch the plant.
+
+    Both are treated as discs of the stated areas: pi (r_footprint + r_plant)^2. A larger plant
+    is a larger target; with a zero-area plant this is just the footprint.
+    """
+    r_f, r_p = math.sqrt(footprint_km2 / math.pi), math.sqrt(max(plant_area_km2, 0.0) / math.pi)
+    return math.pi * (r_f + r_p) ** 2
+
+
 def at_point(
-    lon: float, lat: float, reports: Reports, rule: Rule | None = None
+    lon: float,
+    lat: float,
+    reports: Reports,
+    rule: Rule | None = None,
+    *,
+    region: object | None = None,
+    plant_area_km2: float = 0.0,
 ) -> dict[str, object]:
     """The local hail description at one point under ``rule``."""
     rule = rule or Rule()
@@ -84,9 +120,11 @@ def at_point(
     radius = min(max(reach, rule.min_radius_km), rule.max_radius_km)
     inside = d <= radius
     n = int(inside.sum())
-    area = math.pi * radius**2
+    fraction = clipped_fraction(lon, lat, radius, region)
+    area = math.pi * radius**2 * fraction
     sizes = reports.size_mm[inside]
     rate = n / (area * reports.years)
+    hit = hit_area_km2(rule.footprint_km2, plant_area_km2)
     out: dict[str, object] = {
         "rule": rule.label,
         "radius_km": round(radius, 2),
@@ -94,18 +132,22 @@ def at_point(
         "reports_in_radius": n,
         "flag": "ok" if reach <= rule.max_radius_km else "too_few_reports",
         "window": [reports.start, reports.end],
+        "circle_share_inside_region": round(fraction, 3),
+        "reporting_area_km2": round(area, 1),
         "report_rate_per_100km2_year": round(rate * 100, 4),
         "size_median_mm": round(float(np.median(sizes)), 1) if n else None,
         "size_p90_mm": round(float(np.quantile(sizes, 0.9)), 1) if n else None,
         "size_max_mm": round(float(sizes.max()), 1) if n else None,
         "footprint_km2_placeholder": rule.footprint_km2,
+        "plant_area_km2": round(plant_area_km2, 3),
+        "hit_area_km2": round(hit, 2),
     }
     for threshold in THRESHOLDS_MM:
         rate_t = float((sizes >= threshold).sum()) / (area * reports.years)
         key = f"{threshold / 25.4:g}in"
         out[f"rate_ge_{key}_per_100km2_year"] = round(rate_t * 100, 4)
-        # Poisson: chance of at least one report-footprint of this size covering the point in a year
-        out[f"annual_prob_ge_{key}"] = round(1 - math.exp(-rate_t * rule.footprint_km2), 5)
+        # Poisson: chance that at least one footprint of this size touches the plant in a year
+        out[f"annual_prob_ge_{key}"] = round(1 - math.exp(-rate_t * hit), 5)
     return out
 
 

@@ -73,3 +73,27 @@ def test_rule_label_and_placeholder_flag() -> None:
     rule = exposure.Rule()
     assert rule.label == "N100-r10-75-A25"
     assert exposure.rule_dict(rule)["footprint_is_placeholder"] is True
+
+
+def test_circle_is_clipped_to_the_reporting_region() -> None:
+    import shapely
+
+    west_half = shapely.box(-180, -90, -99.0, 90)  # everything west of the point
+    assert exposure.clipped_fraction(-99.0, 31.0, 20.0, west_half) == pytest.approx(0.5, abs=0.01)
+    assert exposure.clipped_fraction(-99.0, 31.0, 20.0, None) == 1.0
+    reports = _ring(200, 0.2, 50.8)
+    whole = exposure.at_point(-99.0, 31.0, reports, exposure.Rule())
+    half = exposure.at_point(-99.0, 31.0, reports, exposure.Rule(), region=west_half)
+    assert half["circle_share_inside_region"] == pytest.approx(0.5, abs=0.01)
+    ratio = half["report_rate_per_100km2_year"] / whole["report_rate_per_100km2_year"]
+    assert ratio == pytest.approx(2.0, rel=0.03)
+
+
+def test_plant_area_enlarges_the_hit_area() -> None:
+    assert exposure.hit_area_km2(25.0, 0.0) == pytest.approx(25.0)
+    assert exposure.hit_area_km2(25.0, 25.0) == pytest.approx(100.0)
+    reports = _ring(200, 0.2, 50.8)
+    small = exposure.at_point(-99.0, 31.0, reports, exposure.Rule())
+    large = exposure.at_point(-99.0, 31.0, reports, exposure.Rule(), plant_area_km2=8.0)
+    assert large["annual_prob_ge_2in"] > small["annual_prob_ge_2in"]
+    assert large["hit_area_km2"] == pytest.approx(exposure.hit_area_km2(25.0, 8.0), abs=0.01)

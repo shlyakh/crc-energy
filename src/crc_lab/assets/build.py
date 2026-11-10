@@ -21,7 +21,7 @@ from crc_lab.assets import exposure, solar, value
 from crc_lab.curves import annual_maxima as am_mod
 from crc_lab.curves import fit
 from crc_lab.curves.sensitivity import CITIES
-from crc_lab.explorer.texas import write_json_atomic
+from crc_lab.explorer.texas import texas_boundary, write_json_atomic
 
 RETURN_PERIODS = (2, 5, 10, 20, 50, 100)
 SENSITIVITY_RULES = [
@@ -30,7 +30,8 @@ SENSITIVITY_RULES = [
     exposure.Rule(n_target=300),
     exposure.Rule(min_radius_km=0.0),
     exposure.Rule(min_radius_km=25.0),
-    exposure.Rule(footprint_km2=5.0),
+    exposure.Rule(footprint_km2=20.0),
+    exposure.Rule(footprint_km2=50.0),
     exposure.Rule(footprint_km2=100.0),
 ]
 
@@ -58,12 +59,27 @@ def return_levels(assets: pa.Table, curves_dir: Path) -> dict[str, dict[str, lis
     return out
 
 
-def sensitivity(assets: list[dict[str, Any]], reports: exposure.Reports) -> dict[str, Any]:
+def sensitivity(
+    assets: list[dict[str, Any]], reports: exposure.Reports, region: object
+) -> dict[str, Any]:
     """Each rule at the ten cities and summarised over the plants."""
     results: dict[str, Any] = {"rules": [], "cities": CITIES}
     for rule in SENSITIVITY_RULES:
-        plants = [exposure.at_point(a["longitude"], a["latitude"], reports, rule) for a in assets]
-        cities = {c["name"]: exposure.at_point(c["lon"], c["lat"], reports, rule) for c in CITIES}
+        plants = [
+            exposure.at_point(
+                a["longitude"],
+                a["latitude"],
+                reports,
+                rule,
+                region=region,
+                plant_area_km2=(a["area_m2"] or 0) / 1e6,
+            )
+            for a in assets
+        ]
+        cities = {
+            c["name"]: exposure.at_point(c["lon"], c["lat"], reports, rule, region=region)
+            for c in CITIES
+        }
         radius = [p["radius_km"] for p in plants]
         rate = [p["report_rate_per_100km2_year"] for p in plants]
         prob = [p["annual_prob_ge_2in"] for p in plants]
@@ -187,12 +203,25 @@ def main(argv: list[str] | None = None) -> int:
     reports = exposure.load_reports(str(args.events), window.start, window.end)
     rule = exposure.Rule()
     rows = assets.to_pylist()
-    hail = [exposure.at_point(r["longitude"], r["latitude"], reports, rule) for r in rows]
+    region = texas_boundary(args.cache).geometry
+    hail = [
+        exposure.at_point(
+            r["longitude"],
+            r["latitude"],
+            reports,
+            rule,
+            region=region,
+            plant_area_km2=(r["area_m2"] or 0) / 1e6,
+        )
+        for r in rows
+    ]
     levels = return_levels(assets, args.curves)
 
     flat = {
         "hail_radius_km": [h["radius_km"] for h in hail],
         "hail_reports_in_radius": [h["reports_in_radius"] for h in hail],
+        "hail_circle_share_in_texas": [h["circle_share_inside_region"] for h in hail],
+        "hail_hit_area_km2": [h["hit_area_km2"] for h in hail],
         "hail_flag": [h["flag"] for h in hail],
         "hail_report_rate_per_100km2_year": [h["report_rate_per_100km2_year"] for h in hail],
         "hail_size_median_mm": [h["size_median_mm"] for h in hail],
@@ -236,7 +265,8 @@ def main(argv: list[str] | None = None) -> int:
             "Report-based hail: rates follow where people report. A minimum radius limits, but does not remove, that bias.",
             "The footprint that turns a report rate into a chance at the plant is a placeholder with no source.",
             "Value is a national benchmark cost per kW AC times capacity, not the plant's own cost or insured value.",
-            "A plant is treated as its centroid; its own area (up to several km²) is not added to the footprint.",
+            "The circle is clipped to Texas, because the event table has no reports from Mexico, the Gulf or other states.",
+            "A plant is a disc of its USPVDB array area; the chance of a hit uses a disc of footprint plus plant radius.",
         ],
     }
     pq.write_table(
@@ -263,6 +293,9 @@ def main(argv: list[str] | None = None) -> int:
             "value_basis": f"NREL ATB 2025 overnight capital cost {occ:,.0f} $/kW AC ({cost['cost_year']}) x capacity",
             "hail_reports_used": h["reports_in_radius"],
             "hail_radius_km": h["radius_km"],
+            "hail_circle_share_inside_Texas": h["circle_share_inside_region"],
+            "plant_area_km2": h["plant_area_km2"],
+            "hail_hit_area_km2": h["hit_area_km2"],
             "hail_flag": h["flag"],
             "hail_reports_per_100km2_per_year": h["report_rate_per_100km2_year"],
             "hail_size_median_mm": h["size_median_mm"],
@@ -299,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"plants: {card['counts']}")
 
     if args.sensitivity:
-        results = sensitivity(rows, reports)
+        results = sensitivity(rows, reports, region)
         fit.write_json(args.out / "hail-exposure-sensitivity.json", results)
         args.note.write_text(sensitivity_markdown(results, window, len(reports.lon)))
         print(f"sensitivity: {len(results['rules'])} rules -> {args.note}")
