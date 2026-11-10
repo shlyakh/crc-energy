@@ -140,13 +140,14 @@ def test_registry_lists_the_sources_layers() -> None:
         "era5",
         "crc_open",
         "solar_plants",
+        "hail_compare",
     } == declared
     for layer in registry["layers"]:
         assert layer["source_id"] is None or layer["source_id"] in declared
     groups = {g["id"] for g in registry["groups"]}
     assert groups == {"crc-sdk", "crc-lab"}
     new_here = {s["id"] for s in registry["sources"] if s["origin"] == "crc-lab"}
-    assert new_here == {"storm_events", "storm_curves", "solar_plants"}
+    assert new_here == {"storm_events", "storm_curves", "solar_plants", "hail_compare"}
     for source in registry["sources"]:
         assert source["origin"] in groups
         assert source["status"] in ("loaded", "prototype", "planned")
@@ -167,3 +168,29 @@ def test_storm_records_carry_quadrant_radii() -> None:
     assert second[9] == [35.0, None, None, None]
     assert third[7] is None  # negative fill values are not radii
     assert storm["extent_points"] == {"r34": 1, "r50": 0, "r64": 1, "rmw": 1, "roci": 0}
+
+
+def test_hail_compare_layer_and_grouped_plant_panel() -> None:
+    root = Path(__file__).resolve().parents[1] / "site"
+    registry = json.loads((root / "layers.json").read_text())
+    layer = next(x for x in registry["layers"] if x["id"] == "hail_compare")
+    assert layer["kind"] == "h3-compare" and layer["source_id"] == "hail_compare"
+    data = json.loads((root / layer["file"]).read_text())
+    assert set(layer["style"]["series"]) == set(data["sources"])
+    assert {"low", "mid", "high"} == set(layer["style"]["diverging"])
+    assert layer["defaults"]["a"] in data["sources"] and layer["defaults"]["b"] in data["sources"]
+    for source in data["sources"].values():
+        assert len(source["values"]) == len(data["cells"])
+    plants = next(x for x in registry["layers"] if x["id"] == "solar_plants")
+    titles = [g["title"] for g in plants["panel_groups"]]
+    assert titles[:5] == [
+        "Plant",
+        "Value",
+        "Hail from reports",
+        "Hail from reports, bias-corrected",
+        "Radar",
+    ]
+    properties = json.loads((root / plants["file"]).read_text())["features"][0]["properties"]
+    for group in plants["panel_groups"]:
+        for field in group["fields"]:
+            assert field[0] in properties, field[0]

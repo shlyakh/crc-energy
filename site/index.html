@@ -75,6 +75,26 @@
         <ol id="stations-list" class="list"></ol>
       </div>
 
+      <!-- Hail days: four sources compared -->
+      <div id="ctl-compare" class="ctl hidden">
+        <label>View
+          <select id="cmp-mode"><option value="single">one source</option><option value="swipe">swipe between two sources</option><option value="ratio">ratio of two sources</option></select>
+        </label>
+        <div class="row">
+          <label id="cmp-a-label">Source <select id="cmp-a"></select></label>
+          <label id="cmp-b-label">Against <select id="cmp-b"></select></label>
+        </div>
+        <label class="check" id="cmp-own-label"><input type="checkbox" id="cmp-own"> Scale each source to its own range</label>
+        <div class="legend">
+          <div class="legend-head"><span id="cmp-legend-title"></span><span id="cmp-legend-unit" class="mute"></span></div>
+          <div id="cmp-legend-bar"></div>
+          <div class="legend-ends"><span id="cmp-legend-min"></span><span id="cmp-legend-mid"></span><span id="cmp-legend-max"></span></div>
+          <div id="cmp-legend-note" class="mute"></div>
+        </div>
+        <div id="cmp-summary"></div>
+        <div id="cmp-years"></div>
+      </div>
+
       <!-- Cell sources (ERA5, CRC Open) -->
       <div id="ctl-cells" class="ctl hidden">
         <label id="hazard-label">Hazard <select id="hazard"></select></label>
@@ -104,7 +124,7 @@
     <div id="status" class="mute"></div>
   </aside>
   <div id="mapcol">
-    <div id="map"></div>
+    <div id="map"><div id="swipe" class="hidden" title="Drag to move the split"><span id="swipe-a"></span><span id="swipe-b"></span></div></div>
     <div id="timebar" class="hidden">
       <div class="timectl">
         <button id="time-play" title="Play or pause">▶</button>

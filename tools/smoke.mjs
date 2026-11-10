@@ -84,6 +84,30 @@ await change("#hazard", "rflood"); await waitReady("crc_open: rflood"); await ch
 const c = await centre(); await click(c[0], c[1]); report.cell_detail = await detail(); console.log(JSON.stringify(report.cell_detail)); await shot("s7-crc-cell");
 // overlay: tracks over cells
 await reset(); await evaluate("(() => { const lab = [...document.querySelectorAll('#overlays label')].find((l) => l.textContent.includes('Tropical cyclone')); const cb = lab.querySelector('input'); cb.checked = true; cb.dispatchEvent(new Event('change')); })()"); await waitReady("overlay: tracks over CRC Open cells"); await sleep(800); await shot("s8-overlay");
+// Hail days, four sources compared: one source, own-range scale, swipe, ratio, cell click
+await evaluate("(() => { const lab = [...document.querySelectorAll('#overlays label')].find((l) => l.textContent.includes('Tropical cyclone')); const cb = lab.querySelector('input'); cb.checked = false; cb.dispatchEvent(new Event('change')); })()"); await sleep(400);
+const cmpFirst = await source("hail_compare"); await sleep(800); await shot("s12-compare-single");
+const cmp = { first_ms: cmpFirst.ms, sources: await evaluate("document.getElementById('cmp-a').options.length"), legend: await evaluate("document.getElementById('cmp-legend-max').textContent"), summary_rows: await evaluate("document.querySelectorAll('#cmp-summary tr').length - 1"), year_bars: await evaluate("document.querySelectorAll('#cmp-years rect').length") };
+await change("#cmp-a", "signatures"); cmp.switch_source_ms = (await waitReady("compare: colour by signatures")).ms;
+await reset(); await evaluate("(() => { const cb = document.getElementById('cmp-own'); cb.checked = true; cb.dispatchEvent(new Event('change')); })()"); cmp.own_ms = (await waitReady("compare: own-range scale")).ms; cmp.legend_own = await evaluate("document.getElementById('cmp-legend-max').textContent");
+await reset(); await evaluate("(() => { const cb = document.getElementById('cmp-own'); cb.checked = false; cb.dispatchEvent(new Event('change')); })()"); await waitReady("compare: shared scale");
+await change("#cmp-a", "reports"); await waitReady("compare: reports"); await change("#cmp-mode", "swipe"); cmp.swipe_ms = (await waitReady("compare: swipe reports | radar")).ms; await sleep(500);
+cmp.swipe = { hidden: await evaluate("document.getElementById('swipe').classList.contains('hidden')"), left: await evaluate("document.getElementById('swipe').style.left"), labels: await evaluate("document.getElementById('swipe-a').textContent + ' | ' + document.getElementById('swipe-b').textContent") }; await shot("s13-compare-swipe");
+// drag the divider with the pointer; it must move
+{ const r = await evaluate("(() => { const m = document.getElementById('map').getBoundingClientRect(); const s = document.getElementById('swipe').getBoundingClientRect(); return [s.left, m.top + m.height / 2, m.left + m.width * 0.3]; })()");
+  await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: r[0], y: r[1] }); await send("Input.dispatchMouseEvent", { type: "mousePressed", x: r[0], y: r[1], button: "left", clickCount: 1 });
+  await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: r[2], y: r[1], button: "left", buttons: 1 }); await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: r[2], y: r[1], button: "left", clickCount: 1 }); await sleep(400);
+  cmp.swipe.left_after_drag = await evaluate("document.getElementById('swipe').style.left"); await shot("s13b-compare-swipe-dragged"); }
+await evaluate("document.dispatchEvent(new CustomEvent('crc:swipe', { detail: 0.5 }))"); await sleep(200);
+await change("#cmp-mode", "ratio"); await waitReady("compare: ratio"); await change("#cmp-a", "mrms"); await waitReady("compare: ratio numerator radar"); await change("#cmp-b", "reports"); cmp.ratio_ms = (await waitReady("compare: ratio radar / reports")).ms; await sleep(500);
+cmp.ratio = { title: await evaluate("document.getElementById('cmp-legend-title').textContent"), note: (await evaluate("document.getElementById('cmp-legend-note').textContent")).slice(0, 110), swipe_hidden: await evaluate("document.getElementById('swipe').classList.contains('hidden')") }; await shot("s14-compare-ratio");
+{ const cc = await centre(); await click(cc[0], cc[1]); cmp.cell = { ...(await detail()), bars: await evaluate("document.querySelectorAll('#chart .bar').length") }; await shot("s15-compare-cell"); }
+report.compare = cmp; console.log(JSON.stringify(cmp));
+// Solar plants: the click panel is grouped from layers.json panel_groups
+await source("solar_plants"); await sleep(600); await evaluate("document.querySelector('#stations-list li').click()"); await sleep(1000);
+report.plant_panel = { groups: await evaluate("[...document.querySelectorAll('#detail-meta h3')].map((h) => h.textContent)"), percent: await evaluate("[...document.querySelectorAll('#detail-meta span')].filter((s) => s.textContent.endsWith('%')).length"), curve: await evaluate("!!document.querySelector('#chart svg')") };
+console.log(JSON.stringify(report.plant_panel)); await shot("s16-plant-panel");
+await source("coops"); await sleep(400); await evaluate("document.querySelector('#stations-list li').click()"); await sleep(600); report.generic_points_panel = { groups: await evaluate("document.querySelectorAll('#detail-meta h3').length"), rows: await evaluate("document.querySelectorAll('#detail-meta b').length") }; console.log(JSON.stringify(report.generic_points_panel));
 // Sources tab
 await evaluate("document.querySelector('.tab[data-view=catalog]').click()"); await sleep(500);
 report.catalog = { sources: await evaluate("document.querySelectorAll('#catalog-sources tr').length - 1"), hazards: await evaluate("document.querySelectorAll('#catalog-table tr').length - 1"), others: await evaluate("document.querySelectorAll('#sources-table tr').length - 1") };
