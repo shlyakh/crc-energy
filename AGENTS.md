@@ -41,7 +41,8 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - Licences: crc-* code is AGPL-3.0-or-later; CRC Open data is CC BY-NC 4.0 (non-commercial, with attribution);
   NOAA and USGS data ask for attribution.
 - Write outputs atomically (temp file, then `os.replace`). English everywhere.
-- Damage curves are out of scope here; they are being researched separately.
+- Damage curves: hail impact functions v0 are specified in `docs/requirements-hail-impact-v0.md` and planned
+  as Phase 5; every number there carries a source tag, and placeholders stay labelled as placeholders.
 
 ## Layout
 

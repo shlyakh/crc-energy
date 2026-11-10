@@ -177,15 +177,18 @@ repo's code; CRC has no hail factor yet.
    plus monotonicity and bounds on a fine grid.
 3. Loss per asset from the Phase 4 hail exposure: expected annual damage ratio and loss in dollars (solar:
    value from A4), with the building baseline and roof sensitivity reported as a range.
-4. A rule for several hail events in one year at one asset (open: sum capped at 1, or the largest).
+4. Several hail events in one year at one asset: damage ratios are added and the year's total is capped at 1
+   (the plant cannot lose more than its value in a year). Decided 2026-11-10.
 5. Register with CRC where the form fits (`value_semantics="damage ratio"`, a hazard factor named
    `hail_diameter_obs_mm`); explorer: loss on the asset click panel.
 
 Done when: the vectors pass, each Texas solar plant has an expected annual hail loss with its assumptions
 listed, and the report states which numbers rest on placeholders.
 
-Open before Phase 5: the draft's three decisions (placeholder defaults, baseline versus range, where curve
-data lives); cars have no asset set; `AGENTS.md` still says damage curves are out of scope.
+Decided 2026-11-10: curve data and code stay in this repo, written so they can be offered to crc-sdk later
+(no crc-lab imports in the curve module, parameters in one data file, metadata on every curve, tests from
+published vectors). Open before Phase 5: the placeholder defaults; baseline versus range for buildings; cars
+have no asset set.
 
 ## After this effort
 
