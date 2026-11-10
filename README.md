@@ -5,7 +5,7 @@ generation — built on [Climate Risk Commons](https://climateriskcommons.org/) 
 CRC's canonical contract, T&D impact functions in CRC's impact-contract form, a dependence-aware aggregation layer
 (event footprints, with copula brackets) giving AEP/OEP/VaR/CVaR/PML, and an independent validation harness.
 
-Status: D0 done (explainers below). D1 — ERA5 present-day hazard layer — is next.
+Status: D0 done (explainers below). The current plan is in `docs/plan.md` once merged; earlier requirements are in `docs/archive/`.
 
 ## Explainers (D0)
 

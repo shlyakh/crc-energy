@@ -2,6 +2,5 @@
 
 - [Explainers (D0)](explainers/README.md): [Anatomy of one CRC question](explainers/anatomy.html) ·
   [Climate risk curves, animated](explainers/primer.html)
-- [Requirements](requirements.md)
-- [Implementation plan](implementation-plan.md)
 - [Candidate nuggets](nuggets.md)
+- [Archive](archive/README.md): earlier requirements and implementation plan
