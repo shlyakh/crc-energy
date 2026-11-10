@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 228" width="960" height="228" font-family="Helvetica, Arial, sans-serif" role="img" aria-label="Distance between EIA's and the solar database's position, matched plants">
+<rect width="960" height="228" fill="#faf9f6"/>
+<text x="12" y="20" font-size="13" font-weight="600" fill="#2a2a28">Distance between EIA's and the solar database's position, matched plants</text>
+<text x="422" y="49" font-size="12" text-anchor="end" fill="#2a2a28">under 0.5 km</text>
+<rect x="430" y="36" width="420.0" height="18" rx="3" fill="#2a78d6"/>
+<text x="856.0" y="49" font-size="12" fill="#2a2a28">75</text>
+<text x="422" y="77" font-size="12" text-anchor="end" fill="#2a2a28">0.5–1 km</text>
+<rect x="430" y="64" width="134.4" height="18" rx="3" fill="#2a78d6"/>
+<text x="570.4" y="77" font-size="12" fill="#2a2a28">24</text>
+<text x="422" y="105" font-size="12" text-anchor="end" fill="#2a2a28">1–2 km</text>
+<rect x="430" y="92" width="190.4" height="18" rx="3" fill="#2a78d6"/>
+<text x="626.4" y="105" font-size="12" fill="#2a2a28">34</text>
+<text x="422" y="133" font-size="12" text-anchor="end" fill="#2a2a28">2–5 km</text>
+<rect x="430" y="120" width="173.6" height="18" rx="3" fill="#2a78d6"/>
+<text x="609.6" y="133" font-size="12" fill="#2a2a28">31</text>
+<text x="422" y="161" font-size="12" text-anchor="end" fill="#2a2a28">5–10 km</text>
+<rect x="430" y="148" width="39.2" height="18" rx="3" fill="#2a78d6"/>
+<text x="475.2" y="161" font-size="12" fill="#2a2a28">7</text>
+<text x="422" y="189" font-size="12" text-anchor="end" fill="#2a2a28">over 10 km</text>
+<rect x="430" y="176" width="67.2" height="18" rx="3" fill="#2a78d6"/>
+<text x="503.2" y="189" font-size="12" fill="#2a2a28">12</text>
+<text x="430" y="222" font-size="11" fill="#7a7976">plants</text>
+</svg>

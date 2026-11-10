@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 210" width="960" height="210" font-family="Helvetica, Arial, sans-serif" role="img" aria-label="Annual chance of hail 2 inches or more at a plant">
+<rect width="960" height="210" fill="#faf9f6"/>
+<text x="12" y="20" font-size="13" font-weight="600" fill="#2a2a28">Annual chance of hail 2 inches or more at a plant</text>
+<text x="422" y="54" font-size="12" text-anchor="end" fill="#2a2a28">First build: Texas reports, whole circle, plant as a point</text>
+<line x1="430.0" x2="684.0" y1="50" y2="50" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="564.7" cy="50" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="692.0" y="54" font-size="11.5" fill="#2a2a28">0.38 (0.09–1.32)</text>
+<text x="422" y="82" font-size="12" text-anchor="end" fill="#2a2a28">+ circle clipped to Texas</text>
+<line x1="439.2" x2="684.0" y1="78" y2="78" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="566.1" cy="78" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="692.0" y="82" font-size="11.5" fill="#2a2a28">0.38 (0.10–1.32)</text>
+<text x="422" y="110" font-size="12" text-anchor="end" fill="#2a2a28">+ plant's own array area</text>
+<line x1="469.3" x2="728.3" y1="106" y2="106" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="628.2" cy="106" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="736.3" y="110" font-size="11.5" fill="#2a2a28">0.73 (0.14–2.12)</text>
+<text x="422" y="138" font-size="12" text-anchor="end" fill="#2a2a28">+ reports from four neighbouring states</text>
+<line x1="470.0" x2="728.3" y1="134" y2="134" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="627.7" cy="134" r="5" fill="#eb6834" stroke="#faf9f6" stroke-width="2"/>
+<text x="736.3" y="138" font-size="11.5" fill="#2a2a28">0.73 (0.14–2.12)</text>
+<text x="422" y="166" font-size="12" text-anchor="end" fill="#2a2a28">+ reporting-bias correction</text>
+<line x1="561.9" x2="840.0" y1="162" y2="162" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="730.3" cy="162" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="848.0" y="166" font-size="11.5" fill="#2a2a28">2.16 (0.36–6.89)</text>
+<text x="430" y="202" font-size="11" fill="#7a7976">percent per year: dot = median, line = 10th to 90th percentile (log scale)</text>
+</svg>

@@ -21,6 +21,8 @@ dist/
 site/data/*
 # built through crc-sdk by `just sources` (slow: ERA5, stations); committed so deploys stay fast
 !site/data/sources/
+# radar-based files are built locally (the radar pulls are too heavy for CI) and committed
+!site/data/hail_compare/
 site/explainers/
 .DS_Store
 .claude/worktrees/

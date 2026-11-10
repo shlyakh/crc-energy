@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 182" width="960" height="182" font-family="Helvetica, Arial, sans-serif" role="img" aria-label="Hail days per year per cell, by source">
+<rect width="960" height="182" fill="#faf9f6"/>
+<text x="12" y="20" font-size="13" font-weight="600" fill="#2a2a28">Hail days per year per cell, by source</text>
+<text x="422" y="54" font-size="12" text-anchor="end" fill="#2a2a28">Storm reports, hail 1 inch or more (1996–2025)</text>
+<line x1="430.0" x2="484.8" y1="50" y2="50" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="444.4" cy="50" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="492.8" y="54" font-size="11.5" fill="#2a2a28">0.17 (0.00–0.63)</text>
+<text x="422" y="82" font-size="12" text-anchor="end" fill="#2a2a28">Storm reports, corrected for reporting bias (1996–2025)</text>
+<line x1="430.0" x2="657.0" y1="78" y2="78" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="492.5" cy="78" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="665.0" y="82" font-size="11.5" fill="#2a2a28">0.72 (0.00–2.63)</text>
+<text x="422" y="110" font-size="12" text-anchor="end" fill="#2a2a28">Radar hail size (MRMS MESH) 30 mm or more (2020–2025)</text>
+<line x1="479.8" x2="687.2" y1="106" y2="106" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="579.4" cy="106" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="695.2" y="110" font-size="11.5" fill="#2a2a28">1.73 (0.58–2.97)</text>
+<text x="422" y="138" font-size="12" text-anchor="end" fill="#2a2a28">Radar hail signatures (NEXRAD) 1.25 inches or more (1995–2025)</text>
+<line x1="549.9" x2="840.0" y1="134" y2="134" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="697.8" cy="134" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="848.0" y="138" font-size="11.5" fill="#2a2a28">3.10 (1.39–4.74)</text>
+<text x="430" y="174" font-size="11" fill="#7a7976">days per year: dot = median, line = 10th to 90th percentile</text>
+</svg>

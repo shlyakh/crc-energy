@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 228" width="960" height="228" font-family="Helvetica, Arial, sans-serif" role="img" aria-label="Plants in EIA only, by first year online">
+<rect width="960" height="228" fill="#faf9f6"/>
+<text x="12" y="20" font-size="13" font-weight="600" fill="#2a2a28">Plants in EIA only, by first year online</text>
+<text x="422" y="49" font-size="12" text-anchor="end" fill="#2a2a28">2026</text>
+<rect x="430" y="36" width="291.7" height="18" rx="3" fill="#2a78d6"/>
+<text x="727.7" y="49" font-size="12" fill="#2a2a28">25</text>
+<text x="422" y="77" font-size="12" text-anchor="end" fill="#2a2a28">2025</text>
+<rect x="430" y="64" width="420.0" height="18" rx="3" fill="#2a78d6"/>
+<text x="856.0" y="77" font-size="12" fill="#2a2a28">36</text>
+<text x="422" y="105" font-size="12" text-anchor="end" fill="#2a2a28">2024</text>
+<rect x="430" y="92" width="23.3" height="18" rx="3" fill="#2a78d6"/>
+<text x="459.3" y="105" font-size="12" fill="#2a2a28">2</text>
+<text x="422" y="133" font-size="12" text-anchor="end" fill="#2a2a28">2023</text>
+<rect x="430" y="120" width="11.7" height="18" rx="3" fill="#2a78d6"/>
+<text x="447.7" y="133" font-size="12" fill="#2a2a28">1</text>
+<text x="422" y="161" font-size="12" text-anchor="end" fill="#2a2a28">2022</text>
+<rect x="430" y="148" width="11.7" height="18" rx="3" fill="#2a78d6"/>
+<text x="447.7" y="161" font-size="12" fill="#2a2a28">1</text>
+<text x="422" y="189" font-size="12" text-anchor="end" fill="#2a2a28">2017</text>
+<rect x="430" y="176" width="11.7" height="18" rx="3" fill="#2a78d6"/>
+<text x="447.7" y="189" font-size="12" fill="#2a2a28">1</text>
+<text x="430" y="222" font-size="11" fill="#7a7976">plants</text>
+</svg>

@@ -62,6 +62,17 @@ assets-sensitivity:
 reporting-bias:
     uv run python -m crc_lab.assets.reporting_bias
 
+# Radar hail: MRMS daily maxima (needs the 'radar' extra), hail signatures 1995 on, plant table, source comparison
+radar:
+    uv run --extra radar python -m crc_lab.radar.mrms
+    uv run python -m crc_lab.radar.swdi
+    uv run python -m crc_lab.radar.build
+    uv run python -m crc_lab.radar.compare_cells
+
+# The decisions document with its charts (after all builds)
+decisions:
+    uv run python -m crc_lab.decisions
+
 # Check that the static site is complete: every registry layer has its files
 site:
     uv run python -m crc_lab.explorer.check_site

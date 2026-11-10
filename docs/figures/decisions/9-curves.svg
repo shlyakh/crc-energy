@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 210" width="960" height="210" font-family="Helvetica, Arial, sans-serif" role="img" aria-label="1-in-100-year hail size at ten cities, by method">
+<rect width="960" height="210" fill="#faf9f6"/>
+<text x="12" y="20" font-size="13" font-weight="600" fill="#2a2a28">1-in-100-year hail size at ten cities, by method</text>
+<text x="422" y="54" font-size="12" text-anchor="end" fill="#2a2a28">no pooling</text>
+<line x1="621.9" x2="815.4" y1="50" y2="50" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="765.0" cy="50" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="823.4" y="54" font-size="11.5" fill="#2a2a28">88 (51–101)</text>
+<text x="422" y="82" font-size="12" text-anchor="end" fill="#2a2a28">default (in use)</text>
+<line x1="623.2" x2="834.0" y1="78" y2="78" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
+<circle cx="755.8" cy="78" r="5" fill="#eb6834" stroke="#faf9f6" stroke-width="2"/>
+<text x="842.0" y="82" font-size="11.5" fill="#2a2a28">86 (51–106)</text>
+<text x="422" y="110" font-size="12" text-anchor="end" fill="#2a2a28">two rings</text>
+<line x1="626.5" x2="818.3" y1="106" y2="106" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="736.3" cy="106" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="826.3" y="110" font-size="11.5" fill="#2a2a28">81 (52–102)</text>
+<text x="422" y="138" font-size="12" text-anchor="end" fill="#2a2a28">from 2005</text>
+<line x1="628.6" x2="795.0" y1="134" y2="134" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="746.3" cy="134" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="803.0" y="138" font-size="11.5" fill="#2a2a28">83 (52–96)</text>
+<text x="422" y="166" font-size="12" text-anchor="end" fill="#2a2a28">GEV</text>
+<line x1="616.0" x2="840.0" y1="162" y2="162" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
+<circle cx="759.2" cy="162" r="5" fill="#2a78d6" stroke="#faf9f6" stroke-width="2"/>
+<text x="848.0" y="166" font-size="11.5" fill="#2a2a28">87 (49–108)</text>
+<text x="430" y="202" font-size="11" fill="#7a7976">mm: dot = median, line = 10th to 90th percentile</text>
+</svg>

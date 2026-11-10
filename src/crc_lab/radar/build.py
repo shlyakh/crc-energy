@@ -101,6 +101,27 @@ def main(argv: list[str] | None = None) -> int:
         args.out,
     )
 
+    geojson = Path("site/data/assets/solar_tx.geojson")
+    if geojson.exists():
+        from crc_lab.explorer.texas import write_json_atomic
+
+        collection = json.loads(geojson.read_text())
+        by_id = {o["asset_id"]: o for o in out_rows}
+        for feature in collection["features"]:
+            o = by_id.get(feature["properties"]["asset_id"])
+            if o:
+                feature["properties"] |= {
+                    "radar_period": f"{res['first_day']} to {res['last_day']}",
+                    "radar_hail_days_30mm_or_more_over_plant": o["radar_days_ge_30mm"],
+                    "radar_hail_days_50mm_or_more_over_plant": o["radar_days_ge_50mm"],
+                    "radar_hail_days_per_year_30mm_local_25km": round(
+                        o["radar_local_rate_ge_30mm"], 3
+                    ),
+                    "radar_largest_size_over_plant_mm": round(o["radar_max_mm"], 1),
+                    "radar_largest_size_day": o["radar_max_day"],
+                }
+        write_json_atomic(geojson, collection)
+
     # report-based figures on the same plants: annual chance of 1 inch or more -> rate of hits per year
     rep_rate = [-math.log(1 - r["hail_annual_prob_ge_1in"]) for r in rows]
     rep_rate2 = [-math.log(1 - r["hail_annual_prob_ge_2in"]) for r in rows]
