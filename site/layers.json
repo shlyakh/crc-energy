@@ -142,6 +142,104 @@
       "on": true
     },
     {
+      "id": "era5_txx",
+      "kind": "h3-cells",
+      "title": "Hottest day of the year, ERA5 baseline 1991\u20132020",
+      "file": "data/sources/era5_txx/{horizon}.json",
+      "horizons": [
+        2005
+      ],
+      "display": {
+        "unit": "\u00b0C",
+        "offset": 0
+      },
+      "source": "ERA5 reanalysis (1.5\u00b0 WeatherBench2 copy), curves fitted by crc-sdk (GEV, L-moments)",
+      "licence": "CC BY 4.0; contains modified Copernicus Climate Change Service information",
+      "caveat": "Historical baseline, not a projection: annual maxima 1991\u20132020 from a 1.5\u00b0 reanalysis, fitted per H3 resolution-4 cell (about 1,770 km\u00b2). Reanalysis underestimates local extremes; a cell is an area average. Horizon 2005 is the window centre.",
+      "style": {
+        "hue": 30,
+        "chroma": 0.16
+      },
+      "on": true
+    },
+    {
+      "id": "ibtracs",
+      "kind": "lines",
+      "title": "Tropical cyclone tracks, 1980\u20132024",
+      "file": "data/sources/ibtracs.geojson",
+      "source": "NOAA NCEI IBTrACS v04r01, North Atlantic basin, via crc-sdk IBTrACSPlan",
+      "licence": "U.S. government work; attribution requested (Schreck et al. 2024, doi:10.25921/82ty-9e16)",
+      "caveat": "Storms with at least one best-track point inside the Texas box; tracks clipped to a box around Texas. Track points are not asset winds or return-period curves.",
+      "style": {
+        "line": [
+          120,
+          60,
+          160,
+          200
+        ],
+        "width": 1.5,
+        "hue": 300,
+        "chroma": 0.13
+      },
+      "on": false
+    },
+    {
+      "id": "coops",
+      "kind": "points",
+      "title": "Coastal water levels, published return levels",
+      "file": "data/sources/coops.geojson",
+      "source": "NOAA CO-OPS Extreme Water Levels, via crc-sdk NOAAExtremeWaterLevelPlan",
+      "licence": "U.S. government work; attribution requested (NOAA CO-OPS)",
+      "caveat": "Levels as published by NOAA (annual exceedance probabilities from a detrended series, relative to the station datum); not fitted by crc-sdk. A station is a point, not a stretch of coast.",
+      "style": {
+        "fill": [
+          26,
+          110,
+          170,
+          220
+        ],
+        "line": [
+          255,
+          255,
+          255,
+          230
+        ],
+        "radius": 6,
+        "width": 1.5,
+        "hue": 215,
+        "chroma": 0.13
+      },
+      "on": false
+    },
+    {
+      "id": "ghcnh",
+      "kind": "points",
+      "title": "Hottest hour of the year at airport stations, 2000\u20132024",
+      "file": "data/sources/ghcnh.geojson",
+      "source": "NOAA GHCNh hourly temperature, curves fitted by crc-sdk (GEV, L-moments)",
+      "licence": "CC0-1.0 per the AWS registry; attribution requested (NOAA GHCNh)",
+      "caveat": "Historical observations at a point, not a projection; extremes of sampled hourly temperature, not daily TXx. Curves are crc-sdk's fit from 2000\u20132024 (at least 15 valid years).",
+      "style": {
+        "fill": [
+          214,
+          90,
+          40,
+          220
+        ],
+        "line": [
+          255,
+          255,
+          255,
+          230
+        ],
+        "radius": 6,
+        "width": 1.5,
+        "hue": 30,
+        "chroma": 0.16
+      },
+      "on": false
+    },
+    {
       "id": "storm_events",
       "kind": "points-binary",
       "title": "Storm Events (NOAA reports)",

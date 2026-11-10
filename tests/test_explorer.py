@@ -107,7 +107,11 @@ def test_registry_and_sources_are_valid_json() -> None:
     registry = json.loads((root / "layers.json").read_text())
     ids = [layer["id"] for layer in registry["layers"]]
     assert len(ids) == len(set(ids))
-    cells = [layer for layer in registry["layers"] if layer["kind"] == "h3-cells"]
+    cells = [
+        layer
+        for layer in registry["layers"]
+        if layer["kind"] == "h3-cells" and layer["source"] == "CRC Open"
+    ]
     assert {layer["id"] for layer in cells} == set(hazards.HAZARDS)
     for layer in cells:
         assert "{horizon}" in layer["file"]

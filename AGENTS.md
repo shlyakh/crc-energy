@@ -43,6 +43,10 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - `src/crc_lab/storm_events/` — `plan.py` (S1 snapshot), `parse.py` (S2), `geometry.py` (S3 cells),
   `table.py` (S4 event table + data card), `compare.py` (S5), `explorer_layer.py` (S6),
   `build.py` (`python -m crc_lab.storm_events.build [--compare]`)
+  (per-hazard files, `for_assets` check), `build.py` (`python -m crc_lab.explorer.build`), `check_site.py`;
+  `sources.py` (sources track: IBTrACS, CO-OPS, GHCNh layers under `site/data/sources/`)
+- `docs/sources-track/` — requirements and plan for the other crc-sdk sources (probes in `tools/probes/`)
+- `tools/smoke.mjs` — headless Chrome smoke test of the page (`node tools/smoke.mjs <out dir> [url] [--sources]`)
 - `site/` — the static explorer: `index.html`, `app.js`, `style.css`, `layers.json` (E9 registry),
   `sources.json` (E2, hand-written); `site/data/` is generated and git-ignored
 - `tests/` — pytest, offline; `test_pins.py` guards the pins, `test_explorer.py` the build helpers,
