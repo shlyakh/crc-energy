@@ -1,6 +1,6 @@
 # Implementation plan: CRC data explorer and severe-storm sources (Texas)
 
-Status: **draft for review** · 2026-11-10 · for a separate Claude Code effort · requirement IDs refer to
+Status: **agreed 2026-11-10** · for a separate Claude Code effort · requirement IDs refer to
 [requirements.md](requirements.md)
 
 ## How to run this effort
@@ -91,7 +91,7 @@ source with numbers behind it.
 ## After this effort
 
 MRMS radar hail and its comparison with the report-based curves; hail and gust damage curves for solar modules
-and roofs; loss results; a proposal upstream for the Storm Events plan and the event-table schema.
+and buildings (researched separately; added when that research is in); loss results; a proposal upstream for the Storm Events plan and the event-table schema.
 
 ## Risks
 

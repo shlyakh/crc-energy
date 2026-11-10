@@ -1,27 +1,34 @@
 # Agent guide — crc-energy
 
-Present-day physical climate risk for energy infrastructure (transmission lines and towers, substations) on
-Climate Risk Commons (CRC). First phase uses reanalysis and observations (ERA5, NOAA ISD/GHCNh), not CMIP
-projections; CRC Open (SSP5-8.5) is a later, labelled stress case.
+Current work: a data explorer for Climate Risk Commons (CRC) data and a NOAA Storm Events source, for Texas.
+Then hail and thunderstorm-gust hazard curves brought into CRC, and two asset sets (solar farms, real estate).
 
-Companion documents (Claude docs): plan, requirements (USE / OUTSIDE / EXTEND per component), explainers note.
+Read first:
+
+- `docs/requirements.md` — what to build, with IDs
+- `docs/implementation-plan.md` — phases, steps, and the test for "done" in each
+- `docs/primers/event-sources-in-crc.md` — how event records relate to CRC's curves
+
+Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archive/` and is not current.
 
 ## Rules
 
-- Pin `crc-sdk==0.11.1` and `crc-framework==0.6.0`; record both plus the impact-registry revision in every output.
-- Every hazard dataset declares `probability_semantics`, `source_return_period_convention`, `temporal_window`, provenance.
-- Every wind impact definition declares averaging period and gust factor.
-- Label r5-cell results "regional screening" (cell ≈ 253 km²).
-- Keep three loss channels separate: damage, derating, liability.
-- Licences: crc-* are AGPL-3.0-or-later; CRC Open is CC BY-NC 4.0 (no commercial use); OSM is ODbL (publish code and OSM-derived tiles, not merged OSM+hazard tables).
+- Work one phase at a time. Stop after each phase for review. Write a short report in `docs/reports/`.
+- Never invent a number. If a data source cannot be reached, say so and stop.
+- Pin `crc-sdk` and `crc-framework`; record versions in every output. Log upstream changes in `CHANGELOG-upstream.md`.
+- Every dataset gets a data card: source, date fetched, licence, coverage, known biases.
+- Curves built from storm reports say so: an empty cell may be unobserved.
+- Label cell-level results "regional screening" (a cell is about 253 km²).
+- Licences: crc-* code is AGPL-3.0-or-later; CRC Open data is CC BY-NC 4.0 (non-commercial, with attribution);
+  NOAA and USGS data ask for attribution.
 - Write outputs atomically (temp file, then `os.replace`). English everywhere.
+- Damage curves are out of scope here; they are being researched separately.
 
 ## Layout
 
-- `docs/explainers/` — animated HTML explainers (D0): `anatomy.html`, `primer.html`
-- `src/crc_energy/` — package (hazard layer, impacts, aggregate, schema — to come)
-- `tests/` — pytest + Hypothesis; `test_pins.py` guards the pins
-- `CHANGELOG-upstream.md` — crc releases watched and their effect here
+- `docs/` — requirements, plan, primers, explainers, archive
+- `src/crc_energy/` — package
+- `tests/` — pytest; `test_pins.py` guards the pins
 
 ## Checks
 

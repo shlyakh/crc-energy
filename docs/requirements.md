@@ -1,6 +1,6 @@
 # Requirements: CRC data explorer and severe-storm sources (Texas)
 
-Status: **draft for review** · 2026-11-10 · no code has been written for this
+Status: **agreed 2026-11-10** · no code has been written yet
 
 This is the brief for a separate Claude Code effort. Steps are in
 [implementation-plan.md](implementation-plan.md). Background on events in CRC is in
@@ -144,8 +144,10 @@ points join to footprints.
 
 ## 8. Out of scope here
 
-MRMS radar hail; damage curves and loss numbers; joint-loss event sets; anything outside Texas; CMIP beyond
-displaying CRC Open as it is.
+MRMS radar hail; joint-loss event sets; anything outside Texas; CMIP beyond displaying CRC Open as it is.
+
+Damage curves for hail and gust on solar and real-estate assets are being researched separately. This effort
+stops at hazard return levels at each asset; damage and loss numbers follow once that research is in.
 
 ## 9. Open questions
 

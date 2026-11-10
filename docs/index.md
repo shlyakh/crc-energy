@@ -1,6 +1,6 @@
 # crc-energy documentation
 
-Current work (drafts for review):
+Current work (agreed 2026-11-10):
 
 - [Requirements](requirements.md): CRC data explorer and severe-storm sources, Texas
 - [Implementation plan](implementation-plan.md)
