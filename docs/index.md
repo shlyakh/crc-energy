@@ -6,6 +6,7 @@ Current work (agreed 2026-11-10; explorer first, storm sources and assets deferr
 - [Requirements: hail impact functions v0](requirements-hail-impact-v0.md): first-approximation damage curves
   for solar plants, buildings and cars (draft; not yet scheduled as a phase)
 - [Implementation plan](implementation-plan.md)
+- [How hail data is processed](hail-data-processing.md): from raw reports and radar to the numbers at a plant
 - [Decisions and their effect](decisions.md): each choice, its alternatives and a chart of the difference
 - [Data source catalog](data-sources.md): every source in use, probed or proposed, with what was checked
 - [Plan: better hail exposure](plan-hail-exposure.md): footprint, reporting bias, radar (draft for review)

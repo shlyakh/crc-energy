@@ -60,6 +60,10 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - `src/crc_lab/assets/` — `solar.py` (USPVDB asset table), `value.py` (NREL ATB cost, `reference/`),
   `exposure.py` (hail at the asset by local report density), `real_estate.py` (Fort Bend comparison),
   `build.py` (`python -m crc_lab.assets.build [--sensitivity]`)
+- `src/crc_lab/radar/` — `mrms.py` (MRMS hail size grid), `swdi.py` (NEXRAD hail signatures 1995 on), `analysis.py`,
+  `build.py`, `compare_cells.py` (four-source hail days per cell); `src/crc_lab/decisions.py` (decisions document)
+- `docs/hail-data-processing.md`, `docs/decisions.md`, `docs/data-sources.md` — how hail is processed, what was
+  chosen and why, and every data source
 - `docs/sources-track/` — requirements and plan for the other crc-sdk sources (probes in `tools/probes/`)
 - `tools/smoke.mjs`, `tools/record-demo.mjs` — headless Chrome smoke test and demo recorder
 - `site/` — the static explorer: `index.html`, `app.js`, `style.css`, `layers.json` (E9 registry),
