@@ -28,6 +28,11 @@ just serve     # http://127.0.0.1:8000
 just up        # one container (Caddy) on http://127.0.0.1:8080
 ```
 
+Sources track (branch `sources-track`, under review): the other crc-sdk sources as schematic layers,
+switched off by default: tropical cyclone tracks (IBTrACS), coastal water levels (NOAA CO-OPS) and airport
+station temperature curves (GHCNh). `just sources` builds them into `site/data/sources/`; the probes behind
+the choice are in `docs/sources-track/requirements.md`.
+
 GitHub Pages builds the same data in CI (`.github/workflows/pages.yml`) and publishes `site/` at
 https://shlyakh.github.io/crc-lab/ (the explainers stay at `/explainers/`).
 Adding a layer is an entry in `site/layers.json`.
