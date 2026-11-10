@@ -155,7 +155,9 @@ points join to footprints.
 MRMS radar hail; joint-loss event sets; anything outside Texas; CMIP beyond displaying CRC Open as it is.
 
 Damage curves for hail and gust on solar and real-estate assets are being researched separately. This effort
-stops at hazard return levels at each asset; damage and loss numbers follow once that research is in.
+stops at hazard return levels at each asset; damage and loss numbers follow once that research is in. A first
+draft of the hail curves is in [requirements-hail-impact-v0.md](requirements-hail-impact-v0.md); it is not part
+of this effort's phases.
 
 ## 9. Open questions
 
