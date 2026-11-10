@@ -39,7 +39,8 @@ Done when: a one-page report lists each check and its answer.
    unit, semantics, horizons, resolution, licence. Add a hand-written table of other crc-sdk sources.
 2. **Hazard values for Texas.** Choose eight hazards across families (suggested: `tx_max`, `tn_min`, `rx1day`,
    `rflood`, `wind_max_daily_max`, `fwi`, `spei`, `hot_days`). For each: every Texas cell, three horizons, return
-   periods 10, 50, 100, plus curve parameters. One compact file per hazard.
+   periods 10, 50, 100, plus curve parameters. One compact file per hazard. Horizons 2030, 2050 and 2080 (the
+   release runs 2025–2090). The selector lists all 63 hazards; the other 55 are marked "not loaded yet".
 3. **Layer registry.** One file describing each layer: id, title, source, unit, licence, file, colour scale.
 4. **Page.** MapLibre base map; deck.gl H3 layer for cells; selectors for hazard, horizon, return period; legend;
    click panel with the curve; layer switcher; caveat panel; catalogue tab.
@@ -50,7 +51,7 @@ Done when: a one-page report lists each check and its answer.
 Done when: the page loads for Texas, all eight hazards switch within the time limit, a clicked cell shows a curve
 that matches `for_assets` at the cell centre, and the catalogue lists all hazards in the release.
 
-Decision needed before step 2: curve parameters in the browser or a small API (requirements question 1).
+Decided: curve parameters are shipped to the browser; no API in version 1.
 
 ## Phase 2 — Storm Events
 

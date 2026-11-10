@@ -26,8 +26,8 @@ USE = CRC as shipped. OUTSIDE = external data or tools. EXTEND = new data, defin
 | --- | --- | --- |
 | E1 | Catalogue page listing every CRC Open hazard with unit, meaning, probability semantics, resolution, horizons, pathway and licence, generated from the release's own catalogue (`HazardDataset.crc_open().catalog()`) | USE |
 | E2 | Catalogue also lists the other sources crc-sdk reaches (ERA5 recipes, stations, tracks, streamflow, water levels, flood, drought) with what each returns, coverage and licence, and a "not in CRC" list | USE |
-| E3 | Map of Texas with an H3 cell layer coloured by one value chosen by hazard, horizon and return period | USE + OUTSIDE |
-| E4 | Click a cell: its full curve (value against return period) and its metadata | USE |
+| E3 | Map of Texas with an H3 cell layer coloured by one value chosen by hazard, horizon and return period. Version 1 loads eight hazards (hottest day, coldest night, wettest day, river flood, wind, fire weather, drought index, hot days); the selector lists all 63, with those not yet loaded marked as such | USE + OUTSIDE |
+| E4 | Click a cell: its full curve (value against return period) and its metadata. Curve parameters are shipped to the browser in the per-hazard file; no API in version 1 (decided 2026-11-10) | USE |
 | E5 | Layers can be switched on and off; later steps add layers (events, derived curves, assets) without redesign | OUTSIDE |
 | E6 | A caveat panel on every view: source, licence, cell size; for CRC Open "high-emissions case (SSP5-8.5), not a forecast" | — |
 | E7 | Fast: first view under 2 seconds on a laptop; switching hazard under 0.5 seconds | — |
@@ -53,8 +53,8 @@ to hundreds of thousands and buildings to millions.
 - Base map and point layers (events, assets, buildings): MapLibre with PMTiles.
 - Hazard cells: deck.gl's H3 layer over MapLibre, fed by one compact file per hazard holding cell id and the
   values for each horizon and return period.
-- Curve on click: read from the same per-hazard file if curve parameters are included; otherwise a small
-  read-only API (FastAPI + DuckDB over the Parquet files) on the server.
+- Curve on click: read from the same per-hazard file, which includes curve parameters. A small read-only API
+  (FastAPI + DuckDB over the Parquet files) stays an option for later.
 - Deployment: one container (Caddy or nginx serving static files and PMTiles; the API as an optional second
   service). The static part can also go to GitHub Pages unchanged.
 
@@ -149,10 +149,11 @@ displaying CRC Open as it is.
 
 ## 9. Open questions
 
-1. Ship curve parameters to the browser, or serve curves from a small API?
+1. Decided: curve parameters go to the browser; no API in version 1.
 2. Event-table schema: adopt the Source Cooperative column names where they exist, to make comparison easy?
 3. Real-estate source: decided after A2.
-4. Questions for Earth Genome (licence, cleaning steps, coordinate fixes, magnitude columns, code).
+4. Questions for Earth Genome (licence, cleaning steps, coordinate fixes, magnitude columns, code): hold until
+   the two-source comparison has been run and the data looked at.
 
 ## 10. Not yet verified
 
@@ -160,6 +161,27 @@ displaying CRC Open as it is.
 - National Structure Inventory access and licence.
 - deck.gl and MapLibre version compatibility; Martin's DuckDB backend maturity.
 - The cell count for Texas is an area estimate.
+
+## Appendix: all hazards in CRC Open
+
+From the saved output of crc-docs' `notebooks/sources/crc_open_hazards.ipynb` (release seen 2026-11-09). All are at
+H3 resolution 5 except the three flood layers at resolution 7. Horizons run 2025–2090 (flood layers to 2100;
+`cyclone` 2010–2100). One pathway: SSP5-8.5. The eight loaded in version 1 are in bold. Meanings in plain words
+are to be taken from the catalogue during the build, not guessed.
+
+| Family | Hazards (unit) |
+| --- | --- |
+| Heat | **`tx_max`** (K), `tx_mean` (K), `tx_min` (K), `tg_max` (K), `tg_mean` (K), `tg_min` (K), `at` (K), `heat_index` (°C), `humidex` (°C), `wbgt` (K), **`hot_days`** (days), `summer_days` (days), `tropical_nights` (days), `heat_wave_frequency` (events), `heat_wave_index` (days), `heat_wave_max_length` (days), `heat_wave_total_length` (days), `hot_spell_frequency` (events), `hot_spell_max_length` (days), `cooling_degree_days` (K days) |
+| Cold | **`tn_min`** (K), `tn_mean` (K), `tn_max` (K), `windchill` (°C), `frost_days` (days), `ice_days` (days), `maximum_consecutive_frost_days` (days), `daily_freezethaw_cycles` (days), `cold_spell_days` (days), `cold_spell_frequency` (events), `heating_degree_days` (K days) |
+| Temperature range | `dtr` (K), `dtrmax` (K), `dtrvar` (K), `etr` (K) |
+| Rain and snow | **`rx1day`** (mm/day), `rx5day` (mm), `prcptot` (mm), `liquidprcptot` (mm), `solidprcptot` (mm), `sdii` (mm/day), `wet_days` (days), `maximum_consecutive_wet_days` (days) |
+| Flood | **`rflood`** (m), `cflood` (m), `inundation` (m) |
+| Drought and water | **`spei`** (index), `dry_days` (days), `max_consecutive_dry_days` (days), `pet` (mm/day), `water_budget` (kg m⁻² s⁻¹) |
+| Wind | **`wind_max_daily_max`** (m/s), `wind_max_daily_mean` (m/s), `calm_days` ((m/s) days), `cyclone` (m/s) |
+| Fire weather | **`fwi`**, `isi`, `bui`, `ffmc`, `dc`, `dmc` (all indices) |
+| Agriculture | `growing_degree_days` (K days), `corn_heat_units` (CHU) |
+
+Not in CRC Open: hail, gust, lightning, ice accretion, wave height, water temperature, streamflow.
 
 ## Sources
 
