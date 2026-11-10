@@ -30,7 +30,7 @@ USE = CRC as shipped. OUTSIDE = external data or tools. EXTEND = new data, defin
 | E1 | Catalogue page listing every CRC Open hazard with unit, meaning, probability semantics, resolution, horizons, pathway and licence, generated from the release's own catalogue (`HazardDataset.crc_open().catalog()`) | USE |
 | E2 | Catalogue also lists the other sources crc-sdk reaches (ERA5 recipes, stations, tracks, streamflow, water levels, flood, drought) with what each returns, coverage and licence, and a "not in CRC" list | USE |
 | E3 | Map of Texas with an H3 cell layer coloured by one value chosen by hazard, horizon and return period. Version 1 loads eight hazards (hottest day, coldest night, wettest day, river flood, wind, fire weather, drought index, hot days); the selector lists all 63, with those not yet loaded marked as such | USE + OUTSIDE |
-| E4 | Click a cell: its full curve (value against return period) and its metadata. Curve parameters are shipped to the browser in the per-hazard file; no API in version 1 (decided 2026-11-10) | USE |
+| E4 | Click a cell: its full curve (value against return period) and its metadata. The per-hazard file carries the curve evaluated by crc-sdk at fixed return periods (2, 5, 10, 20, 50, 100, 200, 500 years) plus the raw curve parameters; the browser draws and interpolates, never re-implements the curve; no API in version 1 (decided 2026-11-10) | USE |
 | E5 | Layers can be switched on and off; later steps add layers (events, derived curves, assets) without redesign | OUTSIDE |
 | E6 | A caveat panel on every view: source, licence, cell size; for CRC Open "high-emissions case (SSP5-8.5), not a forecast" | — |
 | E7 | Fast: first view under 2 seconds on a laptop; switching hazard under 0.5 seconds | — |

@@ -16,8 +16,8 @@ Status: **agreed 2026-11-10** · for a separate Claude Code effort · requiremen
 
 | Phase | Output | Requirements | Hours | Status |
 | --- | --- | --- | --- | --- |
-| 0 | Repo ready; open items from requirements section 10 checked | G1 | 3 | in progress |
-| 1 | Explorer v1: catalogue page and Texas hazard map, eight CRC Open hazards | E1–E9 | 20–30 | next |
+| 0 | Repo ready; open items from requirements section 10 checked | G1 | 3 | done, reviewed 2026-11-10 |
+| 1 | Explorer v1: catalogue page and Texas hazard map, eight CRC Open hazards | E1–E9 | 20–30 | in progress |
 | 2 | Storm Events table and the two-source comparison | S1–S6 | 20–25 | deferred |
 | 3 | Hail and gust curves in CRC | C1–C6 | 10–15 | deferred |
 | 4 | Assets: solar farms; real-estate exploration | A1–A3 | 10–15 | deferred |
@@ -46,8 +46,14 @@ Done when: `docs/reports/0-setup.md` lists each check and its answer.
 Conventions fixed in Phase 0:
 
 - **Texas is a polygon, not a box.** `for_area()` takes a bounding box, which also covers parts of New Mexico,
-  Oklahoma, Louisiana and Mexico. Clip cells with the Census TIGER state boundary through
-  `crc_sdk.geometry.vector.polyfill_wkb` at resolution 5.
+  Oklahoma, Louisiana and Mexico. Clip cells with the Census TIGER state boundary (`cb_2024_us_state_500k`):
+  keep every resolution-5 cell that **intersects** the state polygon (2,564 cells; decided 2026-11-10 so the
+  borders are covered), not only cells whose centre lies inside (2,384).
+- **Curves are evaluated in Python, not in JavaScript.** CRC Open mixes `hurdle`, `fitted`, `point_mass`,
+  `tabulated` and `no_data` rows in every hazard (Phase 0 report). The data build calls
+  `crc_sdk.workflows.distributions.curve_quantiles` at return periods 2, 5, 10, 20, 50, 100, 200 and 500 years
+  and ships the values with the raw parameters; the browser draws a polyline and interpolates. Decided
+  2026-11-10; the "no API" decision stands.
 - **No front-end build step.** One `site/index.html` with ES modules from pinned CDN versions (MapLibre GL,
   deck.gl's `H3HexagonLayer`, the pmtiles protocol), in the same style as the D0 explainers. The folder publishes
   unchanged to GitHub Pages and to the container.
@@ -73,7 +79,9 @@ Conventions fixed in Phase 0:
 Done when: the page loads for Texas, all eight hazards switch within the time limit, a clicked cell shows a curve
 that matches `for_assets` at the cell centre, and the catalogue lists all hazards in the release.
 
-Decided: curve parameters are shipped to the browser; no API in version 1.
+Decided: curve values at fixed return periods (and the parameters) are shipped to the browser; no API in
+version 1. The "matches `for_assets` at the cell centre" test compares the shipped values with a fresh
+`for_assets` call at the same return periods.
 
 ## Phase 2 — Storm Events
 

@@ -56,7 +56,7 @@ cell's curve at a fixed grid of return periods during the data build
 (`crc_sdk.workflows.distributions.curve_quantiles(table, probabilities)`; `crc_sdk/workflows/tiling.py` already does
 this per row for tiles) and ship those values. The browser then draws a polyline and interpolates; the "matches
 `for_assets` at the cell centre" test holds by construction. The "no API" decision stands. Suggested grid: return
-periods 2, 5, 10, 20, 50, 100, 200, 500. Decide at the start of Phase 1.
+periods 2, 5, 10, 20, 50, 100, 200, 500. **Decided 2026-11-10 (review): precomputed quantiles at that grid; clipping rule = cells intersecting the state polygon (2,564).**
 
 ## Not done / for the user
 
