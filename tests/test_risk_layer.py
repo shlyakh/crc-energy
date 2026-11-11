@@ -69,11 +69,28 @@ def test_plant_curves_match_the_curve_module_at_the_spec_vector() -> None:
     assert at_50 == pytest.approx(hc.pv_plant_hail(50.0), abs=1e-5)
 
 
+def same(a: object, b: object) -> None:
+    """Equal structure, numbers equal to 1e-6 relative."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        assert a.keys() == b.keys()
+        for key in a:
+            same(a[key], b[key])
+    elif isinstance(a, list) and isinstance(b, list):
+        assert len(a) == len(b)
+        for x, y in zip(a, b, strict=True):
+            same(x, y)
+    elif isinstance(a, float) or isinstance(b, float):
+        assert a == pytest.approx(b, rel=1e-6, abs=1e-12)
+    else:
+        assert a == b
+
+
 def test_curves_file_matches_the_curve_module() -> None:
     from crc_lab.impacts import hail_curves as hc
 
     built = risk_layer.curves_payload()
-    assert json.loads((SITE / "curves.json").read_text()) == json.loads(json.dumps(built))
+    # the committed file was built on another machine: floats may differ in the last digit
+    same(json.loads((SITE / "curves.json").read_text()), json.loads(json.dumps(built)))
     i = built["d_mm"].index(50.0)
     defaults = built["solar"]["defaults"]
     key = f"{defaults['stow_tilt_deg']}|{defaults['p_stow']:g}"
