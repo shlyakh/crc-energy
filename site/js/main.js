@@ -3,7 +3,7 @@
 import { $, esc, readAddress, writeAddress } from "./util.js";
 import { initRisk, riskAddress, select as selectPlant, setBasis, setMeasure } from "./risk.js";
 
-const DATA = "../data/";
+const DATA = "data/";
 // tab -> its project, the pane it shows and, for the two source tabs, the origin of the sources listed
 const TABS = {
   risk: { project: "hail", pane: "tab-risk" },

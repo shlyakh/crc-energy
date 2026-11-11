@@ -3,189 +3,100 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Texas climate data explorer</title>
-<meta name="description" content="Texas map of climate and weather data sources read through crc-sdk: cyclone tracks, storm reports, coastal water levels, station curves, a reanalysis baseline and CRC Open projections.">
+<title>Texas hail risk explorer · Texas CRC data</title>
+<meta name="description" content="Hail risk at Texas utility-scale solar plants: expected loss, the hail record behind it, and the Climate Risk Commons data around it.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.css">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
-<!-- No build step. deck.gl's standalone bundle exposes the global `deck` and expects h3-js as the global `h3`
-     (its H3HexagonLayer calls it); load h3-js first. Pinned 2026-11-10: h3-js 4.5.0, deck.gl 9.4.0, maplibre-gl 6.16.0. -->
+<link rel="stylesheet" href="sources.css">
+<!-- No build step. Pinned 2026-11-10: h3-js 4.5.0, deck.gl 9.4.0 (global `deck`, needs the global `h3` first), maplibre-gl 6.16.0 (ESM). -->
 <script src="https://cdn.jsdelivr.net/npm/h3-js@4.5.0/dist/h3-js.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.4.0/dist.min.js"></script>
 </head>
 <body>
-<header>
-  <h1>Texas climate data explorer</h1>
-  <nav>
-    <button class="tab on" data-view="map">Map</button>
-    <button class="tab" data-view="catalog">Sources</button>
-    <button class="tab" data-view="about">About</button>
-    <button id="demo-start" class="demo-btn" title="A 30-second guided tour of this page">▶ Play demo</button>
+<header class="top">
+  <!-- Two projects share this page: the hail risk work (new, built on CRC) and an explorer of the data crc-sdk already reaches. -->
+  <div class="projects" role="tablist" aria-label="Project">
+    <button class="proj" role="tab" data-project="hail"><b>Texas hail risk</b><small>new work, built on Climate Risk Commons</small></button>
+    <button class="proj" role="tab" data-project="crc"><b>Texas CRC data</b><small>explorer of what crc-sdk already reaches</small></button>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="View">
+    <button class="tab" role="tab" data-tab="risk" data-project="hail">Risk</button>
+    <button class="tab" role="tab" data-tab="evidence" data-project="hail">Hail evidence</button>
+    <button class="tab" role="tab" data-tab="methods" data-project="hail">Methods</button>
+    <button class="tab" role="tab" data-tab="crc" data-project="crc">Data</button>
+    <button class="tab" role="tab" data-tab="crc-about" data-project="crc">About</button>
   </nav>
-  <div id="release" class="release"></div>
+  <div class="top-right">
+    <button id="demo-start" class="btn" title="A guided tour of this page, about 35 seconds">▶ Tour</button>
+    <span id="build" class="mute"></span>
+  </div>
 </header>
 
-<main id="view-map" class="view on">
-  <aside id="controls">
-    <section>
-      <h2>Source</h2>
-      <div id="sources"></div>
-    </section>
-
-    <section id="source-panel">
-      <div id="source-blurb" class="blurb"></div>
-
-      <!-- IBTrACS -->
-      <div id="ctl-ibtracs" class="ctl hidden">
-        <div class="row">
-          <label>From season <input type="number" id="tracks-from"></label>
-          <label>To season <input type="number" id="tracks-to"></label>
-        </div>
-        <div class="row">
-          <label>Name contains <input type="search" id="tracks-name" placeholder="e.g. Harvey"></label>
-          <label>At least (knots) <input type="number" id="tracks-min-wind" min="0" step="5" value="0"></label>
-        </div>
-        <label>Colour by
-          <select id="tracks-color"><option value="wind">wind along the track</option><option value="category">Saffir-Simpson category</option></select>
-        </label>
-        <label class="check"><input type="checkbox" id="tracks-extent" checked> Show wind extent (34, 50, 64 kt radii) for the selected storm, or for all shown when 8 or fewer</label>
-        <div id="tracks-legend" class="legend-inline"></div>
-        <div id="tracks-status" class="mute small"></div>
-        <ol id="tracks-list" class="list"></ol>
-      </div>
-
-      <!-- Storm Events -->
-      <div id="ctl-storm_events" class="ctl hidden">
-        <div class="row">
-          <label>From year <input type="number" id="events-from" min="1950" max="2030"></label>
-          <label>To year <input type="number" id="events-to" min="1950" max="2030"></label>
-        </div>
-        <label class="check"><input type="checkbox" id="win-on"> Explore a date window with the timeline</label>
-        <div class="row" id="win-row">
-          <label>Start (UTC) <input type="date" id="win-start" value="2024-03-14"></label>
-          <label>Days <input type="number" id="win-days" min="1" max="14" value="3"></label>
-        </div>
-        <div id="events-types"></div>
-        <div id="events-status" class="mute small"></div>
-      </div>
-
-      <!-- Station sources (CO-OPS, GHCNh) -->
-      <div id="ctl-stations" class="ctl hidden">
-        <div id="stations-status" class="mute small"></div>
-        <ol id="stations-list" class="list"></ol>
-      </div>
-
-      <!-- Hail days: four sources compared -->
-      <div id="ctl-compare" class="ctl hidden">
-        <label>View
-          <select id="cmp-mode"><option value="single">one source</option><option value="swipe">swipe between two sources</option><option value="ratio">ratio of two sources</option></select>
-        </label>
-        <div class="row">
-          <label id="cmp-a-label">Source <select id="cmp-a"></select></label>
-          <label id="cmp-b-label">Against <select id="cmp-b"></select></label>
-        </div>
-        <label class="check" id="cmp-own-label"><input type="checkbox" id="cmp-own"> Scale each source to its own range</label>
-        <div class="legend">
-          <div class="legend-head"><span id="cmp-legend-title"></span><span id="cmp-legend-unit" class="mute"></span></div>
-          <div id="cmp-legend-bar"></div>
-          <div class="legend-ends"><span id="cmp-legend-min"></span><span id="cmp-legend-mid"></span><span id="cmp-legend-max"></span></div>
-          <div id="cmp-legend-note" class="mute"></div>
-        </div>
-        <div id="cmp-summary"></div>
-        <div id="cmp-years"></div>
-      </div>
-
-      <!-- Cell sources (ERA5, CRC Open) -->
-      <div id="ctl-cells" class="ctl hidden">
-        <label id="hazard-label">Hazard <select id="hazard"></select></label>
-        <div class="row">
-          <label>Horizon <select id="horizon"></select></label>
-          <label>Return period <select id="rp"></select></label>
-        </div>
-        <div class="legend">
-          <div class="legend-head"><span id="legend-title"></span><span id="legend-unit" class="mute"></span></div>
-          <div id="legend-bar"></div>
-          <div class="legend-ends"><span id="legend-min"></span><span id="legend-max"></span></div>
-          <label class="check"><input type="checkbox" id="lock"> Keep this colour scale when switching</label>
-          <div id="legend-note" class="mute"></div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <h2>Also show</h2>
-      <div id="overlays"></div>
-    </section>
-
-    <section class="caveats">
-      <h2>Read this first</h2>
-      <ul id="caveats"></ul>
-    </section>
-    <div id="status" class="mute"></div>
-  </aside>
-  <div id="mapcol">
-    <div id="map"><div id="swipe" class="hidden" title="Drag to move the split"><span id="swipe-a"></span><span id="swipe-b"></span></div></div>
-    <div id="timebar" class="hidden">
-      <div class="timectl">
-        <button id="time-play" title="Play or pause">▶</button>
-        <select id="time-speed" title="Playback speed"><option value="1">1 h/s</option><option value="3">3 h/s</option><option value="6" selected>6 h/s</option><option value="12">12 h/s</option><option value="24">24 h/s</option></select>
-        <input type="range" id="time-slider" min="0" max="1000" value="0">
-        <span id="time-clock" class="clock"></span>
-      </div>
-      <div id="timeline"></div>
-      <div id="timeline-note" class="mute small"></div>
-      <div id="timeline-tip" class="tip hidden"></div>
+<main id="tab-risk" class="pane">
+  <section class="col col-table" aria-label="Plants">
+    <div class="col-head">
+      <span class="label">Plants</span><span id="plant-count" class="num mute"></span>
+      <input id="plant-filter" type="search" placeholder="Filter by name or county" aria-label="Filter plants">
     </div>
-  </div>
-  <aside id="detail" class="hidden">
-    <button id="detail-close" title="Close">×</button>
-    <h2 id="detail-title"></h2>
-    <div id="detail-meta" class="meta"></div>
-    <div id="chart"></div>
-    <table id="detail-table"></table>
-    <div id="detail-params" class="meta"></div>
-    <p id="detail-foot" class="mute small"></p>
-  </aside>
+    <div class="col-sub">
+      <label class="field"><span class="label">Capacity</span>
+        <select id="min-mw" aria-label="Minimum capacity">
+          <option value="0">all plants</option><option value="5">≥ 5 MW</option><option value="20">≥ 20 MW</option><option value="50">≥ 50 MW</option><option value="100">≥ 100 MW</option>
+        </select></label>
+      <span id="hidden-note" class="hidden-note"></span>
+    </div>
+    <div class="table-wrap">
+      <table id="plants" class="data">
+        <thead><tr>
+          <th data-sort="name" class="l">Plant</th>
+          <th data-sort="mw">MW</th>
+          <th data-sort="reports" id="th-reports">Reports</th>
+          <th data-sort="corrected" id="th-corrected">Corrected</th>
+        </tr></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+    </div>
+    <p id="table-note" class="note"></p>
+  </section>
+
+  <section class="col col-map">
+    <div class="toolbar">
+      <label class="field"><span class="label">Colour by</span>
+        <select id="measure"></select></label>
+      <div class="field"><span class="label">Hail rate</span>
+        <div class="seg" id="basis" role="radiogroup" aria-label="Hail rate basis">
+          <button data-basis="0" role="radio">As reported</button>
+          <button data-basis="1" role="radio">Bias-corrected</button>
+        </div></div>
+      <button id="reset-view" class="btn">Texas</button>
+    </div>
+    <div id="risk-map-wrap">
+      <div id="risk-map"></div>
+      <div id="risk-hover" class="hover hidden"></div>
+      <div id="risk-legend" class="legend"></div>
+      <div id="risk-coords" class="coords num"></div>
+      <div id="risk-msg" class="map-msg hidden"></div>
+    </div>
+  </section>
+
+  <section class="col col-detail" aria-label="Selected plant">
+    <div id="risk-empty" class="empty">
+      <span class="label">No plant selected</span>
+      <p>Pick a plant in the table or on the map. Its report circle, the hail reports inside it and its array outline are drawn on the map.</p>
+    </div>
+    <div id="risk-detail" class="hidden"></div>
+  </section>
 </main>
 
-<main id="view-catalog" class="view">
-  <section>
-    <h2>Sources in this explorer</h2>
-    <p class="mute">Two groups: sources crc-sdk already reaches, and sources new in this project. Each is shown as it is: observations stay observations, published levels stay published, and only the curves marked as fitted were fitted. Status: loaded = built and checked; prototype = a first cut; planned = not built.</p>
-    <table id="catalog-sources"></table>
-  </section>
-  <section>
-    <h2>CRC Open: every hazard in the release</h2>
-    <p id="catalog-intro" class="mute"></p>
-    <input id="catalog-filter" type="search" placeholder="Filter hazards…">
-    <table id="catalog-table"></table>
-  </section>
-  <section>
-    <h2>Other sources crc-sdk reaches</h2>
-    <p class="mute">From the crc-sdk 0.11.1 documentation and the sources-track probes (<code>docs/sources-track/requirements.md</code>). Not in the explorer yet.</p>
-    <table id="sources-table"></table>
-  </section>
-  <section>
-    <h2>Not in any source here</h2>
-    <ul id="not-in-crc"></ul>
-  </section>
-</main>
+<!-- Hail evidence and CRC data share one pane; js/sources.js fills it and filters the sources by origin. -->
+<main id="tab-sources" class="pane hidden"></main>
+<main id="tab-methods" class="pane doc hidden"></main>
+<main id="tab-crc-about" class="pane doc hidden"></main>
 
-<main id="view-about" class="view">
-  <article id="about"></article>
-</main>
+<div id="demo-bar" class="demo-bar hidden" role="status"><span id="demo-step" class="label"></span><span id="demo-caption"></span><button id="demo-stop" class="btn">Stop</button><i id="demo-progress"></i></div>
 
-<div id="demo-bar" class="hidden" role="status" aria-live="polite">
-  <div id="demo-caption"></div>
-  <div class="demo-ctl">
-    <div id="demo-progress"><i></i></div>
-    <span id="demo-step" class="mute small"></span>
-    <button id="demo-next" class="hidden">Next</button>
-    <button id="demo-pause">Pause</button>
-    <button id="demo-stop" title="Escape also exits">Stop</button>
-  </div>
-</div>
-
-<script type="module" src="app.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

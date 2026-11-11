@@ -17,8 +17,16 @@ def main(site: Path = Path("site")) -> int:
     missing: list[str] = []
     for name in (
         "index.html",
-        "app.js",
         "style.css",
+        "sources.css",
+        "js/main.js",
+        "js/risk.js",
+        "js/sources.js",
+        "js/methods.js",
+        "js/demo.js",
+        "data/assets/plants.json",
+        "data/assets/plants_detail.json",
+        "data/assets/curves.json",
         "sources.json",
         "data/catalog.json",
         "data/texas.geojson",

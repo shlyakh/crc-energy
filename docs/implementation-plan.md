@@ -194,6 +194,13 @@ Decided 2026-11-10: curve data and code stay in this repo, written so they can b
 published vectors). Open before Phase 5: the placeholder defaults; baseline versus range for buildings; cars
 have no asset set.
 
+## Phase 6 — Explorer redesign
+
+Built 2026-11-10 to 11; plan: [plan-explorer-next.md](plan-explorer-next.md); report:
+[reports/6-explorer-redesign.md](reports/6-explorer-redesign.md). One page, two projects ("Texas hail risk" and
+"Texas CRC data"); a Risk tab with a ranked plant table, plants coloured in classes and a plant detail column;
+legends with numeric ranges, scale bar, hover and selection highlight on every map; Methods with the damage curves.
+
 ## After this effort
 
 Explorer improvements are drafted in [plan-explorer-next.md](plan-explorer-next.md); questions waiting for Yuri are in [open-questions.md](open-questions.md).

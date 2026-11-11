@@ -10,7 +10,7 @@ const ph = '<span class="pill ph">placeholder</span>';
 
 export async function showMethods(el, dataUrl) {
   if (done.has(el.id)) return;
-  const [plants, curves, registry] = await Promise.all([json(`${dataUrl}assets/plants.json`), json(`${dataUrl}assets/curves.json`), json("../layers.json")]);
+  const [plants, curves, registry] = await Promise.all([json(`${dataUrl}assets/plants.json`), json(`${dataUrl}assets/curves.json`), json("layers.json")]);
   const t = plants.totals, rule = plants.rule, d = curves.solar.defaults;
   const big = plants.plants.filter((p) => p.mw >= 20), sum = (f) => big.reduce((a, p) => a + (p[f] ?? 0), 0);
   const hail = registry.sources.filter((s) => s.origin === "crc-lab");
@@ -104,7 +104,7 @@ export async function showMethods(el, dataUrl) {
 
 export async function showCrcAbout(el, dataUrl) {
   if (done.has(el.id)) return;
-  const [registry, catalog, manifest] = await Promise.all([json("../layers.json"), json("../sources.json"), json(`${dataUrl}manifest.json`).catch(() => null)]);
+  const [registry, catalog, manifest] = await Promise.all([json("layers.json"), json("sources.json"), json(`${dataUrl}manifest.json`).catch(() => null)]);
   const group = registry.groups.find((g) => g.id === "crc-sdk"), shown = registry.sources.filter((s) => s.origin === "crc-sdk");
   const versions = manifest?.versions ? Object.entries(manifest.versions).map(([k, v]) => `${k} ${v}`).join(", ") : "";
   el.innerHTML = `<div class="doc-in">

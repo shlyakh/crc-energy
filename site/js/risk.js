@@ -19,7 +19,7 @@ const byId = (id) => S.data.plants.find((p) => p.id === id);
 const visible = () => S.data.plants.filter((p) => p.mw >= S.minMW || p.id === S.selected);
 const hiddenCount = () => S.data.plants.length - visible().length;
 
-globalThis.__risk = S; // read by tools/smoke-next.mjs
+globalThis.__risk = S; // read by tools/smoke.mjs
 
 export function riskAddress() { return { plant: S.selected, measure: S.measure?.id, basis: S.basis || null, minmw: S.minMW === 20 ? null : S.minMW }; }
 
@@ -27,7 +27,7 @@ export async function initRisk(dataUrl, address, onChange) {
   S.onChange = onChange; S.detailUrl = `${dataUrl}assets/plants_detail.json`;
   const [data, registry, texas] = await Promise.all([
     fetch(`${dataUrl}assets/plants.json`).then((r) => { if (!r.ok) throw new Error(`plants.json ${r.status}`); return r.json(); }),
-    fetch("../layers.json").then((r) => r.json()),
+    fetch("layers.json").then((r) => r.json()),
     fetch(`${dataUrl}texas.geojson`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
   ]);
   S.data = data; S.texas = texas;

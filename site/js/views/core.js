@@ -7,7 +7,7 @@ export const { MapboxOverlay, H3HexagonLayer, GeoJsonLayer, ScatterplotLayer, Li
 export const $ = (id) => document.getElementById(id);
 
 export const state = {
-  root: "../",               // registry paths ("data/...") are relative to site/
+  root: "",                  // registry paths ("data/...") are relative to site/
   registry: null, catalog: null, manifest: null, texas: null,
   origin: null, byOrigin: {}, // shown group of sources, and the last source picked in each
   source: null,              // active source id (registry.sources[].id)

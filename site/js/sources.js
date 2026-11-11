@@ -345,7 +345,7 @@ function initMap() {
 }
 
 // ---------- the three exports main.js uses ----------
-export async function initSources({ dataUrl = "../data/", address = {}, onChange } = {}) {
+export async function initSources({ dataUrl = "data/", address = {}, onChange } = {}) {
   state.root = dataUrl.replace(/data\/?$/, ""); if (onChange) notify = onChange;
   $("tab-sources").innerHTML = PANE;
   const [registry, catalog, manifest, texas] = await Promise.all([fetchJSON("layers.json"), fetchJSON("data/catalog.json"), fetchJSON("data/manifest.json"), fetchJSON("data/texas.geojson")]);

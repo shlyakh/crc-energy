@@ -10,9 +10,9 @@ Current work (agreed 2026-11-10; explorer first, storm sources and assets deferr
 - [Decisions and their effect](decisions.md): each choice, its alternatives and a chart of the difference
 - [Data source catalog](data-sources.md): every source in use, probed or proposed, with what was checked
 - [Open questions for review](open-questions.md): every question waiting for Yuri, explained, with options
-- [Plan: explorer improvements after Phase 5](plan-explorer-next.md) (draft for review)
+- [Plan: explorer redesign](plan-explorer-next.md) (Phase 6, built)
 - [Plan: better hail exposure](plan-hail-exposure.md): footprint, reporting bias, radar (draft for review)
-- [Reports](reports/): one per phase — [0 setup](reports/0-setup.md) · [1 explorer](reports/1-explorer.md) · [2 storm events](reports/2-storm-events.md) · [2 comparison](reports/2-storm-events-comparison.md) · [3 curves](reports/3-curves.md) · [3 sensitivity](reports/3-curves-sensitivity.md) · [4 assets](reports/4-assets.md) · [4 hail exposure](reports/4-hail-exposure-sensitivity.md) · [4 real estate](reports/4-real-estate-fort-bend.md) · [4 radar](reports/4-radar-hail.md) · [5 reporting bias](reports/5-reporting-bias.md) · [5 hail impact and loss](reports/5-hail-impact.md)
+- [Reports](reports/): one per phase — [0 setup](reports/0-setup.md) · [1 explorer](reports/1-explorer.md) · [2 storm events](reports/2-storm-events.md) · [2 comparison](reports/2-storm-events-comparison.md) · [3 curves](reports/3-curves.md) · [3 sensitivity](reports/3-curves-sensitivity.md) · [4 assets](reports/4-assets.md) · [4 hail exposure](reports/4-hail-exposure-sensitivity.md) · [4 real estate](reports/4-real-estate-fort-bend.md) · [4 radar](reports/4-radar-hail.md) · [5 reporting bias](reports/5-reporting-bias.md) · [5 hail impact and loss](reports/5-hail-impact.md) · [6 explorer redesign](reports/6-explorer-redesign.md)
 - [Primer: how an event source can be used in CRC](primers/event-sources-in-crc.md)
 
 Background:

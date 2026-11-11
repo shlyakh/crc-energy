@@ -5,9 +5,11 @@ plants. Built: the explorer (source-centric, nine sources), NOAA Storm Events on
 gust curves (Phase 3), solar plants with value and hail exposure, reporting-bias model and radar (Phase 4),
 hail impact functions v0 and loss per plant (Phase 5, 2026-11-10, awaiting review). One branch: `main`.
 
-The explorer is driven by `site/layers.json`: `groups`, `sources` (each with an `origin`), layers with a
-`source_id`, `panel_groups` for click panels, and `demo` for the 30-second tour (`?demo=1`;
-`tools/record-demo.mjs` records `site/demo.webm`). `tools/smoke.mjs` walks every source.
+The explorer (redesigned in Phase 6, `docs/reports/6-explorer-redesign.md`) is one static page holding two
+projects, switched at the top left: "Texas hail risk" (new work: Risk, Hail evidence, Methods) and "Texas CRC data"
+(an explorer of what crc-sdk already reaches: Data, About). `site/layers.json` stays the registry of sources and
+layers (`groups`, `sources` with an `origin`, layers with a `source_id`); the Risk tab reads the generated
+`site/data/assets/plants.json`, `plants_detail.json` and `curves.json`.
 
 Read first:
 
@@ -65,15 +67,15 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - `docs/hail-data-processing.md`, `docs/decisions.md`, `docs/data-sources.md` — how hail is processed, what was
   chosen and why, and every data source
 - `docs/sources-track/` — requirements and plan for the other crc-sdk sources (probes in `tools/probes/`)
-- `site/next/` — the redesigned explorer (Phase 6, `docs/plan-explorer-next.md`), built beside the current page until the
-  swap: `index.html`, `style.css`, `sources.css`, `js/` (ES modules: `main.js` shell, `risk.js` + `charts.js` Risk tab,
-  `sources.js` + `views/` the source tabs, `methods.js` Methods and About, `demo.js` the tour); two projects on one
-  page ("Texas hail risk": Risk, Hail evidence, Methods; "Texas CRC data": Data, About); `site/next/demo.webm` is
-  recorded with `node tools/record-demo.mjs <dir> <url>/next/ site/next/demo.webm`; data from `src/crc_lab/explorer/risk_layer.py`
-  (`site/data/assets/plants.json`, `plants_detail.json`); `tools/smoke-next.mjs` checks it
-- `tools/smoke.mjs`, `tools/record-demo.mjs` — headless Chrome smoke test and demo recorder
-- `site/` — the static explorer: `index.html`, `app.js`, `style.css`, `layers.json` (E9 registry),
-  `sources.json` (E2, hand-written); `site/data/` is generated and git-ignored
+- `site/` — the static explorer, no build step: `index.html`, `style.css` (tokens, Risk tab), `sources.css`, `js/`
+  (ES modules: `main.js` shell and projects, `risk.js` + `charts.js` Risk tab, `sources.js` + `views/` the source tabs
+  shared by Hail evidence and Data, `methods.js` Methods and About, `demo.js` the tour), `layers.json` (registry),
+  `sources.json` (hand-written catalogue); `site/next/index.html` only forwards old links
+- `src/crc_lab/explorer/risk_layer.py` — the Risk tab's data files (plants with measures and class breaks, report
+  circles and outlines, damage curves as values); run by `just impacts`
+- `tools/smoke.mjs` (`node tools/smoke.mjs <out dir> [url] [width] [height] [--no-demo]`), `tools/record-demo.mjs` —
+  headless Chrome smoke test and tour recorder; `site/data/` is generated and git-ignored except `sources/`,
+  `assets/` and `hail_compare/`
 - `tests/` — pytest, offline; `test_pins.py` guards the pins, `test_explorer.py` the build helpers,
   `test_storm_events.py` the parser and cells on `tests/fixtures/` (a fixed 2024 sample), `test_curves.py`
   the annual maxima and pooling on a synthetic event table
