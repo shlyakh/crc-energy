@@ -66,11 +66,11 @@ function texasBounds() { let b = [-106.7, 25.8, -93.5, 36.6]; return [[b[0] - 0.
 function fitTexas(duration = 0) { S.map.fitBounds(texasBounds(), { padding: PAD, duration }); }
 
 function initMap(basemap) {
-  const map = new maplibregl.Map({ container: "map", style: basemap.style, bounds: texasBounds(), fitBoundsOptions: { padding: PAD }, attributionControl: { compact: true, customAttribution: `${basemap.attribution} · plants: EIA-860/860M via PUDL, USPVDB · hail: NOAA Storm Events, MRMS` } });
+  const map = new maplibregl.Map({ container: "risk-map", style: basemap.style, bounds: texasBounds(), fitBoundsOptions: { padding: PAD }, attributionControl: { compact: true, customAttribution: `${basemap.attribution} · plants: EIA-860/860M via PUDL, USPVDB · hail: NOAA Storm Events, MRMS` } });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   map.addControl(new maplibregl.ScaleControl({ maxWidth: 140, unit: "metric" }), "bottom-right");
-  map.on("mousemove", (e) => { $("coords").textContent = `${e.lngLat.lat.toFixed(3)}° N  ${Math.abs(e.lngLat.lng).toFixed(3)}° W`; });
-  map.on("mouseout", () => { $("coords").textContent = ""; });
+  map.on("mousemove", (e) => { $("risk-coords").textContent = `${e.lngLat.lat.toFixed(3)}° N  ${Math.abs(e.lngLat.lng).toFixed(3)}° W`; });
+  map.on("mouseout", () => { $("risk-coords").textContent = ""; });
   const overlay = new MapboxOverlay({
     interleaved: false, layers: [],
     onHover: (info) => hover(info), getCursor: ({ isHovering }) => (isHovering ? "pointer" : "grab"),
@@ -94,7 +94,7 @@ function addLabels() {
 }
 
 function hover(info) {
-  const box = $("hover"); const o = info.object;
+  const box = $("risk-hover"); const o = info.object;
   if (!o || !["plants", "sel-reports"].includes(info.layer?.id)) { box.classList.add("hidden"); if (S.hovered) { S.hovered = null; markRow(); } return; }
   if (info.layer.id === "plants") {
     const v = shown(o); const other = S.measure.has_basis ? shown(o, 1 - S.basis) : null;
@@ -143,7 +143,7 @@ function renderLegend() {
   const sizes = [50, 200, 600].map((mw) => `<span><i style="width:${2 * radiusPx(mw)}px;height:${2 * radiusPx(mw)}px"></i>${mw}</span>`).join("");
   const sel = S.selected && S.detail ? `<div class="sep"></div><div class="row"><span class="ring"></span>Report circle of the selected plant</div><div class="row"><span class="dot" style="background:var(--report)"></span>Hail report, sized by hail size</div><div class="row"><span class="dot" style="background:var(--c2);opacity:.5;border-radius:1px"></span>Array outline (USPVDB)</div>` : "";
   const period = m.id === "radar_days" ? `Radar (MRMS) ${S.data.periods.radar}.` : `Storm reports ${S.data.periods.reports}, ${BASIS[S.basis]}.`;
-  $("legend").innerHTML = `<h3>${esc(m.label)}</h3><div class="unit">${esc(m.unit)} · plants per class at right</div>${rows}${none ? `<div class="row"><span class="dot" style="background:var(--nodata)"></span>no value<span class="n num">${none}</span></div>` : ""}
+  $("risk-legend").innerHTML = `<h3>${esc(m.label)}</h3><div class="unit">${esc(m.unit)} · plants per class at right</div>${rows}${none ? `<div class="row"><span class="dot" style="background:var(--nodata)"></span>no value<span class="n num">${none}</span></div>` : ""}
     <div class="sep"></div><div class="label">Capacity, MW AC</div><div class="sizes">${sizes}</div>${sel}
     <div class="foot">${period}${m.id.startsWith("loss") ? " First-approximation damage curve with placeholder inputs." : ""}</div>`;
   document.body.dataset.legend = `${m.unit} | ${counts.map((_, i) => range(i)).join(" | ")}`;
@@ -172,7 +172,7 @@ export async function select(id, { fly = false, duration = 700 } = {}) {
   S.selected = id && byId(id) ? id : null;
   if (S.selected && !S.detail) {
     try { S.detail = await fetch(S.detailUrl).then((r) => { if (!r.ok) throw new Error(`plants_detail.json ${r.status}`); return r.json(); }); }
-    catch (e) { $("map-msg").textContent = `Report circles could not be loaded: ${e.message}`; $("map-msg").classList.remove("hidden"); }
+    catch (e) { $("risk-msg").textContent = `Report circles could not be loaded: ${e.message}`; $("risk-msg").classList.remove("hidden"); }
   }
   for (const tr of $("plants").tBodies[0].rows) tr.classList.toggle("sel", tr.dataset.id === S.selected);
   renderLegend(); renderLayers(); renderDetail(); S.onChange();
@@ -189,13 +189,13 @@ export async function select(id, { fly = false, duration = 700 } = {}) {
 
 function renderDetail() {
   const p = S.selected ? byId(S.selected) : null;
-  $("detail-empty").classList.toggle("hidden", !!p); $("detail").classList.toggle("hidden", !p);
+  $("risk-empty").classList.toggle("hidden", !!p); $("risk-detail").classList.toggle("hidden", !p);
   if (!p) return;
   const d = S.detail?.[p.id]; const rule = S.data.rule, def = S.data.curve_defaults || {};
   const on = (b) => (S.basis === b ? ' class="sub on"' : ' class="sub"');
   const glass = p.glass === "glass_glass_2.0" ? "2.0 mm glass-glass" : "3.2 mm glass, backsheet";
   const ph = '<span class="pill ph">placeholder</span>', inf = '<span class="pill">rule</span>';
-  $("detail").innerHTML = `
+  $("risk-detail").innerHTML = `
     <div class="d-head"><button class="d-close" title="Clear selection (Esc)" aria-label="Clear selection">×</button>
       <h2>${esc(p.name)}</h2><p>${esc(p.county)} County · ${p.lat.toFixed(3)}° N ${Math.abs(p.lon).toFixed(3)}° W</p>
       <p>${fmtMW(p.mw)} MW AC · online ${p.year ?? "–"} · ${esc(p.mount)} · ${glass}</p></div>
@@ -226,5 +226,5 @@ function renderDetail() {
         ${(d?.notes ?? []).map((n) => `<li>${esc(n)}</li>`).join("")}
       </ul>
       <p>Value: benchmark cost per kW AC × capacity. Charts of hail sizes and the damage curve come with the next stop.</p></div>`;
-  $("detail").querySelector(".d-close").onclick = () => select(null);
+  $("risk-detail").querySelector(".d-close").onclick = () => select(null);
 }

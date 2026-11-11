@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.css">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="sources.css">
 <!-- No build step. Pinned 2026-11-10: h3-js 4.5.0, deck.gl 9.4.0 (global `deck`, needs the global `h3` first), maplibre-gl 6.16.0 (ESM). -->
 <script src="https://cdn.jsdelivr.net/npm/h3-js@4.5.0/dist/h3-js.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.4.0/dist.min.js"></script>
@@ -62,26 +63,26 @@
         </div></div>
       <button id="reset-view" class="btn">Texas</button>
     </div>
-    <div id="map-wrap">
-      <div id="map"></div>
-      <div id="hover" class="hover hidden"></div>
-      <div id="legend" class="legend"></div>
-      <div id="coords" class="coords num"></div>
-      <div id="map-msg" class="map-msg hidden"></div>
+    <div id="risk-map-wrap">
+      <div id="risk-map"></div>
+      <div id="risk-hover" class="hover hidden"></div>
+      <div id="risk-legend" class="legend"></div>
+      <div id="risk-coords" class="coords num"></div>
+      <div id="risk-msg" class="map-msg hidden"></div>
     </div>
   </section>
 
   <section class="col col-detail" aria-label="Selected plant">
-    <div id="detail-empty" class="empty">
+    <div id="risk-empty" class="empty">
       <span class="label">No plant selected</span>
       <p>Pick a plant in the table or on the map. Its report circle, the hail reports inside it and its array outline are drawn on the map.</p>
     </div>
-    <div id="detail" class="hidden"></div>
+    <div id="risk-detail" class="hidden"></div>
   </section>
 </main>
 
-<main id="tab-evidence" class="pane page hidden"></main>
-<main id="tab-crc" class="pane page hidden"></main>
+<!-- Hail evidence and CRC data share one pane; js/sources.js fills it and filters the sources by origin. -->
+<main id="tab-sources" class="pane hidden"></main>
 <main id="tab-methods" class="pane page hidden"></main>
 
 <script type="module" src="js/main.js"></script>

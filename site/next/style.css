@@ -77,8 +77,8 @@ select { height: 28px; padding: 0 var(--s2); border: 1px solid var(--rule-2); bo
 .btn:hover { background: var(--hover); }
 
 /* map and its furniture */
-#map-wrap { position: relative; flex: 1; min-height: 0; }
-#map { position: absolute; inset: 0; }
+#risk-map-wrap { position: relative; flex: 1; min-height: 0; }
+#risk-map { position: absolute; inset: 0; }
 .legend { position: absolute; left: var(--s3); bottom: var(--s3); width: 236px; background: rgba(252, 252, 251, .96); border: 1px solid var(--rule-2); padding: var(--s2) var(--s3) var(--s3); font-size: var(--f-s); pointer-events: none; }
 .legend h3 { margin: 0; font-size: var(--f-s); font-weight: 600; line-height: 1.3; }
 .legend .unit { color: var(--ink-2); font-size: var(--f-xs); margin-bottom: var(--s2); }
@@ -101,7 +101,7 @@ select { height: 28px; padding: 0 var(--s2); border: 1px solid var(--rule-2); bo
 
 /* detail */
 .empty { padding: var(--s4); color: var(--ink-2); } .empty p { margin: var(--s2) 0 0; font-size: var(--f-s); }
-#detail { padding-bottom: var(--s5); }
+#risk-detail { padding-bottom: var(--s5); }
 .d-head { padding: var(--s3) var(--s4); border-bottom: 1px solid var(--rule-2); position: relative; }
 .d-head h2 { margin: 0 var(--s5) 2px 0; font-size: var(--f-l); font-weight: 650; line-height: 1.25; }
 .d-head p { margin: 0; color: var(--ink-2); font-size: var(--f-s); }

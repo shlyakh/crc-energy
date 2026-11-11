@@ -31,7 +31,7 @@ await open(URL);
 let d = await data();
 check("page ready, Risk tab first", d.ready === "1" && d.tab === "risk" && !d.error, d);
 check("table lists every plant", d.rows === String(await ev("__risk.data.totals.plants")), d.rows);
-const legend = await ev("document.getElementById('legend').innerText");
+const legend = await ev("document.getElementById('risk-legend').innerText");
 check("legend on the map has a unit and numeric ranges", /% per year/.test(legend) && /<\s*[\d.]+/.test(legend) && /≥\s*[\d.]+/.test(legend) && /[\d.]+ – [\d.]+/.test(legend), legend);
 check("legend names the data period and the size scale", /1996–\d{4}/.test(legend) && /CAPACITY, MW AC/i.test(legend), legend);
 check("scale bar present", (await ev("document.querySelector('.maplibregl-ctrl-scale')?.textContent || ''")).includes("km"));
@@ -46,16 +46,16 @@ const tags = await ev("JSON.stringify([...document.querySelectorAll('.tag')].map
 const sel = JSON.parse(await ev(`JSON.stringify(__risk.data.plants.find((p) => p.id === '${first}'))`));
 check("name tag and circle label on the map", tags.includes(sel.name) && /report circle r = [\d.]+ km · \d+ reports/.test(tags), tags);
 check("circle label matches the plant's report count", tags.includes(`${sel.reports} reports`), tags);
-const detail = await ev("document.getElementById('detail').innerText");
+const detail = await ev("document.getElementById('risk-detail').innerText");
 check("detail shows the same plant with both bases", detail.includes(sel.name) && /as reported/i.test(detail) && /bias-corrected/i.test(detail), detail.slice(0, 200));
 check("selected row is marked", (await ev("document.querySelector('#plants tr.sel')?.dataset.id")) === first);
 check("address carries the selection", (await ev("location.hash")).includes(`plant=${first}`));
 await shot("n2-selected");
 
 // select from the map: click the pixel of another plant
-const other = JSON.parse(await ev("JSON.stringify((() => { const p = __risk.data.plants.find((q) => q.name.includes('Fighting Jays')); const xy = __risk.map.project([p.lon, p.lat]); const r = document.getElementById('map').getBoundingClientRect(); return { id: p.id, x: r.left + xy.x, y: r.top + xy.y }; })())"));
+const other = JSON.parse(await ev("JSON.stringify((() => { const p = __risk.data.plants.find((q) => q.name.includes('Fighting Jays')); const xy = __risk.map.project([p.lon, p.lat]); const r = document.getElementById('risk-map').getBoundingClientRect(); return { id: p.id, x: r.left + xy.x, y: r.top + xy.y }; })())"));
 await ev(`__risk.map.jumpTo({ center: __risk.map.getCenter() })`);
-const pos = JSON.parse(await ev(`JSON.stringify((() => { const p = __risk.data.plants.find((q) => q.id === '${other.id}'); __risk.map.jumpTo({ center: [p.lon, p.lat], zoom: 9 }); const xy = __risk.map.project([p.lon, p.lat]); const r = document.getElementById('map').getBoundingClientRect(); return { x: r.left + xy.x, y: r.top + xy.y }; })())`));
+const pos = JSON.parse(await ev(`JSON.stringify((() => { const p = __risk.data.plants.find((q) => q.id === '${other.id}'); __risk.map.jumpTo({ center: [p.lon, p.lat], zoom: 9 }); const xy = __risk.map.project([p.lon, p.lat]); const r = document.getElementById('risk-map').getBoundingClientRect(); return { x: r.left + xy.x, y: r.top + xy.y }; })())`));
 await sleep(1500);
 for (const type of ["mouseMoved", "mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x: pos.x, y: pos.y, button: type === "mouseMoved" ? "none" : "left", clickCount: 1 });
 await sleep(3000); d = await data();
@@ -70,7 +70,7 @@ check("loss total in the table foot, as reported", (await foot()).includes((tota
 await ev("document.querySelector('#basis [data-basis=\"1\"]').click()"); await sleep(600); d = await data();
 check("basis switch sets bias-corrected", d.basis === "1" && (await ev("document.querySelector('#basis [data-basis=\"1\"]').getAttribute('aria-checked')")) === "true", d.basis);
 check("loss total in the table foot, bias-corrected", (await foot()).includes((totals.loss_usd_c / 1e6).toFixed(2)), await foot());
-check("legend follows the measure and the basis", /\$ million per year/.test(await ev("document.getElementById('legend').innerText")) && /bias-corrected/.test(await ev("document.getElementById('legend').innerText")));
+check("legend follows the measure and the basis", /\$ million per year/.test(await ev("document.getElementById('risk-legend').innerText")) && /bias-corrected/.test(await ev("document.getElementById('risk-legend').innerText")));
 const top = JSON.parse(await ev("JSON.stringify([...__risk.data.plants].sort((a, b) => (b.loss_usd_c ?? -1) - (a.loss_usd_c ?? -1))[0].id)"));
 check("table sorted by the active basis, largest first", (await ev("document.querySelector('#plants tbody tr').dataset.id")) === top);
 await ev("document.querySelector('#plants thead th[data-sort=\"name\"]').click()"); await sleep(300);
@@ -79,7 +79,7 @@ check("sort by name", names.join("|") === [...names].sort((a, b) => a.toLowerCas
 await ev("(() => { const i = document.getElementById('plant-filter'); i.value = 'fort bend'; i.oninput({ target: i }); })()"); await sleep(300);
 check("filter narrows the table", Number((await data()).rows) > 0 && Number((await data()).rows) < 20, (await data()).rows);
 await ev("(() => { const s = document.getElementById('measure'); s.value = 'radar_days'; s.onchange(); })()"); await sleep(500);
-check("radar measure disables the basis switch", (await ev("document.querySelector('#basis button').disabled")) === true && /days per year/.test(await ev("document.getElementById('legend').innerText")));
+check("radar measure disables the basis switch", (await ev("document.querySelector('#basis button').disabled")) === true && /days per year/.test(await ev("document.getElementById('risk-legend').innerText")));
 await ev("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))"); await sleep(400);
 check("Escape clears the selection", ((await data()).selected || "") === "" && (await ev("document.querySelectorAll('.tag').length")) === 0);
 
