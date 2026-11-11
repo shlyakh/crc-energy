@@ -67,7 +67,9 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - `docs/sources-track/` — requirements and plan for the other crc-sdk sources (probes in `tools/probes/`)
 - `site/next/` — the redesigned explorer (Phase 6, `docs/plan-explorer-next.md`), built beside the current page until the
   swap: `index.html`, `style.css`, `sources.css`, `js/` (ES modules: `main.js` shell, `risk.js` + `charts.js` Risk tab,
-  `sources.js` + `views/` the Hail evidence and CRC data tabs); data from `src/crc_lab/explorer/risk_layer.py`
+  `sources.js` + `views/` the source tabs, `methods.js` Methods and About, `demo.js` the tour); two projects on one
+  page ("Texas hail risk": Risk, Hail evidence, Methods; "Texas CRC data": Data, About); `site/next/demo.webm` is
+  recorded with `node tools/record-demo.mjs <dir> <url>/next/ site/next/demo.webm`; data from `src/crc_lab/explorer/risk_layer.py`
   (`site/data/assets/plants.json`, `plants_detail.json`); `tools/smoke-next.mjs` checks it
 - `tools/smoke.mjs`, `tools/record-demo.mjs` — headless Chrome smoke test and demo recorder
 - `site/` — the static explorer: `index.html`, `app.js`, `style.css`, `layers.json` (E9 registry),

@@ -272,6 +272,65 @@ def build(
     return payload, detail
 
 
+STOW_TILTS_DEG = (45, 50, 52, 55, 60, 65, 70, 75)
+STOW_CHANCES = (0.0, 0.25, 0.5, 0.8, 0.95, 1.0)
+
+
+def curves_payload() -> dict[str, Any]:
+    """The four v0 curves as values for the Methods tab; the solar curve on a grid of stow settings.
+
+    The page picks among these with its sliders; it never computes a curve.
+    """
+    doc = hc.load()
+    pv = doc["curves"]["pv_plant_hail_v0"]
+    grid = CURVE_GRID_MM
+
+    def values(function: Any, **kwargs: Any) -> list[float]:
+        return [float(f"{v:.6g}") for v in function(grid, **kwargs)]
+
+    solar = {
+        glass: {
+            f"{tilt}|{chance:g}": values(
+                hc.pv_plant_hail, glass_class=glass, stow_tilt_deg=tilt, p_stow=chance
+            )
+            for tilt in STOW_TILTS_DEG
+            for chance in STOW_CHANCES
+        }
+        for glass in pv["break_probability"]
+    }
+    return {
+        "schema": doc["schema"],
+        "as_of": doc["as_of"],
+        "d_mm": grid,
+        "solar": {
+            "meta": hc.metadata("pv_plant_hail_v0"),
+            "defaults": pv["defaults"],
+            "stow_tilts_deg": list(STOW_TILTS_DEG),
+            "stow_chances": list(STOW_CHANCES),
+            "break_probability_knots": pv["break_probability"],
+            "plant": solar,
+        },
+        "buildings": {
+            "swiss": {
+                "meta": hc.metadata("bld_hail_swiss_v0"),
+                "damage_ratio": values(hc.bld_hail_swiss),
+            },
+            "roof": {
+                "meta": hc.metadata("bld_hail_roof_v0"),
+                "defaults": doc["curves"]["bld_hail_roof_v0"]["defaults"],
+                "asphalt_laminated": values(hc.bld_hail_roof, roof_class="asphalt_laminated"),
+                "asphalt_3tab": values(hc.bld_hail_roof, roof_class="asphalt_3tab"),
+            },
+        },
+        "cars": {
+            "swiss": {
+                "meta": hc.metadata("car_hail_swiss_v0"),
+                "damage_ratio": values(hc.car_hail_swiss),
+            }
+        },
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache", type=Path, default=Path("data/cache"))
@@ -282,6 +341,7 @@ def main(argv: list[str] | None = None) -> int:
     payload, detail = build(args.cache, args.events, args.assets, args.site)
     write_json_atomic(args.site / "plants.json", payload)
     write_json_atomic(args.site / "plants_detail.json", detail)
+    write_json_atomic(args.site / "curves.json", curves_payload())
     for m in payload["measures"]:
         print(f"{m['id']}: breaks {m['breaks']} {m['unit']}")
     sizes = [(args.site / n).stat().st_size // 1024 for n in ("plants.json", "plants_detail.json")]

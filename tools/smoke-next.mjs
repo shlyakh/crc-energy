@@ -306,6 +306,38 @@ await open(`${URL}#tab=risk&plant=${other.id}&measure=p2in&basis=1`); await slee
 check("deep link restores plant, measure and basis", d.selected === other.id && d.measure === "p2in" && d.basis === "1", d);
 await shot("n4-deep-link");
 
+// ---------- two projects, Methods, About, the tour ----------
+await open(URL); await sleep(500);
+check("opens on the hail project with its three tabs", (await data()).project === "hail" && (await ev("[...document.querySelectorAll('.tab:not(.hidden)')].map((b) => b.dataset.tab).join()")) === "risk,evidence,methods");
+await ev("document.querySelector('.proj[data-project=\"crc\"]').click()"); await sleep(4000); d = await data();
+check("project switch opens Texas CRC data with its own tabs", d.project === "crc" && d.tab === "crc" && d.origin === "crc-sdk" && (await ev("[...document.querySelectorAll('.tab:not(.hidden)')].map((b) => b.dataset.tab).join()")) === "crc,crc-about" && (await ev("document.title")).includes("CRC data"), d);
+await ev("document.querySelector('.tab[data-tab=\"crc-about\"]').click()"); await sleep(1500);
+const about = await ev("document.getElementById('tab-crc-about').innerText");
+check("CRC About lists the sources shown and the SDK catalogue", (await data()).crcAbout === "1" && /Tropical cyclone tracks/.test(about) && /HazardDataset/.test(about) && /crc-sdk 0\.\d+/.test(about), about.slice(0, 200));
+await shot("p-crc-about");
+await ev("document.querySelector('.proj[data-project=\"hail\"]').click()"); await sleep(800);
+check("switching back returns to the hail project's last tab", (await data()).project === "hail" && (await data()).tab === "risk", await data());
+await ev("document.querySelector('.tab[data-tab=\"methods\"]').click()"); await sleep(2000);
+const mText = await ev("document.getElementById('tab-methods').innerText");
+check("Methods has the steps, the placeholders and the limits", (await data()).methods === "1" && /Report circle/.test(mText) && /PLACEHOLDER/i.test(mText) && /Known limits/i.test(mText) && (await ev("document.querySelectorAll('#tab-methods .flow .box').length")) === 5, mText.slice(0, 200));
+check("four curve charts drawn", (await ev("document.querySelectorAll('#tab-methods svg path[stroke]').length")) >= 6);
+// the stow sliders pick among curves shipped as values: at the defaults the curve gives the spec's 0.1248 at 2 inches
+const curves = JSON.parse(await ev("fetch('../data/assets/curves.json').then((r) => r.text())"));
+const at2 = (glass, tilt, p) => curves.solar.plant[glass][`${tilt}|${p}`][curves.d_mm.indexOf(50)];
+check("solar curve at the defaults matches the shipped values", Math.abs(Number(await ev("document.getElementById('tab-methods').dataset.solarAt2in")) - at2("glass_glass_2.0", 60, 0.8)) < 1e-9 && Math.abs(at2("glass_glass_2.0", 60, 0.8) - 0.1161) < 0.02);
+await ev("(() => { const s = document.querySelector('#m-p'); s.value = '0'; s.dispatchEvent(new Event('input')); const t = document.querySelector('#m-tilt'); t.value = String(t.max); t.dispatchEvent(new Event('input')); })()"); await sleep(300);
+check("sliders move the curve to the never-stowed values", (await ev("document.getElementById('tab-methods').dataset.solarKey")) === "glass_glass_2.0|75|0" && Math.abs(Number(await ev("document.getElementById('tab-methods').dataset.solarAt2in")) - at2("glass_glass_2.0", 75, 0)) < 1e-9 && at2("glass_glass_2.0", 75, 0) > at2("glass_glass_2.0", 60, 0.8));
+check("Methods fits the window width", (await ev("document.documentElement.scrollWidth <= innerWidth")) === true);
+await shot("p-methods");
+if (!process.argv.includes("--no-demo")) {
+  await ev("document.getElementById('demo-start').click()"); await sleep(1500);
+  check("tour starts with a caption", (await data()).demo === "running" && (await ev("document.getElementById('demo-caption').textContent.length")) > 20);
+  const seen = new Set(); for (let i = 0; i < 120 && (await data()).demo === "running"; i++) { seen.add(`${(await data()).project}/${(await data()).tab}`); if (i === 30) await shot("p-tour-mid"); await sleep(500); }
+  d = await data();
+  check("tour finishes in 30 to 45 seconds without a failed step", d.demo === "done" && Number(d.demoMs) > 30000 && Number(d.demoMs) < 45000 && !d.demoError, d);
+  check("tour visits both projects and returns to Risk", ["hail/risk", "hail/evidence", "hail/methods", "crc/crc"].every((s) => seen.has(s)) && d.tab === "risk", [...seen]);
+}
+
 check("no console messages or script errors", messages.length === 0, messages);
 writeFileSync(`${S}/smoke-next.json`, JSON.stringify({ url: URL, failures, messages }, null, 1));
 ws.close(); chrome.kill();

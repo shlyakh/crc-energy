@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Texas hail risk explorer</title>
+<title>Texas hail risk explorer · Texas CRC data</title>
 <meta name="description" content="Hail risk at Texas utility-scale solar plants: expected loss, the hail record behind it, and the Climate Risk Commons data around it.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.css">
 <link rel="icon" href="data:,">
@@ -15,19 +15,22 @@
 </head>
 <body>
 <header class="top">
-  <div class="brand">
-    <h1>Texas hail risk explorer</h1>
-    <span class="sub">built on Climate Risk Commons</span>
+  <!-- Two projects share this page: the hail risk work (new, built on CRC) and an explorer of the data crc-sdk already reaches. -->
+  <div class="projects" role="tablist" aria-label="Project">
+    <button class="proj" role="tab" data-project="hail"><b>Texas hail risk</b><small>new work, built on Climate Risk Commons</small></button>
+    <button class="proj" role="tab" data-project="crc"><b>Texas CRC data</b><small>explorer of what crc-sdk already reaches</small></button>
   </div>
-  <nav class="tabs" role="tablist">
-    <button class="tab" role="tab" data-tab="risk">Risk</button>
-    <button class="tab" role="tab" data-tab="evidence">Hail evidence</button>
-    <button class="tab" role="tab" data-tab="crc">CRC data</button>
-    <button class="tab" role="tab" data-tab="methods">Methods</button>
+  <nav class="tabs" role="tablist" aria-label="View">
+    <button class="tab" role="tab" data-tab="risk" data-project="hail">Risk</button>
+    <button class="tab" role="tab" data-tab="evidence" data-project="hail">Hail evidence</button>
+    <button class="tab" role="tab" data-tab="methods" data-project="hail">Methods</button>
+    <button class="tab" role="tab" data-tab="crc" data-project="crc">Data</button>
+    <button class="tab" role="tab" data-tab="crc-about" data-project="crc">About</button>
   </nav>
   <div class="top-right">
+    <button id="demo-start" class="btn" title="A guided tour of this page, about 35 seconds">▶ Tour</button>
     <span id="build" class="mute"></span>
-    <a href="../" class="mute">current explorer</a>
+    <a href="../" class="mute" id="old-link">current explorer</a>
   </div>
 </header>
 
@@ -90,7 +93,10 @@
 
 <!-- Hail evidence and CRC data share one pane; js/sources.js fills it and filters the sources by origin. -->
 <main id="tab-sources" class="pane hidden"></main>
-<main id="tab-methods" class="pane page hidden"></main>
+<main id="tab-methods" class="pane doc hidden"></main>
+<main id="tab-crc-about" class="pane doc hidden"></main>
+
+<div id="demo-bar" class="demo-bar hidden" role="status"><span id="demo-step" class="label"></span><span id="demo-caption"></span><button id="demo-stop" class="btn">Stop</button><i id="demo-progress"></i></div>
 
 <script type="module" src="js/main.js"></script>
 </body>

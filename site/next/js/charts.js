@@ -58,3 +58,30 @@ export function bars(el, { title, sub, rows, unit, idle }) {
   });
   mount(el, title, `${sub} · ${unit}`, h, s, idle);
 }
+
+// Line chart of one or more curves over hail size, with a crosshair readout. series: [{ label, ys, color, width, dash }]
+// Values are damage ratios (0-1) shown as percent with `digits` decimals. A legend is drawn when there are two or more series.
+export function lineChart(el, { title, sub, xs, series, digits = 0, width = 460, height = 220, xUnit = "hail size, mm", marks = [] }) {
+  const x0 = 46, y0 = height - 30, top = 10, right = 10, xmax = xs[xs.length - 1];
+  const peak = Math.max(...series.flatMap((s) => s.ys)) * 100, ymax = niceMax(peak) / 100;
+  const X = (v) => x0 + ((width - x0 - right) * v) / xmax, Y = (v) => y0 - ((y0 - top) * v) / ymax;
+  const tick = (v) => { for (let d = digits; d < digits + 3; d++) if (Math.abs(v - Number(v.toFixed(d))) < 1e-9) return v.toFixed(d); return v.toFixed(digits + 2); };
+  let s = `<line x1="${x0}" x2="${width - right}" y1="${y0}" y2="${y0}" stroke="var(--rule-2)"/>`;
+  for (const f of [0.25, 0.5, 0.75, 1]) s += `<line x1="${x0}" x2="${width - right}" y1="${Y(ymax * f)}" y2="${Y(ymax * f)}" stroke="var(--rule)"/><text x="${x0 - 5}" y="${Y(ymax * f) + 3}" text-anchor="end" class="ch-tick">${tick(100 * ymax * f)}%</text>`;
+  for (let t = 0; t <= xmax; t += 25) s += `<line x1="${X(t)}" x2="${X(t)}" y1="${y0}" y2="${y0 + 3}" stroke="var(--rule-2)"/><text x="${X(t)}" y="${y0 + 14}" text-anchor="middle" class="ch-tick">${t}</text>`;
+  s += `<text x="${width - right}" y="${y0 + 26}" text-anchor="end" class="ch-tick">${esc(xUnit)} (25.4 mm = 1 in)</text>`;
+  for (const m of marks) s += `<line x1="${X(m.x)}" x2="${X(m.x)}" y1="${top}" y2="${y0}" stroke="var(--rule-2)" stroke-dasharray="2 3"/><text x="${X(m.x) + 3}" y="${top + 8}" class="ch-tick">${esc(m.label)}</text>`;
+  for (const r of series) s += `<path d="${xs.map((x, i) => `${i ? "L" : "M"}${X(x).toFixed(1)},${Y(r.ys[i]).toFixed(1)}`).join("")}" fill="none" stroke="${r.color}" stroke-width="${r.width ?? 2}" ${r.dash ? `stroke-dasharray="${r.dash}"` : ""} stroke-linejoin="round"/>`;
+  s += `<line class="xh" y1="${top}" y2="${y0}" stroke="var(--ink-2)" stroke-width="1" visibility="hidden"/>`;
+  const legend = series.length > 1 ? `<div class="lg">${series.map((r) => `<span><i style="border-color:${r.color};${r.dash ? "border-top-style:dashed" : ""}"></i>${esc(r.label)}</span>`).join("")}</div>` : "";
+  const idle = "Move over the chart to read values.";
+  el.innerHTML = `<div class="ch-title">${esc(title)}</div><div class="ch-sub">${esc(sub)}</div>${legend}<svg viewBox="0 0 ${width} ${height}" width="100%" role="img" style="display:block;max-width:${width}px">${s}</svg><div class="ch-cap num">${idle}</div>`;
+  const node = el.querySelector("svg"), xh = el.querySelector(".xh"), cap = el.querySelector(".ch-cap");
+  node.addEventListener("mousemove", (e) => {
+    const box = node.getBoundingClientRect(); const v = (((e.clientX - box.left) / box.width) * width - x0) / (width - x0 - right) * xmax;
+    if (v < 0 || v > xmax) return; let i = 0; for (let k = 1; k < xs.length; k++) if (Math.abs(xs[k] - v) < Math.abs(xs[i] - v)) i = k;
+    xh.setAttribute("x1", X(xs[i])); xh.setAttribute("x2", X(xs[i])); xh.setAttribute("visibility", "visible");
+    cap.textContent = `${xs[i]} mm (${(xs[i] / 25.4).toFixed(2)} in): ${series.map((r) => `${series.length > 1 ? `${r.label} ` : ""}${(100 * r.ys[i]).toFixed(digits + 1)}%`).join(" · ")}`;
+  });
+  node.addEventListener("mouseleave", () => { xh.setAttribute("visibility", "hidden"); cap.textContent = idle; });
+}

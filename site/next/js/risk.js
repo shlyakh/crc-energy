@@ -55,6 +55,7 @@ export async function initRisk(dataUrl, address, onChange) {
   if (address.plant && byId(address.plant)) await select(address.plant, { fly: true, duration: 0 });
 }
 
+export function setMeasure(id) { const m = S.data.measures.find((x) => x.id === id); if (!m) return; $("measure").value = id; $("measure").onchange(); }
 export function setBasis(basis) {
   if (!S.measure.has_basis) return;
   if (S.sort.key === (S.basis ? "corrected" : "reports")) S.sort.key = basis ? "corrected" : "reports";

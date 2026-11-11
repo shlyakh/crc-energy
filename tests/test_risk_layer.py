@@ -67,3 +67,24 @@ def test_plant_curves_match_the_curve_module_at_the_spec_vector() -> None:
     curve = detail[tracker["id"]]["curve"]
     at_50 = curve["damage_ratio"][curve["d_mm"].index(50.0)]
     assert at_50 == pytest.approx(hc.pv_plant_hail(50.0), abs=1e-5)
+
+
+def test_curves_file_matches_the_curve_module() -> None:
+    from crc_lab.impacts import hail_curves as hc
+
+    built = risk_layer.curves_payload()
+    assert json.loads((SITE / "curves.json").read_text()) == json.loads(json.dumps(built))
+    i = built["d_mm"].index(50.0)
+    defaults = built["solar"]["defaults"]
+    key = f"{defaults['stow_tilt_deg']}|{defaults['p_stow']:g}"
+    assert built["solar"]["plant"][defaults["glass_class"]][key][i] == pytest.approx(
+        hc.pv_plant_hail(50.0), rel=1e-5
+    )
+    assert built["buildings"]["swiss"]["damage_ratio"][i] == pytest.approx(
+        hc.bld_hail_swiss(50.0), rel=1e-5
+    )
+    assert built["solar"]["meta"]["placeholders"] == [
+        "stow_tilt_deg",
+        "p_stow",
+        "module_cost_share",
+    ]
