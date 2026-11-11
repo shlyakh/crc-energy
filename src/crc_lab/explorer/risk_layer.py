@@ -32,6 +32,17 @@ NICE = (1.0, 1.5, 2.0, 3.0, 5.0, 7.0)
 CURVE_GRID_MM = [float(x) for x in np.arange(0.0, 112.5, 2.5)]
 OUTLINE_TOLERANCE_DEG = 0.0004  # about 40 m
 FACTOR_WARNING = 5.0
+# Fields of the plant GeoJSON (Phases 4 and 5) carried into the collapsed detail groups
+MORE = (
+    "capacity_MW_DC", "first_online", "balancing_authority", "mounting", "module", "bifacial",
+    "polygon", "plant_area_km2", "location_source", "value_basis",
+    "hail_reports_per_100km2_per_year", "hail_size_median_mm", "hail_size_p90_mm",
+    "hail_size_largest_mm", "hail_hit_area_km2", "hail_flag", "reporting_rate_fitted",
+    "annual_chance_hail_1in_or_more", "annual_chance_hail_1in_or_more_bias_corrected",
+    "radar_hail_days_30mm_or_more_over_plant", "radar_hail_days_50mm_or_more_over_plant",
+    "gust_return_levels_ms", "loss_damage_ratio_if_2in_hail",
+    "loss_damage_ratio_exceeded_1_in_100", "loss_damage_ratio_exceeded_1_in_100_bias_corrected",
+)  # fmt: skip
 
 # id, label, unit, multiplier to the display unit, decimals, fields (reports, bias-corrected)
 MEASURES: list[dict[str, Any]] = [
@@ -105,7 +116,9 @@ def outline(wkbs: list[bytes]) -> list[list[list[float]]]:
     return rings
 
 
-def build(cache: Path, events: Path, assets: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+def build(
+    cache: Path, events: Path, assets: Path, site: Path
+) -> tuple[dict[str, Any], dict[str, Any]]:
     rows = pq.read_table(assets / "solar_tx.parquet").to_pylist()
     loss = {
         r["asset_id"]: r for r in pq.read_table(assets / "solar_tx_hail_loss.parquet").to_pylist()
@@ -126,6 +139,35 @@ def build(cache: Path, events: Path, assets: Path) -> tuple[dict[str, Any], dict
         .select(["asset_id", "geometry_wkb"])
         .to_pylist()
     }
+
+    geojson = site / "solar_tx.geojson"
+    props = (
+        {
+            f["properties"]["asset_id"]: f["properties"]
+            for f in json.loads(geojson.read_text())["features"]
+        }
+        if geojson.exists()
+        else {}
+    )
+    compare_path = site.parent / "hail_compare" / "cells.json"
+    compare = json.loads(compare_path.read_text()) if compare_path.exists() else None
+    cell_index = {c: i for i, c in enumerate(compare["cells"])} if compare else {}
+
+    def hail_days(lat: float, lon: float) -> dict[str, Any] | None:
+        """Hail days per year in the plant's cell from the four records of the comparison layer."""
+        import h3
+
+        i = (
+            cell_index.get(h3.latlng_to_cell(lat, lon, compare["h3_resolution"]))
+            if compare
+            else None
+        )
+        if i is None:
+            return None
+        return {
+            k: {"title": s["title"], "period": s["period"], "value": s["values"][i]}
+            for k, s in compare["sources"].items()
+        }
 
     plants: list[dict[str, Any]] = []
     detail: dict[str, Any] = {}
@@ -195,6 +237,8 @@ def build(cache: Path, events: Path, assets: Path) -> tuple[dict[str, Any], dict
                     for v in hc.pv_plant_hail(CURVE_GRID_MM, **curve_arguments(params))
                 ],
             },
+            "hail_days": hail_days(r["latitude"], r["longitude"]),
+            "more": {k: props.get(r["asset_id"], {}).get(k) for k in MORE},
             "stow_basis": params["stow_basis"],
             "notes": params["notes"],
         }
@@ -235,7 +279,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--assets", type=Path, default=Path("data/assets"))
     parser.add_argument("--site", type=Path, default=Path("site/data/assets"))
     args = parser.parse_args(argv)
-    payload, detail = build(args.cache, args.events, args.assets)
+    payload, detail = build(args.cache, args.events, args.assets, args.site)
     write_json_atomic(args.site / "plants.json", payload)
     write_json_atomic(args.site / "plants_detail.json", detail)
     for m in payload["measures"]:

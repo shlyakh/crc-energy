@@ -47,6 +47,8 @@ def test_committed_plant_files_agree() -> None:
         d = detail[p["id"]]
         assert d["circle"]["reports"] == len(d["reports"]) == p["reports"]
         assert bool(d["outline"]) == p["polygon"]
+        assert set(d["hail_days"]) == {"reports", "reports_corrected", "mrms", "signatures"}
+        assert d["more"]["hail_size_largest_mm"] == max(r[2] for r in d["reports"])
         assert len(d["curve"]["d_mm"]) == len(d["curve"]["damage_ratio"])
         assert d["curve"]["damage_ratio"] == sorted(d["curve"]["damage_ratio"])
         if p["factor"] is not None:

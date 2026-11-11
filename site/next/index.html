@@ -37,6 +37,13 @@
       <span class="label">Plants</span><span id="plant-count" class="num mute"></span>
       <input id="plant-filter" type="search" placeholder="Filter by name or county" aria-label="Filter plants">
     </div>
+    <div class="col-sub">
+      <label class="field"><span class="label">Capacity</span>
+        <select id="min-mw" aria-label="Minimum capacity">
+          <option value="0">all plants</option><option value="5">≥ 5 MW</option><option value="20">≥ 20 MW</option><option value="50">≥ 50 MW</option><option value="100">≥ 100 MW</option>
+        </select></label>
+      <span id="hidden-note" class="hidden-note"></span>
+    </div>
     <div class="table-wrap">
       <table id="plants" class="data">
         <thead><tr>

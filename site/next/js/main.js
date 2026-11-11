@@ -30,6 +30,7 @@ async function showTab(tab) {
     try {
       if (!sources) { sources = await import("./sources.js"); await sources.initSources({ dataUrl: DATA, address, onChange: syncAddress }); }
       await sources.showSources(ORIGIN[shell.tab]);
+      delete document.body.dataset.error;
     } catch (e) { $("tab-sources").innerHTML = `<div class="page"><h2>Could not open this tab</h2><p>${esc(e.message || e)}</p></div>`; document.body.dataset.error = String(e.message || e); }
   }
   syncAddress();

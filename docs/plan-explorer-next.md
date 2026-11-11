@@ -1,8 +1,9 @@
 # Plan: explorer redesign (Phase 6) — "Texas hail risk explorer"
 
-Approved by Yuri 2026-11-10 after a question round; replaces the earlier draft list. **Status: stop 1 built**
+Approved by Yuri 2026-11-10 after a question round; replaces the earlier draft list. **Status: stops 1 and 2 built**
 (live at `/crc-lab/next/`; the current explorer is untouched until the swap). One change from the plan as
-approved: class breaks and measures live in the generated `site/data/assets/plants.json`, not in the registry.
+approved: plants under 20 MW are hidden by default (Yuri, 2026-11-10), with the count stated in the table head, the
+legend and the note, and a selector to show them; class breaks and measures live in the generated `site/data/assets/plants.json`, not in the registry.
 
 ## Context
 
