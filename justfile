@@ -72,6 +72,7 @@ radar:
 # Phase 5: hail loss per solar plant from the v0 impact curves (after assets, reporting-bias and radar)
 impacts:
     uv run python -m crc_lab.impacts.build
+    uv run python -m crc_lab.explorer.risk_layer
 
 # The decisions document with its charts (after all builds)
 decisions:

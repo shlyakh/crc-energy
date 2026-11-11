@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Texas hail risk explorer</title>
+<meta name="description" content="Hail risk at Texas utility-scale solar plants: expected loss, the hail record behind it, and the Climate Risk Commons data around it.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.css">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+<!-- No build step. Pinned 2026-11-10: h3-js 4.5.0, deck.gl 9.4.0 (global `deck`, needs the global `h3` first), maplibre-gl 6.16.0 (ESM). -->
+<script src="https://cdn.jsdelivr.net/npm/h3-js@4.5.0/dist/h3-js.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.4.0/dist.min.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>Texas hail risk explorer</h1>
+    <span class="sub">built on Climate Risk Commons</span>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="risk">Risk</button>
+    <button class="tab" role="tab" data-tab="evidence">Hail evidence</button>
+    <button class="tab" role="tab" data-tab="crc">CRC data</button>
+    <button class="tab" role="tab" data-tab="methods">Methods</button>
+  </nav>
+  <div class="top-right">
+    <span id="build" class="mute"></span>
+    <a href="../" class="mute">current explorer</a>
+  </div>
+</header>
+
+<main id="tab-risk" class="pane">
+  <section class="col col-table" aria-label="Plants">
+    <div class="col-head">
+      <span class="label">Plants</span><span id="plant-count" class="num mute"></span>
+      <input id="plant-filter" type="search" placeholder="Filter by name or county" aria-label="Filter plants">
+    </div>
+    <div class="table-wrap">
+      <table id="plants" class="data">
+        <thead><tr>
+          <th data-sort="name" class="l">Plant</th>
+          <th data-sort="mw">MW</th>
+          <th data-sort="reports" id="th-reports">Reports</th>
+          <th data-sort="corrected" id="th-corrected">Corrected</th>
+        </tr></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+    </div>
+    <p id="table-note" class="note"></p>
+  </section>
+
+  <section class="col col-map">
+    <div class="toolbar">
+      <label class="field"><span class="label">Colour by</span>
+        <select id="measure"></select></label>
+      <div class="field"><span class="label">Hail rate</span>
+        <div class="seg" id="basis" role="radiogroup" aria-label="Hail rate basis">
+          <button data-basis="0" role="radio">As reported</button>
+          <button data-basis="1" role="radio">Bias-corrected</button>
+        </div></div>
+      <button id="reset-view" class="btn">Texas</button>
+    </div>
+    <div id="map-wrap">
+      <div id="map"></div>
+      <div id="hover" class="hover hidden"></div>
+      <div id="legend" class="legend"></div>
+      <div id="coords" class="coords num"></div>
+      <div id="map-msg" class="map-msg hidden"></div>
+    </div>
+  </section>
+
+  <section class="col col-detail" aria-label="Selected plant">
+    <div id="detail-empty" class="empty">
+      <span class="label">No plant selected</span>
+      <p>Pick a plant in the table or on the map. Its report circle, the hail reports inside it and its array outline are drawn on the map.</p>
+    </div>
+    <div id="detail" class="hidden"></div>
+  </section>
+</main>
+
+<main id="tab-evidence" class="pane page hidden"></main>
+<main id="tab-crc" class="pane page hidden"></main>
+<main id="tab-methods" class="pane page hidden"></main>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

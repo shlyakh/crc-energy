@@ -6,9 +6,9 @@ Claude the question number and the letter.
 
 | # | Question | What happens until you answer |
 | --- | --- | --- |
-| 1 | Comparison map: one colour scale for all sources, or one per source? | One shared scale |
-| 2 | Comparison map: which two sources should the ratio view open on? | Reports and radar, in that order |
-| 3 | Should the 30-second demo show the comparison map? | It does not |
+| 1 | Comparison map: one colour scale for all sources, or one per source? | Settled 2026-11-10 by the redesign plan: own range in one-source view, shared in swipe |
+| 2 | Comparison map: which two sources should the ratio view open on? | Settled: radar ÷ reports, with radar ÷ corrected one click away |
+| 3 | Should the 30-second demo show the comparison map? | Settled: yes, in the rewritten demo |
 | 4 | Radar hail-day threshold: 30 mm or 33 mm? | 30 mm |
 | 5 | Should the reporting-bias correction have an upper limit? | No limit (up to 13 times) |
 | 6 | Bias correction at a plant: per cell, or the smoother regional value? | Per cell |

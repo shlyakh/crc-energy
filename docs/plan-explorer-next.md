@@ -1,87 +1,117 @@
-# Plan: explorer improvements after Phase 5
+# Plan: explorer redesign (Phase 6) — "Texas hail risk explorer"
 
-Draft for review, 2026-11-10. Nothing here is started. It is a list to choose from, not a commitment: mark
-what you want, strike what you do not, add what is missing.
+Approved by Yuri 2026-11-10 after a question round; replaces the earlier draft list. **Status: stop 1 built**
+(live at `/crc-lab/next/`; the current explorer is untouched until the swap). One change from the plan as
+approved: class breaks and measures live in the generated `site/data/assets/plants.json`, not in the registry.
 
-## Where the explorer stands
+## Context
 
-Nine sources in two groups, a map, a storm player with a timeline, a comparison map for four hail records, a
-plant panel with value, hail, radar and (since Phase 5) loss, an About tab and a 30-second demo. It is a static
-site with no build step, and that should not change.
+The explorer grew one feature at a time and reads as amateur: nine sources listed as equals, controls below
+the fold, a 46-line plant panel, no legend or scale on the map, no highlight on the selected plant, and loss
+(Phase 5) invisible until a plant is clicked. Yuri wants the next phase to be a UI redesign. Decisions below
+were settled in a question round on 2026-11-10.
 
-It grew one feature at a time. Three problems are visible now:
+## Decisions (from the question round)
 
-1. **The controls are below the fold.** The source list fills the left column. On a 900-pixel-high window the
-   controls and legend of the selected source sit under nine source cards and need scrolling to reach.
-2. **The plant panel is a long list.** It has 7 groups and up to 46 lines. The two numbers a reader wants
-   first, chance of damaging hail and expected loss, are in the middle.
-3. **Loss cannot be seen on the map.** Phase 5 gives every plant an expected loss, but all plants are the same
-   yellow dot. The answer to "which plants are most at risk" needs a click on each one.
+| Topic | Decision |
+| --- | --- |
+| Main job | Hail risk at solar plants; the page opens there |
+| Reader | Risk engineer / analyst: dense, exact, units and assumptions visible |
+| Tabs | **Risk · Hail evidence · CRC data · Methods** |
+| Risk layout | Ranked plant table left, map centre, plant detail right; all three in sync |
+| Plant symbols | Size = capacity (MW); colour = loss as % of value per year by default; selector for other measures |
+| Bias | One global switch "Reports as they are / Bias-corrected", default uncorrected; table and detail always print both; warning mark where the correction factor is above 5 |
+| On the map | Legend with numeric class breaks and units, scale bar, cursor coordinates, data period; selection ring + label + array outline + report circle with its reports; hover readout and zoom-dependent labels. **No** hazard underlay under plants |
+| Look | Technical light: thin rules, small caps labels, tabular numbers, muted basemap, colour for data only |
+| Plant detail | Headline figures, three small charts (hail sizes in circle; damage curve with reports marked; reports / corrected / radar bars), other groups collapsed; assumptions marked "reported" or "placeholder" |
+| Other tabs | New shell and map furniture (compact source picker, legends, hover, highlight); features unchanged |
+| Screens | Designed for ≥1280 px; table becomes a drawer at 900–1280 px; no phone layout |
+| Methods | About, sources, "from reports to loss at a plant" with a diagram, the four damage curves with a stow slider |
+| Demo | Rewritten around the risk story, re-recorded at the end |
+| Delivery | Built at `site/next/` on main, live at `/crc-lab/next/`; three review stops; then swapped to the root |
+| Title | "Texas hail risk explorer · built on Climate Risk Commons" |
 
-## Proposed work, in suggested order
+Choices made without asking (say if any is wrong):
 
-### Step 1. Make loss visible (about a day)
+- Still a static site with no build step and libraries pinned by URL. The code is split into ES modules.
+- Curves are still never computed in the browser. The stow slider picks among curves precomputed in Python
+  (a grid of stow angles and stow chances shipped as values).
+- The current view is kept in the address (tab, source, plant, switch) so a view can be linked.
+- Open questions 1–3 are settled by this plan as suggested: own-range scale in one-source view, shared scale in
+  swipe; ratio opens on radar ÷ reports with "radar ÷ corrected" one click away; comparison is in the new demo.
+- Colours use class breaks (5–6 classes), not a continuous ramp, so the legend can print exact ranges.
 
-- **Size and colour the plants.** Dot area by capacity or value; colour by a chosen measure: expected loss in
-  dollars, loss as a share of value, chance of 2-inch hail, radar hail days. One selector, one legend.
-- **A switch between "reports as they are" and "bias-corrected"** that applies to the map colours and the
-  panel together. You asked to see both; today they are two blocks of text.
-- **A ranked plant table** beside the map: name, capacity, value, loss, sortable, click to fly to the plant.
-- **A summary line**: plants shown, total value, total expected loss, under the current switch.
+## Technical approach
 
-### Step 2. Rework the plant panel (about a day)
+**What exists** (`site/`, surveyed): one 1,100-line ES module `app.js` tied to fixed DOM ids; MapLibre 6.16 ESM
+plus deck.gl 9.4 through `MapboxOverlay` (not interleaved); continuous OKLCH colour ramps with no class breaks;
+legends only in the sidebar; no scale bar; deck's default text tooltip; no selection highlight for points or
+cells; plants drawn by the generic `geoLayer` as identical 5 px dots. The whole `site/` folder is published,
+so `site/next/` appears at `/next/` with no workflow change.
 
-- **Headline first**: three or four large figures (value, chance of 2-inch hail a year, expected loss a year,
-  largest radar hail seen), then the detail groups collapsed.
-- **Assumptions in one place**: glass type, stow, cost share, footprint, each marked "placeholder" or
-  "reported", so nobody reads a placeholder as a fact.
-- **Small charts instead of lines of numbers**: the plant's hail-size distribution; the damage curve with the
-  plant's reports marked on it; reports, corrected reports and radar as three bars.
-- **Show the circle.** Draw the plant's report circle and the reports inside it on the map when the plant is
-  selected. This is the clearest way to explain where the numbers come from.
+**Structure of `site/next/`** (ES modules, no build step, same pinned libraries, data read from `../data/`):
 
-### Step 3. Layout (about a day)
+- `index.html`, `style.css` (design tokens: spacing scale, type scale, rules, one accent, data palettes)
+- `js/main.js` (tabs, address state), `js/state.js`, `js/map.js` (map, overlay, `ScaleControl`, coordinates,
+  hover box, selection layer), `js/legend.js` (on-map legend from class breaks), `js/scale.js` (class breaks,
+  palettes, formatters with units), `js/charts.js` (SVG charts that take a target element)
+- `js/risk.js` (table, plant layers, detail), `js/evidence.js` and `js/crcdata.js` (source picker + the existing
+  per-kind views), `js/methods.js`, `js/demo.js`
+- `js/views/` — the existing renderers moved over largely as they are: tracks and wind swaths, events and the
+  player/timeline, h3 cells, h3-compare, stations.
 
-- **Compact source list**: one line per source with the group badge; the description opens on selection. The
-  controls and legend of the selected source then fit on the first screen.
-- **A link to the current view**: source, layer, plant, storm and switches kept in the address, so a view can
-  be sent to someone. Today every visit starts at storm tracks.
-- **Phone layout**: the side column becomes a bottom sheet. Swipe-line dragging by touch gets tested here.
+**Reused from `site/app.js`**: the pure helpers (`parseColor`, `ramp`, `colorAt`, `fmt`, `quantile`, `esc`, time
+helpers, swath geometry `radiusAt`/`ringAt`/`fixAt`, `divergingAt`, `hoverChart`); the per-kind layer builders
+and loaders, changed only so they return legend and status data instead of writing to fixed ids; `drawCurve` /
+`drawSeries`, changed to take a target element; the registry `site/layers.json` (kept as the single
+declaration, with a `tab` on each source and a `risk` block for the plant measures and class breaks).
 
-### Step 4. Damage curves explained (half a day)
+**New data, built in Python** (committed like the other plant files; new module `src/crc_lab/explorer/risk_layer.py`,
+run from `just impacts`):
 
-- **A curves page**: the four v0 curves drawn, with their knots, their source tags and the placeholders marked,
-  built from the same data file as the code. A slider for stow angle and stow chance shows how the solar curve
-  moves. This is the page to show someone who asks "where does the loss number come from".
+- `site/data/assets/solar_tx.geojson`: numeric fields for every map measure and table column (loss ratio and
+  dollars on both bases, correction factor, chance of 2-inch hail, radar hail days, capacity, value).
+- `site/data/assets/solar_tx_detail.json`: per plant, the report circle (radius, share inside the region), the
+  reports inside it (lon, lat, size), the array outline (from `geometry_wkb` in `assets/solar.py`, simplified),
+  the plant's damage curve as values, and hail days from reports / corrected / radar. Reuses
+  `exposure.local_reports`, `impacts.build.plant_parameters` and `hail_curves.pv_plant_hail`.
+- `site/data/methods/curves.json`: the four v0 curves and the solar curve on a grid of stow angles and stow
+  chances, from `hail_curves`, with the placeholder list from `hail_v0.json`.
+- Class breaks for each measure are computed in Python (rounded quantile breaks) and stored in the registry, so
+  the legend, the map and the reports use the same ranges.
 
-### Step 5. Open items from earlier rounds (half a day in total)
+**Risk tab behaviour**: one selection state shared by table row, map and detail; selecting flies to the plant,
+draws ring, label, outline, circle (radius and report count labelled) and its reports sized by hail size;
+`Esc` clears. The measure selector and the bias switch recolour the dots, re-sort the table and update the
+legend and the totals line. Hover shows name, MW and the current measure with its unit.
 
-- Comparison map: scale default, ratio default, demo step (questions 1 to 3 in
-  [open questions](open-questions.md)).
-- Storm player: fading reports, reports near the track only, window length, outer storm size, the events file
-  size (question 10).
-- About tab: a computed count line for the comparison source; the colour check for the four bar colours.
-- Re-record the demo once, after the steps you choose are done.
+## Stops
 
-### Later, each needing a decision first
+1. **Shell and Risk map.** `site/next/` skeleton, tokens and styles, four tabs, Risk tab map with sized and
+   coloured plants, on-map legend, scale bar, coordinates, hover readout, selection ring, array outline, report
+   circle with reports. Data additions built in Python.
+2. **Risk table and detail; other tabs.** Ranked sortable table with totals, bias switch, detail column with
+   headline and three charts, collapsed groups; Hail evidence and CRC data tabs moved into the shell with the
+   compact source picker and the same map furniture; deep links.
+3. **Methods, demo, swap.** Methods sections and curves page; new demo and recording; smoke test rewritten;
+   `site/next/` becomes `site/`; old page deleted; docs and report `docs/reports/6-explorer-redesign.md`.
 
-- **Radar hail swaths in the storm window**: play a hail day and see the radar swath cross the plants, with
-  the reports on top. Needs radar tiles small enough for a static site; the daily grids are too large to ship
-  whole, so this would cover chosen days only (for example 16 March 2024).
-- **Buildings** on the map, if a building asset set is built (question 9).
-- **Scenario view**: "what if a 2-inch storm crosses this plant", using the damage curve directly, beside the
-  annual figures.
+## Verification
 
-## What would not change
+- `just test`, `just lint`: new offline tests for `risk_layer.py` (every plant has the numeric fields; circle
+  report counts equal `reports_in_circle` in the loss table; class breaks increase and cover the data; curve
+  grid equals `hail_curves` at the spec's test vectors) and for the extended registry.
+- `tools/smoke.mjs` gets a second script for `/next/` (the old one keeps guarding the live page until the
+  swap): opens each tab, checks the legend text contains numeric ranges and a unit, selects a plant from the
+  table and from the map and checks ring, circle and detail agree, flips the bias switch and checks the totals
+  line changes from the uncorrected to the corrected total of the Phase 5 report, sorts the table, walks every
+  source in the other two tabs, opens a deep link, and fails on any console message.
+- Screenshots at 1440×900 and 1100×800 at each stop, looked at before reporting.
+- The colour classes are run through the palette validator of the dataviz skill.
+- At the swap: `check_site.py` and the registry tests updated to the new file names; old smoke script and old
+  `app.js` removed; `tools/record-demo.mjs` re-records `site/demo.webm`; Pages deploy checked live.
 
-- Static files, no build step, libraries pinned by address.
-- Curves and losses computed in Python and shipped as values; the page never re-implements a curve.
-- The registry (`site/layers.json`) stays the one place a source, layer or panel is declared.
-- The smoke test walks every source after each change.
+## Out of scope
 
-## Questions
-
-1. Is the order right? Step 1 gives the most for the least work; step 3 fixes what is most awkward today.
-2. For plant colours, which measure should be the default: loss in dollars, or loss as a share of value?
-3. Is a phone layout wanted at all, or is this a desktop tool?
-4. Should the curves page live in the explorer, or in `docs/` as a static report?
+Hazard underlay beneath plants (declined), phone layout, radar swath playback, buildings, redesign of the
+storm player and comparison features, any change to the loss numbers.
