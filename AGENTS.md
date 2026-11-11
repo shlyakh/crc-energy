@@ -66,6 +66,7 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - `docs/algorithms.md` (every calculation: formula, averaging, parameters, weakness; update it when an algorithm
   changes), `docs/plan-radar-loss-and-buildings.md` (draft plan for Phases 7 and 8);
   `src/crc_lab/assets/regional.py` (bias correction per region, the third basis)
+- `docs/handover-plan.md` (state at the pause of 2026-11-11, where CRC is used, upstream candidates, next stages)
 - `docs/open-questions.md` (questions waiting for Yuri), `docs/plan-explorer-next.md` (explorer plan, draft)
 - `docs/hail-data-processing.md`, `docs/decisions.md`, `docs/data-sources.md` — how hail is processed, what was
   chosen and why, and every data source

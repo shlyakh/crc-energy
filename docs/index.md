@@ -15,6 +15,7 @@ Current work (agreed 2026-11-10; explorer first, storm sources and assets deferr
 - [Plan: explorer redesign](plan-explorer-next.md) (Phase 6, built)
 - [Plan: better hail exposure](plan-hail-exposure.md): footprint, reporting bias, radar (draft for review)
 - [Reports](reports/): one per phase — [0 setup](reports/0-setup.md) · [1 explorer](reports/1-explorer.md) · [2 storm events](reports/2-storm-events.md) · [2 comparison](reports/2-storm-events-comparison.md) · [3 curves](reports/3-curves.md) · [3 sensitivity](reports/3-curves-sensitivity.md) · [4 assets](reports/4-assets.md) · [4 hail exposure](reports/4-hail-exposure-sensitivity.md) · [4 real estate](reports/4-real-estate-fort-bend.md) · [4 radar](reports/4-radar-hail.md) · [5 reporting bias](reports/5-reporting-bias.md) · [5 hail impact and loss](reports/5-hail-impact.md) · [6 explorer redesign](reports/6-explorer-redesign.md)
+- [Handover: state and plan for further development](handover-plan.md): where CRC is used, what could go upstream, next stages
 - [Primer: how an event source can be used in CRC](primers/event-sources-in-crc.md)
 
 Background:
