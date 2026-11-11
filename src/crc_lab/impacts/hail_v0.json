@@ -1,0 +1,157 @@
+{
+  "schema": "hail-impact-curves/v0",
+  "as_of": "2026-11-10",
+  "hazard_input": {
+    "name": "hail_diameter_obs_mm",
+    "unit": "mm",
+    "source_v0": "NOAA Storm Events hail magnitude (inches x 25.4)"
+  },
+  "curves": {
+    "pv_plant_hail_v0": {
+      "asset": "solar_plant",
+      "output": "damage_ratio",
+      "form": "stow_mixture_of_piecewise_linear",
+      "native_metric": "lab ice-ball diameter, normal incidence, 11 impacts per module",
+      "calibration_region": "laboratory",
+      "confidence": "lab points stated; extrapolation, stow model and cost share inferred or placeholder",
+      "source": "Kiwa PVEL PV Module Reliability Scorecards 2023, 2024, 2026 (Hail Stress Sequence)",
+      "break_probability": {
+        "glass_glass_2.0": [
+          [
+            25,
+            0.0
+          ],
+          [
+            35,
+            0.18
+          ],
+          [
+            40,
+            0.5
+          ],
+          [
+            45,
+            0.61
+          ],
+          [
+            50,
+            0.89
+          ],
+          [
+            60,
+            1.0
+          ]
+        ],
+        "glass_backsheet_3.2": [
+          [
+            40,
+            0.0
+          ],
+          [
+            45,
+            0.035
+          ],
+          [
+            50,
+            0.38
+          ],
+          [
+            55,
+            0.55
+          ],
+          [
+            65,
+            0.87
+          ],
+          [
+            80,
+            1.0
+          ]
+        ]
+      },
+      "stow": {
+        "model": "elastic",
+        "d_eff": "D * cos(stow_tilt_deg)^(2/3.5)",
+        "ke_diameter_exponent": 3.5
+      },
+      "defaults": {
+        "glass_class": "glass_glass_2.0",
+        "stow_tilt_deg": 60,
+        "p_stow": 0.8,
+        "module_cost_share": 0.4
+      },
+      "placeholders": [
+        "stow_tilt_deg",
+        "p_stow",
+        "module_cost_share"
+      ]
+    },
+    "bld_hail_swiss_v0": {
+      "asset": "building",
+      "form": "emanuel_sigmoid",
+      "exponent": 3,
+      "native_metric": "MESHS (MeteoSwiss radar), 1 km daily maximum",
+      "calibration_region": "Switzerland",
+      "confidence": "published; parameters to verify against final Table 2",
+      "source": "Schmid et al. 2024, NHESS 24, 847-872, doi:10.5194/nhess-24-847-2024, CC BY 4.0",
+      "damage_ratio": {
+        "v_thresh": 20.0,
+        "v_half": 73.9,
+        "scale": 0.00147
+      },
+      "fraction_affected": {
+        "v_thresh": 8.6,
+        "v_half": 66.9,
+        "scale": 0.118
+      }
+    },
+    "bld_hail_roof_v0": {
+      "asset": "building",
+      "output": "damage_ratio",
+      "form": "scaled_lognormal_cdf",
+      "native_metric": "hail diameter at the roof",
+      "calibration_region": "United States (engineering thresholds)",
+      "confidence": "onset sizes stated; theta inferred; beta and cost share placeholder",
+      "source": "Haag Engineering onset thresholds via Smith 2013 (IIBEC)",
+      "roof_classes": {
+        "asphalt_3tab": {
+          "onset_mm": 25.4,
+          "theta": 38.3,
+          "beta": 0.25
+        },
+        "asphalt_laminated": {
+          "onset_mm": 31.75,
+          "theta": 47.9,
+          "beta": 0.25
+        }
+      },
+      "defaults": {
+        "roof_class": "asphalt_laminated",
+        "roof_cost_share": 0.1
+      },
+      "placeholders": [
+        "beta",
+        "roof_cost_share"
+      ]
+    },
+    "car_hail_swiss_v0": {
+      "asset": "car_general_fleet",
+      "form": "emanuel_sigmoid",
+      "exponent": 3,
+      "native_metric": "MESHS (MeteoSwiss radar), 1 km daily maximum",
+      "calibration_region": "Switzerland",
+      "confidence": "published; parameters to verify against final Table 2",
+      "source": "Schmid et al. 2024, NHESS 24, 847-872, doi:10.5194/nhess-24-847-2024, CC BY 4.0",
+      "damage_ratio": {
+        "v_thresh": 13.7,
+        "v_half": 53.3,
+        "scale": 0.00396
+      },
+      "fraction_affected": {
+        "v_thresh": 8.1,
+        "v_half": 55.0,
+        "scale": 0.046
+      }
+    }
+  }
+}

@@ -502,11 +502,11 @@
       "id": "solar_plants",
       "source_id": "solar_plants",
       "kind": "points",
-      "title": "Solar plants (USPVDB), value and local hail",
+      "title": "Solar plants (EIA), value, local hail and hail loss",
       "file": "data/assets/solar_tx.geojson",
       "source": "USPVDB v4.0; NREL ATB 2025; NOAA Storm Events via crc-lab",
       "licence": "U.S. government works and NREL ATB; attribution requested",
-      "caveat": "Hail figures are report-based and local to a circle around the plant; the annual chance uses a placeholder footprint of 25 km\u00b2 per report. The curve is the plant's cell curve from Phase 3, a regional value.",
+      "caveat": "Hail figures are report-based and local to a circle around the plant; the annual chance uses a placeholder footprint of 25 km\u00b2 per report. The curve is the plant's cell curve from Phase 3, a regional value. Loss figures use the v0 solar hail curve with placeholder stow, cost-share and footprint values: order of magnitude only.",
       "style": {
         "fill": [
           237,
@@ -690,6 +690,60 @@
             [
               "radar_largest_size_day",
               "On"
+            ]
+          ]
+        },
+        {
+          "title": "Hail loss, first approximation (v0 curve, placeholder inputs)",
+          "fields": [
+            [
+              "loss_expected_annual",
+              "Expected loss per year, from reports"
+            ],
+            [
+              "loss_expected_annual_damage_ratio",
+              "Share of plant value per year",
+              "percent"
+            ],
+            [
+              "loss_damage_ratio_exceeded_1_in_100",
+              "Damage ratio exceeded 1 year in 100",
+              "percent"
+            ],
+            [
+              "loss_expected_annual_bias_corrected",
+              "Expected loss per year, bias-corrected"
+            ],
+            [
+              "loss_expected_annual_damage_ratio_bias_corrected",
+              "Share of plant value per year, bias-corrected",
+              "percent"
+            ],
+            [
+              "loss_damage_ratio_exceeded_1_in_100_bias_corrected",
+              "Damage ratio exceeded 1 year in 100, bias-corrected",
+              "percent"
+            ],
+            [
+              "loss_damage_ratio_if_2in_hail",
+              "Damage ratio if 2-inch hail covers the plant",
+              "percent"
+            ],
+            [
+              "loss_glass_class",
+              "Module glass assumed"
+            ],
+            [
+              "loss_stow",
+              "Stow assumed"
+            ],
+            [
+              "loss_notes",
+              "Notes"
+            ],
+            [
+              "loss_curve",
+              "Curve"
             ]
           ]
         },

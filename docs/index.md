@@ -4,13 +4,15 @@ Current work (agreed 2026-11-10; explorer first, storm sources and assets deferr
 
 - [Requirements](requirements.md): CRC data explorer and severe-storm sources, Texas
 - [Requirements: hail impact functions v0](requirements-hail-impact-v0.md): first-approximation damage curves
-  for solar plants, buildings and cars (draft; not yet scheduled as a phase)
+  for solar plants, buildings and cars (built as Phase 5)
 - [Implementation plan](implementation-plan.md)
 - [How hail data is processed](hail-data-processing.md): from raw reports and radar to the numbers at a plant
 - [Decisions and their effect](decisions.md): each choice, its alternatives and a chart of the difference
 - [Data source catalog](data-sources.md): every source in use, probed or proposed, with what was checked
+- [Open questions for review](open-questions.md): every question waiting for Yuri, explained, with options
+- [Plan: explorer improvements after Phase 5](plan-explorer-next.md) (draft for review)
 - [Plan: better hail exposure](plan-hail-exposure.md): footprint, reporting bias, radar (draft for review)
-- [Reports](reports/): one per phase — [0 setup](reports/0-setup.md) · [1 explorer](reports/1-explorer.md) · [2 storm events](reports/2-storm-events.md) · [2 comparison](reports/2-storm-events-comparison.md) · [3 curves](reports/3-curves.md) · [3 sensitivity](reports/3-curves-sensitivity.md) · [4 assets](reports/4-assets.md) · [4 hail exposure](reports/4-hail-exposure-sensitivity.md) · [4 real estate](reports/4-real-estate-fort-bend.md) · [4 radar](reports/4-radar-hail.md) · [5 reporting bias](reports/5-reporting-bias.md)
+- [Reports](reports/): one per phase — [0 setup](reports/0-setup.md) · [1 explorer](reports/1-explorer.md) · [2 storm events](reports/2-storm-events.md) · [2 comparison](reports/2-storm-events-comparison.md) · [3 curves](reports/3-curves.md) · [3 sensitivity](reports/3-curves-sensitivity.md) · [4 assets](reports/4-assets.md) · [4 hail exposure](reports/4-hail-exposure-sensitivity.md) · [4 real estate](reports/4-real-estate-fort-bend.md) · [4 radar](reports/4-radar-hail.md) · [5 reporting bias](reports/5-reporting-bias.md) · [5 hail impact and loss](reports/5-hail-impact.md)
 - [Primer: how an event source can be used in CRC](primers/event-sources-in-crc.md)
 
 Background:

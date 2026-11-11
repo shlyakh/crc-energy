@@ -183,12 +183,13 @@ def test_hail_compare_layer_and_grouped_plant_panel() -> None:
         assert len(source["values"]) == len(data["cells"])
     plants = next(x for x in registry["layers"] if x["id"] == "solar_plants")
     titles = [g["title"] for g in plants["panel_groups"]]
-    assert titles[:5] == [
+    assert titles[:6] == [
         "Plant",
         "Value",
         "Hail from reports",
         "Hail from reports, bias-corrected",
         "Radar",
+        "Hail loss, first approximation (v0 curve, placeholder inputs)",
     ]
     properties = json.loads((root / plants["file"]).read_text())["features"][0]["properties"]
     for group in plants["panel_groups"]:

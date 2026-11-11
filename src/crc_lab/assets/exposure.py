@@ -171,6 +171,18 @@ def hit_area_km2(footprint_km2: float, plant_area_km2: float) -> float:
     return math.pi * (r_f + r_p) ** 2
 
 
+def local_reports(
+    lon: float, lat: float, reports: Reports, rule: Rule, *, region: object | None = None
+) -> tuple[np.ndarray, float, float, float]:
+    """The circle grown under ``rule``: report sizes inside it, its radius, the radius that
+    reaches N reports (inf if never) and the share of the circle inside the reporting region."""
+    d = distances_km(lon, lat, reports)
+    order = np.argsort(d)
+    reach = float(d[order[rule.n_target - 1]]) if len(d) >= rule.n_target else math.inf
+    radius = min(max(reach, rule.min_radius_km), rule.max_radius_km)
+    return reports.size_mm[d <= radius], radius, reach, clipped_fraction(lon, lat, radius, region)
+
+
 def at_point(
     lon: float,
     lat: float,
@@ -182,15 +194,9 @@ def at_point(
 ) -> dict[str, object]:
     """The local hail description at one point under ``rule``."""
     rule = rule or Rule()
-    d = distances_km(lon, lat, reports)
-    order = np.argsort(d)
-    reach = float(d[order[rule.n_target - 1]]) if len(d) >= rule.n_target else math.inf
-    radius = min(max(reach, rule.min_radius_km), rule.max_radius_km)
-    inside = d <= radius
-    n = int(inside.sum())
-    fraction = clipped_fraction(lon, lat, radius, region)
+    sizes, radius, reach, fraction = local_reports(lon, lat, reports, rule, region=region)
+    n = len(sizes)
     area = math.pi * radius**2 * fraction
-    sizes = reports.size_mm[inside]
     rate = n / (area * reports.years)
     hit = hit_area_km2(rule.footprint_km2, plant_area_km2)
     out: dict[str, object] = {

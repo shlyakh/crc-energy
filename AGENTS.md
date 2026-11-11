@@ -1,17 +1,13 @@
 # Agent guide — crc-lab
 
-Current work: a data explorer for Climate Risk Commons (CRC) data, Texas, with eight CRC Open hazards
-(Phase 1), NOAA Storm Events as a cleaned source on H3 cells (Phase 2) and hail-size and thunderstorm-gust
-curves built from it and brought into CRC (Phase 3); all built 2026-11-10, awaiting review. Deferred: two
-asset sets (Phase 4). Branches: `sources-track` (other crc-sdk sources, `docs/sources-track/`) and
-`explorer-v2` (source-centric explorer redo, IBTrACS first).
+Current work: a data explorer for Climate Risk Commons (CRC) data, Texas, and a hail-risk pipeline for solar
+plants. Built: the explorer (source-centric, nine sources), NOAA Storm Events on H3 cells (Phase 2), hail and
+gust curves (Phase 3), solar plants with value and hail exposure, reporting-bias model and radar (Phase 4),
+hail impact functions v0 and loss per plant (Phase 5, 2026-11-10, awaiting review). One branch: `main`.
 
-On this branch (`explorer-v2`) the explorer is source-centric: `site/layers.json` declares `sources` and every
-layer's `source_id`; the page lists sources (IBTrACS first, CRC Open as one of them) and shows per-source
-controls. `src/crc_lab/explorer/tracks.py` builds the IBTrACS storm records; `tools/smoke.mjs` walks every
-source. Sources carry an `origin` (crc-sdk adapter, or new in crc-lab) and the registry's `groups` and `demo`
-drive the grouping, the About tab and the 30-second demo (`?demo=1`; `tools/record-demo.mjs` records
-`site/demo.webm`). Reports: `docs/reports/E2-explorer-v2.md`, `E3-time-and-extent.md`, `E4-groups-about-demo.md`.
+The explorer is driven by `site/layers.json`: `groups`, `sources` (each with an `origin`), layers with a
+`source_id`, `panel_groups` for click panels, and `demo` for the 30-second tour (`?demo=1`;
+`tools/record-demo.mjs` records `site/demo.webm`). `tools/smoke.mjs` walks every source.
 
 Read first:
 
@@ -41,8 +37,8 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
 - Licences: crc-* code is AGPL-3.0-or-later; CRC Open data is CC BY-NC 4.0 (non-commercial, with attribution);
   NOAA and USGS data ask for attribution.
 - Write outputs atomically (temp file, then `os.replace`). English everywhere.
-- Damage curves: hail impact functions v0 are specified in `docs/requirements-hail-impact-v0.md` and planned
-  as Phase 5; every number there carries a source tag, and placeholders stay labelled as placeholders.
+- Damage curves: hail impact functions v0 are specified in `docs/requirements-hail-impact-v0.md` and built
+  as Phase 5 (`src/crc_lab/impacts/`); every number there carries a source tag, and placeholders stay labelled as placeholders.
 
 ## Layout
 
@@ -62,6 +58,10 @@ Earlier scope (energy infrastructure, ERA5 layers, dependence) is in `docs/archi
   `build.py` (`python -m crc_lab.assets.build [--sensitivity]`)
 - `src/crc_lab/radar/` — `mrms.py` (MRMS hail size grid), `swdi.py` (NEXRAD hail signatures 1995 on), `analysis.py`,
   `build.py`, `compare_cells.py` (four-source hail days per cell); `src/crc_lab/decisions.py` (decisions document)
+- `src/crc_lab/impacts/` — Phase 5: `hail_v0.json` (the spec's parameters), `hail_curves.py` (the four v0 curves; numpy only,
+  no crc imports, liftable into crc-sdk), `annual.py` (events to a year's damage ratio, capped), `crc_adapter.py`
+  (tabulated `ImpactExpression`s), `build.py` (`just impacts`: loss per plant, report 5, plant panel fields)
+- `docs/open-questions.md` (questions waiting for Yuri), `docs/plan-explorer-next.md` (explorer plan, draft)
 - `docs/hail-data-processing.md`, `docs/decisions.md`, `docs/data-sources.md` — how hail is processed, what was
   chosen and why, and every data source
 - `docs/sources-track/` — requirements and plan for the other crc-sdk sources (probes in `tools/probes/`)

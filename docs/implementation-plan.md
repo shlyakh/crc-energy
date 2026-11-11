@@ -168,6 +168,8 @@ Suggested start: N = 100, minimum radius 10 km, maximum 75 km; to be confirmed b
 
 ## Phase 5 — Hail impact functions v0
 
+Built 2026-11-10; report: [reports/5-hail-impact.md](reports/5-hail-impact.md). Buildings and cars have no asset set, so their curves are reported at ten city centres only; no hail factor was registered inside crc-sdk (an upstream change); the curves are offered as tabulated impact expressions.
+
 From `docs/requirements-hail-impact-v0.md`. Checked against the pins on 2026-11-10: every test vector in the
 draft reproduces; crc-framework's `SigmoidImpact` is a logistic (midpoint, steepness), so the Swiss curves are
 callables; `PiecewiseLinearImpact` fits the solar breakage tables; crc-sdk's impact context carries only
@@ -193,6 +195,8 @@ published vectors). Open before Phase 5: the placeholder defaults; baseline vers
 have no asset set.
 
 ## After this effort
+
+Explorer improvements are drafted in [plan-explorer-next.md](plan-explorer-next.md); questions waiting for Yuri are in [open-questions.md](open-questions.md).
 
 MRMS radar hail and its comparison with the report-based curves; hail and gust damage curves for solar modules
 and buildings (researched separately; added when that research is in); loss results; a proposal upstream for the Storm Events plan and the event-table schema.
