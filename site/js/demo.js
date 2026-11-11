@@ -1,4 +1,4 @@
-// The tour: about 35 seconds through both projects. Driven through the shell's small API and the pages' own
+// The tour: about 40 seconds through both projects. Driven through the shell's small API and the pages' own
 // controls, so it shows what a visitor can do. body.dataset.demo is "running" then "done" (read by the recorder).
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -14,13 +14,24 @@ export async function runDemo(app) {
   const click = (sel) => document.querySelector(sel)?.click();
   const waitSources = async () => { for (let i = 0; i < 60 && !document.body.dataset.sourcesReady; i++) await sleep(100); await sleep(300); };
   const steps = [
-    [4500, `<b>Hail risk at Texas solar plants.</b> ${big.length} plants of 20 MW or more, sized by capacity and coloured by expected hail loss as a share of value.`, async () => { await app.showTab("risk"); $("min-mw").value = "20"; $("min-mw").onchange(); app.setMeasure("loss_ratio"); app.setBasis(0); await app.selectPlant(null); $("reset-view").click(); }],
+    [3500, `<b>Hail risk at Texas solar plants.</b> ${big.length} plants of 20 MW or more, sized by capacity and coloured by expected hail loss as a share of value.`, async () => { await app.showTab("risk"); $("min-mw").value = "20"; $("min-mw").onchange(); app.setMeasure("loss_ratio"); app.setBasis(0); await app.selectPlant(null); $("reset-view").click(); }],
     [5000, `<b>${top.name}</b>, ${top.mw.toFixed(0)} MW: the largest expected loss, ${usd(top.loss_usd)} a year. Its report circle and the hail reports inside it are drawn on the map.`, async () => { app.setMeasure("loss_usd"); await app.selectPlant(top.id, { fly: true }); }],
     [4500, `<b>Corrected for where people report.</b> Reports are sparse in empty country. The correction lifts the portfolio from ${usd(risk.data.totals.loss_usd)} to ${usd(risk.data.totals.loss_usd_c)} a year.`, async () => { app.setBasis(1); }],
     [5000, `<b>${jays.name}.</b> Reports give it a small loss, yet radar saw ${jays.radar_max_mm} mm hail over it on ${jays.radar_max_day}. Reports miss hail.`, async () => { app.setBasis(0); await app.selectPlant(jays.id, { fly: true }); }],
     [5000, `<b>Hail evidence.</b> Radar hail days divided by reported hail days, cell by cell: where the two records disagree most, hail goes unreported.`, async () => { await app.selectPlant(null); await app.showTab("evidence"); await waitSources(); click('.src-row[data-id="hail_compare"]'); await sleep(900); click('#cmp-mode [data-mode="ratio"]'); }],
-    [4500, `<b>Methods.</b> How a report becomes a loss, and the damage curves with their placeholder inputs marked.`, async () => { await app.showTab("methods"); await sleep(500); document.getElementById("m-solar")?.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" }); }],
-    [5000, `<b>Texas CRC data.</b> The second project: an explorer of what crc-sdk already reaches. Here, tropical cyclone tracks since 1950.`, async () => { await app.showTab("crc"); await waitSources(); click('.src-row[data-id="ibtracs"]'); }],
+    [3500, `<b>Methods.</b> How a report becomes a loss, and the damage curves with their placeholder inputs marked.`, async () => { await app.showTab("methods"); await sleep(500); document.getElementById("m-solar")?.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" }); }],
+    [9500, `<b>Texas CRC data.</b> The second project: an explorer of what crc-sdk already reaches. Here Hurricane Beryl, July 2024, replayed from the best-track record with its wind radii and the storm reports near its track.`, async () => {
+      await app.showTab("crc"); await waitSources(); click('.src-row[data-id="ibtracs"]');
+      const src = globalThis.__sources; for (let i = 0; i < 60 && !src.tracks; i++) await sleep(100);
+      const beryl = src.tracks.storms.find((x) => x.name.toUpperCase() === "BERYL" && x.season === 2024); if (!beryl) throw new Error("Beryl 2024 is not in the track file");
+      (await import("./views/tracks.js")).selectStorm(beryl);
+      for (let i = 0; i < 60 && !(src.time && src.time.key === `storm:${beryl.sid}` && !$("timebar").classList.contains("hidden")); i++) await sleep(100);
+      await sleep(600);
+      // from the start of the player's window, at the fastest speed: about 87 hours in 7 seconds
+      const speed = $("time-speed"); speed.value = "12"; speed.dispatchEvent(new Event("change"));
+      const slider = $("time-slider"); slider.value = "0"; slider.dispatchEvent(new Event("input"));
+      $("time-play").click();
+    }],
   ];
   const total = steps.reduce((a, s) => a + s[0], 0); let elapsed = 0;
   bar.classList.remove("hidden"); document.body.dataset.demo = "running"; const t0 = performance.now();
@@ -38,6 +49,7 @@ export async function runDemo(app) {
   } finally {
     document.removeEventListener("keydown", onKey); bar.classList.add("hidden"); $("demo-progress").style.width = "0";
     document.body.dataset.demoMs = String(Math.round(performance.now() - t0));
+    if (document.body.dataset.playing) $("time-play")?.click();
     await app.showTab("risk"); $("reset-view").click(); running = false;
     document.body.dataset.demo = stop ? "stopped" : "done";
   }

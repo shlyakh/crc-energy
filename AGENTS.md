@@ -6,7 +6,7 @@ gust curves (Phase 3), solar plants with value and hail exposure, reporting-bias
 hail impact functions v0 and loss per plant (Phase 5, 2026-11-10, awaiting review). One branch: `main`.
 
 The explorer (redesigned in Phase 6, `docs/reports/6-explorer-redesign.md`) is one static page holding two
-projects, switched at the top left: "Texas hail risk" (new work: Risk, Hail evidence, Methods) and "Texas CRC data"
+projects, switched in the top row (their tabs sit in a second row beneath; the tour ends on Beryl 2024 in the storm player): "Texas hail risk" (new work: Risk, Hail evidence, Methods) and "Texas CRC data"
 (an explorer of what crc-sdk already reaches: Data, About). `site/layers.json` stays the registry of sources and
 layers (`groups`, `sources` with an `origin`, layers with a `source_id`); the Risk tab reads the generated
 `site/data/assets/plants.json`, `plants_detail.json` and `curves.json`.

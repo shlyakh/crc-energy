@@ -66,3 +66,11 @@ https://shlyakh.github.io/crc-lab/. The old page is removed (it is in git histor
 1. Is 20 MW the right default threshold, or should it follow a definition (for example EIA's utility-scale)?
 2. Should the tour be cut to 30 seconds, or is 38 acceptable?
 3. Open questions 4 to 10 in [open-questions.md](../open-questions.md) are unchanged.
+
+## Later adjustments (2026-11-11)
+
+- The header is two rows: the two projects and the Tour button on top, the chosen project's tabs in a row of
+  their own beneath (32 px). Before, projects and tabs shared one row.
+- The tour's last step selects Hurricane Beryl 2024 in Texas CRC data and plays it in the storm player
+  (the player's whole window, 87 hours at 12 h/s). The tour runs about 41 seconds; `site/demo.webm` was
+  re-recorded and its frames checked.

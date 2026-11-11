@@ -20,18 +20,19 @@
     <button class="proj" role="tab" data-project="hail"><b>Texas hail risk</b><small>new work, built on Climate Risk Commons</small></button>
     <button class="proj" role="tab" data-project="crc"><b>Texas CRC data</b><small>explorer of what crc-sdk already reaches</small></button>
   </div>
-  <nav class="tabs" role="tablist" aria-label="View">
-    <button class="tab" role="tab" data-tab="risk" data-project="hail">Risk</button>
-    <button class="tab" role="tab" data-tab="evidence" data-project="hail">Hail evidence</button>
-    <button class="tab" role="tab" data-tab="methods" data-project="hail">Methods</button>
-    <button class="tab" role="tab" data-tab="crc" data-project="crc">Data</button>
-    <button class="tab" role="tab" data-tab="crc-about" data-project="crc">About</button>
-  </nav>
   <div class="top-right">
-    <button id="demo-start" class="btn" title="A guided tour of this page, about 35 seconds">▶ Tour</button>
+    <button id="demo-start" class="btn" title="A guided tour of this page, about 40 seconds">▶ Tour</button>
     <span id="build" class="mute"></span>
   </div>
 </header>
+<!-- Second row: the tabs of the chosen project only. -->
+<nav class="tabs subnav" role="tablist" aria-label="View">
+  <button class="tab" role="tab" data-tab="risk" data-project="hail">Risk</button>
+  <button class="tab" role="tab" data-tab="evidence" data-project="hail">Hail evidence</button>
+  <button class="tab" role="tab" data-tab="methods" data-project="hail">Methods</button>
+  <button class="tab" role="tab" data-tab="crc" data-project="crc">Data</button>
+  <button class="tab" role="tab" data-tab="crc-about" data-project="crc">About</button>
+</nav>
 
 <main id="tab-risk" class="pane">
   <section class="col col-table" aria-label="Plants">

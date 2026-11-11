@@ -349,6 +349,8 @@ await ev("document.querySelector('#basis [data-basis=\"2\"]').click()"); await s
 
 // ---------- two projects, Methods, About, the tour ----------
 await open(URL); await sleep(500);
+{ const g = JSON.parse(await ev("JSON.stringify((() => { const r = (q) => document.querySelector(q).getBoundingClientRect(); const top = r('.top'), nav = r('.tabs'), pane = r('#tab-risk'), tab = r('.tab:not(.hidden)'); return { topB: top.bottom, navT: nav.top, navB: nav.bottom, tabT: tab.top, paneT: pane.top, paneB: pane.bottom, h: innerHeight, inTop: !!document.querySelector('.top .tab') }; })())"));
+  check("tabs sit in their own row under the projects, and the pane fills the rest", !g.inTop && Math.abs(g.navT - g.topB) < 1 && g.tabT >= g.topB && Math.abs(g.paneT - g.navB) < 1 && Math.abs(g.paneB - g.h) < 1, g); }
 check("opens on the hail project with its three tabs", (await data()).project === "hail" && (await ev("[...document.querySelectorAll('.tab:not(.hidden)')].map((b) => b.dataset.tab).join()")) === "risk,evidence,methods");
 await ev("document.querySelector('.proj[data-project=\"crc\"]').click()"); await sleep(4000); d = await data();
 check("project switch opens Texas CRC data with its own tabs", d.project === "crc" && d.tab === "crc" && d.origin === "crc-sdk" && (await ev("[...document.querySelectorAll('.tab:not(.hidden)')].map((b) => b.dataset.tab).join()")) === "crc,crc-about" && (await ev("document.title")).includes("CRC data"), d);
@@ -373,7 +375,13 @@ await shot("p-methods");
 if (!process.argv.includes("--no-demo")) {
   await ev("document.getElementById('demo-start').click()"); await sleep(1500);
   check("tour starts with a caption", (await data()).demo === "running" && (await ev("document.getElementById('demo-caption').textContent.length")) > 20);
-  const seen = new Set(); for (let i = 0; i < 120 && (await data()).demo === "running"; i++) { seen.add(`${(await data()).project}/${(await data()).tab}`); if (i === 30) await shot("p-tour-mid"); await sleep(500); }
+  const seen = new Set(); const clocks = new Set(); let beryl = false;
+  for (let i = 0; i < 120 && (await data()).demo === "running"; i++) {
+    seen.add(`${(await data()).project}/${(await data()).tab}`); if (i === 30) await shot("p-tour-mid");
+    if ((await data()).playing === "1") { if (!beryl) { beryl = (await ev("__sources.storm === (__sources.tracks.storms.find((x) => x.name === 'Beryl' && x.season === 2024) || {}).sid")) === true; } clocks.add(await ev("document.getElementById('time-clock').textContent")); if (clocks.size === 6) await shot("p-tour-beryl"); }
+    await sleep(500);
+  }
+  check("tour plays Beryl 2024 in the storm player", beryl && clocks.size >= 6, { beryl, clocks: [...clocks].slice(0, 12) });
   d = await data();
   check("tour finishes in 30 to 45 seconds without a failed step", d.demo === "done" && Number(d.demoMs) > 30000 && Number(d.demoMs) < 45000 && !d.demoError, d);
   check("tour visits both projects and returns to Risk", ["hail/risk", "hail/evidence", "hail/methods", "crc/crc"].every((s) => seen.has(s)) && d.tab === "risk", [...seen]);
