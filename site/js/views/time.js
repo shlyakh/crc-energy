@@ -1,7 +1,7 @@
 // Time: the storm player, the report date window and the timeline strip under the map. Moved from site/app.js.
 import { $, state, api, esc, ScatterplotLayer, PathLayer, layerById, ramp, rgbCss, minToMs, msToMin, parseT, fmtT, highlightLayers } from "./core.js";
 import { loadEvents, eventColor, showEvent } from "./events.js";
-import { fixAt, ringAt, stormTimes } from "./tracks.js";
+import { fixAt, ringAt, stormTimes, nearTester, nearRule, dashedRing, AVG_NAME, nmKm } from "./tracks.js";
 
 function lowerBound(arr, v) { let lo = 0, hi = arr.length; while (lo < hi) { const mid = (lo + hi) >> 1; if (arr[mid] < v) lo = mid + 1; else hi = mid; } return lo; }
 export async function setupTime() {
@@ -25,6 +25,12 @@ export async function setupTime() {
   }
   const i0 = lowerBound(ev.begin, Math.max(1, Math.floor(msToMin(t0)))), i1 = lowerBound(ev.begin, Math.floor(msToMin(t1)) + 1);
   state.time = { key, mode, t0, t1, now, shade, range: [i0, i1], playing: false, speed: Number($("time-speed").value) || 6, frameMs: null, frames: 0 };
+  if (mode === "storm") {
+    // per report of the window: 1 near the track, 0 away from it, 2 no point (county/zone report, cannot be tested)
+    const s = state.tracks.storms.find((x) => x.sid === state.storm); const near = nearTester(s); const mask = new Uint8Array(i1 - i0);
+    for (let i = i0; i < i1; i++) mask[i - i0] = ev.lon[i] !== ev.lon[i] ? 2 : near(ev.lon[i], ev.lat[i], minToMs(ev.begin[i])) ? 1 : 0;
+    state.time.mask = mask; state.time.rule = nearRule(s, t0, t1);
+  }
   state.timelineKey = null;
 }
 export function stopPlay() { if (state.time) state.time.playing = false; $("time-play").textContent = "▶"; document.body.dataset.playing = ""; }
@@ -32,12 +38,15 @@ function windowTypes() { // in window mode the type checkboxes apply; in storm m
   const ev = state.events; const { index } = ev;
   return state.time.mode === "window" ? index.types.map((t) => state.eventsFilter.types.has(t)) : index.types.map(() => true);
 }
+// storm mode shows the reports near the track unless "all Texas reports" is ticked
+const nearOnly = (tm) => tm.mode === "storm" && state.nearOnly;
 export function drawFrame() {
   if (!state.overlay) return;
   const t0 = performance.now(); const layers = [...state.baseLayers]; const tm = state.time;
   if (tm && state.events) {
     const ev = state.events; const el = layerById("storm_events"); const on = windowTypes(); const nowMin = msToMin(tm.now);
-    const keep = []; for (let i = tm.range[0]; i < tm.range[1]; i++) { if (ev.begin[i] > nowMin) break; if (on[ev.type[i]] && ev.lon[i] === ev.lon[i]) keep.push(i); }
+    const near = nearOnly(tm); const i0 = tm.range[0];
+    const keep = []; for (let i = i0; i < tm.range[1]; i++) { if (ev.begin[i] > nowMin) break; if (on[ev.type[i]] && ev.lon[i] === ev.lon[i] && (!near || tm.mask[i - i0] === 1)) keep.push(i); }
     const colors = ev.index.types.map((t) => eventColor(el, t));
     layers.push(new ScatterplotLayer({
       id: "window-events", data: keep, pickable: true, radiusUnits: "pixels", getRadius: 4, stroked: true, lineWidthMinPixels: 1, getLineColor: [255, 255, 255, 200],
@@ -51,12 +60,17 @@ export function drawFrame() {
         const fx = fixAt(s, tm.now); const base = ramp(layerById("ibtracs").style)[6];
         const outlines = fx.r.map((r4, b) => (r4 && r4.some((v) => v > 0) ? { path: [...ringAt(fx.lon, fx.lat, r4, 6), ringAt(fx.lon, fx.lat, r4, 6)[0]], b } : null)).filter(Boolean);
         if (state.extent && outlines.length) layers.push(new PathLayer({ id: "storm-outline", data: outlines, getPath: (d) => d.path, getColor: [...base, 230], widthUnits: "pixels", getWidth: (d) => 1 + d.b * 0.5, pickable: false }));
+        // no 34 kt radii at this fix: the record's single radius as a dashed circle (an average size, not a wind extent)
+        if (state.extent && fx.avg) layers.push(new PathLayer({ id: "storm-avg-radius", data: dashedRing(fx.lon, fx.lat, fx.avg.nm), getPath: (d) => d, getColor: [...base, 235], widthUnits: "pixels", getWidth: 1.75, pickable: false }));
+        const avgNow = fx.avg ? `At the player's clock: ${AVG_NAME[fx.avg.kind]} ${nmKm(fx.avg.nm)}, drawn dashed.` : outlines.length ? "At the player's clock: 34 kt radii are given, so no circle." : "At the player's clock: no radius of either kind.";
+        const avgEl = $("storm-avg-now"); if (avgEl && avgEl.textContent !== avgNow) avgEl.textContent = avgNow;
+        document.body.dataset.avgRadius = fx.avg ? `${fx.avg.kind}:${Math.round(fx.avg.nm)}` : "";
         layers.push(new ScatterplotLayer({ id: "storm-marker", data: [fx], getPosition: (d) => [d.lon, d.lat], radiusUnits: "pixels", getRadius: 7, getFillColor: [...base, 255], stroked: true, getLineColor: [255, 255, 255, 255], lineWidthMinPixels: 2, pickable: false }));
         tm.fix = fx;
       }
     }
     $("time-slider").value = Math.round(((tm.now - tm.t0) / (tm.t1 - tm.t0)) * 1000);
-    $("time-clock").textContent = `${fmtT(tm.now)} UTC${tm.fix && tm.mode === "storm" && tm.fix.wind !== null ? ` · ${tm.fix.wind.toFixed(0)} kt` : ""} · ${keep.length} reports`;
+    $("time-clock").textContent = `${fmtT(tm.now)} UTC${tm.fix && tm.mode === "storm" && tm.fix.wind !== null ? ` · ${tm.fix.wind.toFixed(0)} kt` : ""} · ${keep.length}${tm.mode === "storm" ? "" : " reports"}${tm.mode === "storm" ? (near ? " near track" : " in Texas") : ""}`;
     const cur = document.querySelector("#timeline .cursor"); if (cur && state.timelineX) { const px = state.timelineX(tm.now); cur.setAttribute("x1", px); cur.setAttribute("x2", px); }
     const sc = document.getElementById("series-cursor"); if (sc && state.series && tm.mode === "storm") { const px = state.series(tm.now); sc.setAttribute("x1", px); sc.setAttribute("x2", px); }
     document.body.dataset.now = fmtT(tm.now); document.body.dataset.shown = keep.length; if (tm.fix) document.body.dataset.marker = `${tm.fix.lon.toFixed(3)},${tm.fix.lat.toFixed(3)}`;
@@ -89,7 +103,12 @@ export function buildTimebar() {
   $("time-play").onclick = () => { if (tm.playing) stopPlay(); else play(); };
   $("time-speed").onchange = (e) => { tm.speed = Number(e.target.value); };
   $("time-slider").oninput = (e) => seek(Number(e.target.value) / 1000);
-  const filterKey = tm.mode === "window" ? [...state.eventsFilter.types].sort().join("|") : "";
+  const storm = tm.mode === "storm"; $("near-row").classList.toggle("hidden", !storm);
+  if (storm) {
+    $("near-all").checked = !state.nearOnly; $("near-note").textContent = tm.rule.text; $("near-note").title = tm.rule.title;
+    $("near-all").onchange = (e) => { state.nearOnly = !e.target.checked; drawTimeline(); state.timelineKey = `${tm.key}near${state.nearOnly}`; drawFrame(); if (state.map) state.map.resize(); };
+  }
+  const filterKey = tm.mode === "window" ? [...state.eventsFilter.types].sort().join("|") : `near${state.nearOnly}`;
   if (state.timelineKey !== tm.key + filterKey) { drawTimeline(); state.timelineKey = tm.key + filterKey; }
   drawFrame();
 }
@@ -97,7 +116,12 @@ export function drawTimeline() {
   const started = performance.now(); const tm = state.time; const ev = state.events; const { index } = ev; const el = layerById("storm_events");
   const on = windowTypes(); const CAP = 6000;
   const counts = new Map(); const marks = [];
-  for (let i = tm.range[0]; i < tm.range[1]; i++) { if (!on[ev.type[i]]) continue; counts.set(ev.type[i], (counts.get(ev.type[i]) || 0) + 1); if (marks.length < CAP) marks.push(i); }
+  const near = nearOnly(tm); let all = 0, noPoint = 0;
+  for (let i = tm.range[0]; i < tm.range[1]; i++) {
+    if (!on[ev.type[i]]) continue; all++;
+    if (near) { const m = tm.mask[i - tm.range[0]]; if (m === 2) noPoint++; if (m !== 1) continue; }
+    counts.set(ev.type[i], (counts.get(ev.type[i]) || 0) + 1); if (marks.length < CAP) marks.push(i);
+  }
   // rows: hail and thunderstorm wind always, then the other types present, by count (fixed order within a window)
   const always = ["Hail", "Thunderstorm Wind"].map((t) => index.types.indexOf(t)).filter((c) => c >= 0);
   const rest = [...counts.keys()].filter((c) => !always.includes(c)).sort((a, b) => counts.get(b) - counts.get(a));
@@ -128,7 +152,12 @@ export function drawTimeline() {
   svg.push(`<line class="cursor" x1="${x(tm.now)}" x2="${x(tm.now)}" y1="${T - 4}" y2="${H - 2}"/></svg>`);
   box.innerHTML = svg.join("");
   const total = [...counts.values()].reduce((a, b) => a + b, 0);
-  $("timeline-note").textContent = `${total.toLocaleString("en-US")} reports begin between ${fmtT(tm.t0)} and ${fmtT(tm.t1)} UTC${total > marks.length ? `; the first ${marks.length.toLocaleString("en-US")} are drawn` : ""}. A tick is an instant report, a bar one with a duration; taller and darker = larger hail or stronger wind; dashed or hollow = county/zone report with no point on the map.${tm.shade ? " Shaded: storm centre over the Texas box." : ""}`;
+  const N = (v) => v.toLocaleString("en-US");
+  const head = near
+    ? `${N(total)} reports near the track begin between ${fmtT(tm.t0)} and ${fmtT(tm.t1)} UTC, of ${N(all)} in Texas in that time; ${N(noPoint)} of the others are county/zone reports with no point, which cannot be tested against the track and are left out`
+    : `${N(total)} reports${tm.mode === "storm" ? " in all of Texas" : ""} begin between ${fmtT(tm.t0)} and ${fmtT(tm.t1)} UTC`;
+  $("timeline-note").textContent = `${head}${total > marks.length ? `; the first ${N(marks.length)} are drawn` : ""}. A tick is an instant report, a bar one with a duration; taller and darker = larger hail or stronger wind${near ? "" : "; dashed or hollow = county/zone report with no point on the map"}.${tm.shade ? " Shaded: storm centre over the Texas box." : ""}`;
+  document.body.dataset.timelineTotal = total; document.body.dataset.timelineAll = all; document.body.dataset.timelineNoPoint = near ? noPoint : ""; document.body.dataset.near = near ? "1" : "";
   const tip = $("timeline-tip"); const svgEl = box.querySelector("svg");
   svgEl.onmousemove = (e) => {
     const i = e.target.dataset && e.target.dataset.i; if (i === undefined) { tip.classList.add("hidden"); return; }

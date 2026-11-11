@@ -21,7 +21,7 @@ export async function showMethods(el, dataUrl) {
       <div class="tile"><b>${t.plants}</b><span>Texas solar plants in the EIA list (${big.length} of 20 MW or more)</span></div>
       <div class="tile"><b>${fmtUSD(t.value)}</b><span>replacement value at benchmark cost</span></div>
       <div class="tile"><b>${fmtUSD(t.loss_usd)}</b><span>expected hail loss a year, reports as they are</span></div>
-      <div class="tile"><b>${fmtUSD(t.loss_usd_c)}</b><span>the same after the reporting-bias correction</span></div>
+      <div class="tile"><b>${fmtUSD(t.loss_usd_c)}</b><span>bias-corrected per cell (${fmtUSD(t.loss_usd_r)} per region)</span></div>
     </div>
     <p><b>These are first-approximation numbers.</b> The damage curve is a version-0 curve from laboratory data. Four inputs have no source and are placeholders: the stow angle (${d.stow_tilt_deg}°), the chance that a tracker is stowed when hail arrives (${d.p_stow}), the modules' share of plant value (${d.module_cost_share}) and the area hit per hail report (${rule.footprint_km2} km²). Read the results as orders of magnitude and as a ranking, not as prices.</p>
 
@@ -33,7 +33,7 @@ export async function showMethods(el, dataUrl) {
       <div class="box"><b>Damage per event</b>The solar curve turns hail size into a share of plant value lost, with the plant's glass type and mounting; scaled by the share of the plant covered.</div>
       <div class="box"><b>A year</b>Events arrive at random. A year's damage shares are added and capped at full loss. Times plant value = expected loss per year.</div>
     </div>
-    <div class="flow-side"><b>Bias-corrected variant.</b> Reports are sparse where few people live. A model of the reporting rate from population and roads divides the event rate at step 3. Hail sizes are not changed. Both variants are always shown; plants whose rate is multiplied by more than ${plants.factor_warning_above} are marked.</div>
+    <div class="flow-side"><b>Bias-corrected variants.</b> Reports are sparse where few people live. A model gives every cell a reporting rate from population and roads. <b>Per cell:</b> the rate at step 3 is divided by the mean reporting rate of the cells in the plant's circle. <b>Per region:</b> the circle is dropped; the rate is the reports in the plant's model region (about 12,000 km²) ÷ (years × sum of reporting rate × cell area), and the region's report sizes are pooled. Per region is steadier but blurs differences inside a region. Hail sizes are not changed by either. All three figures are always shown; plants whose per-cell factor is above ${plants.factor_warning_above} are marked.</div>
     <p>One consequence, checked in the build for every plant: expected damage does not depend on the plant's size. A larger plant is hit more often, but each hit covers a smaller share of it.</p>
     <p>Plant value is capacity × a national benchmark cost per kW (NREL ATB), not the plant's own cost or insured value. Plants under 20 MW (${t.plants - big.length} of ${t.plants}, mostly rooftop and parking arrays) are hidden on the Risk tab by default; the ${big.length} larger plants carry ${fmtUSD(sum("loss_usd"))} of the ${fmtUSD(t.loss_usd)}.</p>
 

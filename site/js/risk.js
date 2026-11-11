@@ -5,7 +5,9 @@ import { histogram, curve, bars } from "./charts.js";
 import { $, esc, css, rgb, classOf, classVar, fmtMeasure, fmtBreak, fmtInt, fmtMW, fmtUSD, fmtPct, circleRing } from "./util.js";
 
 const { MapboxOverlay, ScatterplotLayer, GeoJsonLayer, PolygonLayer } = globalThis.deck;
-const BASIS = ["as reported", "bias-corrected"];
+const BASIS = ["as reported", "bias-corrected per cell", "bias-corrected per region"];
+// The table shows reports as they are and one corrected column: per region when that basis is on, per cell otherwise.
+const cb = () => (S.basis === 2 ? 2 : 1);
 const LABEL_FONT = ["Noto Sans Regular"];
 const PAD = { top: 24, right: 24, bottom: 36, left: 110 };
 const S = { data: null, detail: null, detailUrl: "", measure: null, basis: 0, sort: { key: "reports", dir: -1 }, filter: "", minMW: 20, selected: null, hovered: null, map: null, overlay: null, tags: [], texas: null, onChange: () => {} };
@@ -32,7 +34,7 @@ export async function initRisk(dataUrl, address, onChange) {
   ]);
   S.data = data; S.texas = texas;
   S.measure = data.measures.find((m) => m.id === address.measure) || data.measures[0];
-  S.basis = address.basis === "1" && S.measure.has_basis ? 1 : 0;
+  S.basis = ["1", "2"].includes(address.basis) && S.measure.has_basis ? Number(address.basis) : 0;
   S.sort.key = S.basis ? "corrected" : "reports";
   if (address.minmw !== undefined && [0, 5, 20, 50, 100].includes(Number(address.minmw))) S.minMW = Number(address.minmw);
   $("min-mw").value = String(S.minMW);
@@ -65,7 +67,7 @@ export function setBasis(basis) {
 function refresh() {
   for (const b of $("basis").children) { b.setAttribute("aria-checked", String(Number(b.dataset.basis) === S.basis)); b.disabled = !S.measure.has_basis; }
   const hidden = hiddenCount();
-  $("plant-count").textContent = hidden ? `${visible().length} of ${S.data.plants.length}` : String(S.data.plants.length);
+  $("plant-count").textContent = `${visible().length} of ${S.data.plants.length} in the EIA list`;
   $("hidden-note").textContent = hidden ? `${hidden} plants under ${S.minMW} MW hidden` : "all plants shown";
   $("hidden-note").classList.toggle("on", hidden > 0);
   if (S.map.getLayer("plant-labels")) S.map.setFilter("plant-labels", labelFilter());
@@ -112,8 +114,8 @@ function hover(info) {
   const box = $("risk-hover"); const o = info.object;
   if (!o || !["plants", "sel-reports"].includes(info.layer?.id)) { box.classList.add("hidden"); if (S.hovered) { S.hovered = null; markRow(); } return; }
   if (info.layer.id === "plants") {
-    const v = shown(o); const other = S.measure.has_basis ? shown(o, 1 - S.basis) : null;
-    box.innerHTML = `<b>${esc(o.name)}</b> · ${fmtMW(o.mw)} MW · ${esc(o.county)} Co.<br>${esc(S.measure.label)}: <b>${fmtMeasure(S.measure, value(o))}</b> ${esc(S.measure.unit)}${S.measure.has_basis ? `<br><span>${BASIS[1 - S.basis]}: ${other === null ? "–" : fmtMeasure(S.measure, value(o, 1 - S.basis))}</span>` : ""}`;
+    const v = shown(o); const ob = S.basis ? 0 : 1; const other = S.measure.has_basis ? shown(o, ob) : null;
+    box.innerHTML = `<b>${esc(o.name)}</b> · ${fmtMW(o.mw)} MW · ${esc(o.county)} Co.<br>${esc(S.measure.label)}: <b>${fmtMeasure(S.measure, value(o))}</b> ${esc(S.measure.unit)}${S.measure.has_basis ? `<br><span>${BASIS[ob]}: ${other === null ? "–" : fmtMeasure(S.measure, value(o, ob))}</span>` : ""}`;
     if (S.hovered !== o.id) { S.hovered = o.id; markRow(); }
   } else {
     box.innerHTML = `Hail report · <b>${o[2].toFixed(0)} mm</b> (${(o[2] / 25.4).toFixed(2)} in)<br><span>${o[1].toFixed(3)}° N ${Math.abs(o[0]).toFixed(3)}° W · ${S.data.periods.reports}</span>`;
@@ -160,24 +162,24 @@ function renderLegend() {
   const period = m.id === "radar_days" ? `Radar (MRMS) ${S.data.periods.radar}.` : `Storm reports ${S.data.periods.reports}, ${BASIS[S.basis]}.`;
   $("risk-legend").innerHTML = `<h3>${esc(m.label)}</h3><div class="unit">${esc(m.unit)} · plants per class at right</div>${rows}${none ? `<div class="row"><span class="dot" style="background:var(--nodata)"></span>no value<span class="n num">${none}</span></div>` : ""}
     <div class="sep"></div><div class="label">Capacity, MW AC</div><div class="sizes">${sizes}</div>${sel}
-    <div class="foot">${hiddenCount() ? `<b>Plants under ${S.minMW} MW are not shown (${hiddenCount()} of ${S.data.plants.length}).</b> ` : ""}${period}${m.id.startsWith("loss") ? " First-approximation damage curve with placeholder inputs." : ""}</div>`;
+    <div class="foot">${S.basis === 2 && m.has_basis ? "Per region: every plant of a model region (about 12,000 km²) shares one corrected hail rate; the report circle is not used. " : ""}${hiddenCount() ? `<b>Plants under ${S.minMW} MW are not shown (${hiddenCount()} of the ${S.data.plants.length} in the EIA list).</b> ` : ""}${period}${m.id.startsWith("loss") ? " First-approximation damage curve with placeholder inputs." : ""}</div>`;
   document.body.dataset.legend = `${m.unit} | ${counts.map((_, i) => range(i)).join(" | ")}`;
 }
 
 // ---------- table ----------
 function renderTable() {
   const m = S.measure; const active = S.basis ? "corrected" : "reports";
-  $("th-reports").textContent = m.has_basis ? "Reports" : "Radar"; $("th-corrected").classList.toggle("hidden", !m.has_basis);
+  $("th-reports").textContent = m.has_basis ? "Reports" : "Radar"; $("th-corrected").textContent = cb() === 2 ? "Per region" : "Per cell"; $("th-corrected").classList.toggle("hidden", !m.has_basis);
   for (const th of document.querySelectorAll("#plants thead th")) { th.classList.toggle("active", th.dataset.sort === active); th.classList.toggle("offcol", m.has_basis && ["reports", "corrected"].includes(th.dataset.sort) && th.dataset.sort !== active); if (th.dataset.sort === S.sort.key) th.setAttribute("aria-sort", S.sort.dir > 0 ? "ascending" : "descending"); else th.removeAttribute("aria-sort"); }
-  const key = { name: (p) => p.name.toLowerCase(), mw: (p) => p.mw, reports: (p) => value(p, 0) ?? -Infinity, corrected: (p) => value(p, 1) ?? -Infinity }[S.sort.key];
+  const key = { name: (p) => p.name.toLowerCase(), mw: (p) => p.mw, reports: (p) => value(p, 0) ?? -Infinity, corrected: (p) => value(p, cb()) ?? -Infinity }[S.sort.key];
   const rows = visible().filter((p) => !S.filter || `${p.name} ${p.county}`.toLowerCase().includes(S.filter)).sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0) * S.sort.dir);
-  $("plants").tBodies[0].innerHTML = rows.map((p) => `<tr data-id="${p.id}"${p.id === S.selected ? ' class="sel"' : ""}><td class="l" title="${esc(p.name)}"><span class="sw" style="background:var(${colourVar(p)})"></span>${esc(p.name)}<small>${esc(p.county)} · ${p.year ?? "–"} · ${esc(p.mount)}</small></td><td>${fmtMW(p.mw)}</td><td class="${S.basis === 0 || !m.has_basis ? "" : "off offcol"}">${fmtMeasure(m, value(p, 0))}</td>${m.has_basis ? `<td class="${S.basis === 1 ? "" : "off offcol"}">${fmtMeasure(m, value(p, 1))}${p.factor_warning ? ' <span class="warn" title="The bias correction multiplies this plant\'s hail rate by ' + p.factor + ", above " + S.data.factor_warning_above + '. It rests on the least certain part of the reporting model.">!</span>' : ""}</td>` : ""}</tr>`).join("");
+  $("plants").tBodies[0].innerHTML = rows.map((p) => `<tr data-id="${p.id}"${p.id === S.selected ? ' class="sel"' : ""}><td class="l" title="${esc(p.name)}"><span class="sw" style="background:var(${colourVar(p)})"></span>${esc(p.name)}<small>${esc(p.county)} · ${p.year ?? "–"} · ${esc(p.mount)}${p.thin_film ? " · thin film" : ""}</small></td><td>${fmtMW(p.mw)}</td><td class="${S.basis === 0 || !m.has_basis ? "" : "off offcol"}">${fmtMeasure(m, value(p, 0))}</td>${m.has_basis ? `<td class="${S.basis > 0 ? "" : "off offcol"}">${fmtMeasure(m, value(p, cb()))}${p.factor_warning && cb() === 1 ? ' <span class="warn" title="The bias correction multiplies this plant\'s hail rate by ' + p.factor + ", above " + S.data.factor_warning_above + '. It rests on the least certain part of the reporting model.">!</span>' : ""}</td>` : ""}</tr>`).join("");
   for (const tr of $("plants").tBodies[0].rows) { tr.onclick = () => select(tr.dataset.id, { fly: true }); tr.onmouseenter = () => { S.hovered = tr.dataset.id; }; }
   const stat = (basis) => { const vals = rows.map((p) => value(p, basis)).filter((v) => v !== null && v !== undefined); if (!vals.length) return "–"; if (m.id === "loss_usd") return fmtMeasure(m, vals.reduce((a, b) => a + b, 0)); vals.sort((a, b) => a - b); return fmtMeasure(m, vals[Math.floor(vals.length / 2)]); };
   const mw = rows.reduce((a, p) => a + p.mw, 0);
-  $("plants").tFoot.innerHTML = `<tr><th class="l">${m.id === "loss_usd" ? "Total" : "Median"} · ${rows.length} plants</th><th>${fmtInt(mw)}</th><th class="${S.basis === 0 || !m.has_basis ? "" : "offcol"}">${stat(0)}</th>${m.has_basis ? `<th class="${S.basis === 1 ? "" : "offcol"}">${stat(1)}</th>` : ""}</tr>`;
+  $("plants").tFoot.innerHTML = `<tr><th class="l">${m.id === "loss_usd" ? "Total" : "Median"} · ${rows.length} plants</th><th>${fmtInt(mw)}</th><th class="${S.basis === 0 || !m.has_basis ? "" : "offcol"}">${stat(0)}</th>${m.has_basis ? `<th class="${S.basis > 0 ? "" : "offcol"}">${stat(cb())}</th>` : ""}</tr>`;
   const vis = visible(), sum = (f) => vis.reduce((a, p) => a + (p[f] ?? 0), 0), hidden = hiddenCount();
-  $("table-note").innerHTML = `${esc(m.label)}, ${esc(m.unit)}. ${hidden ? `The ${vis.length} plants of ${S.minMW} MW or more` : `All ${vis.length} plants`}: value ${fmtUSD(sum("value"))}; expected hail loss <b>${fmtUSD(sum("loss_usd"))}</b> a year as reported, <b>${fmtUSD(sum("loss_usd_c"))}</b> bias-corrected.${hidden ? ` ${hidden} smaller plants are hidden.` : ""}${m.has_basis ? ' <span class="warn">!</span> correction factor above ' + S.data.factor_warning_above + "." : ""}`;
+  $("table-note").innerHTML = `${esc(m.label)}, ${esc(m.unit)}. ${hidden ? `The ${vis.length} plants of ${S.minMW} MW or more` : `All ${vis.length} plants`}: value ${fmtUSD(sum("value"))}; expected hail loss <b>${fmtUSD(sum("loss_usd"))}</b> a year as reported, <b>${fmtUSD(sum("loss_usd_c"))}</b> bias-corrected per cell, <b>${fmtUSD(sum("loss_usd_r"))}</b> per region.${hidden ? ` ${hidden} smaller plants are hidden.` : ""}${m.has_basis && cb() === 1 ? ' <span class="warn">!</span> per-cell correction factor above ' + S.data.factor_warning_above + "." : ""}`;
   document.body.dataset.rows = String(rows.length); document.body.dataset.first = rows[0]?.id || "";
 }
 function markRow() { for (const tr of $("plants").tBodies[0].rows) tr.style.background = tr.dataset.id === S.hovered && tr.dataset.id !== S.selected ? "var(--hover)" : ""; }
@@ -216,16 +218,18 @@ function renderDetail() {
   $("risk-detail").innerHTML = `
     <div class="d-head"><button class="d-close" title="Clear selection (Esc)" aria-label="Clear selection">×</button>
       <h2>${esc(p.name)}</h2><p>${esc(p.county)} County · ${p.lat.toFixed(3)}° N ${Math.abs(p.lon).toFixed(3)}° W</p>
-      <p>${fmtMW(p.mw)} MW AC · online ${p.year ?? "–"} · ${esc(p.mount)} · ${glass}</p></div>
+      <p>${fmtMW(p.mw)} MW AC · online ${p.year ?? "–"} · ${esc(p.mount)} · ${glass}</p>${p.thin_film ? '<p><span class="pill ph" style="margin-left:0">thin-film modules</span> no breakage table for them; the glass rule above is a stand-in</p>' : ""}</div>
     <table class="kv">
       <tr><th>Replacement value</th><td class="big">${fmtUSD(p.value)}</td></tr>
       <tr><th>Expected hail loss</th><td class="mute">per year</td></tr>
       <tr${on(0)}><th>as reported</th><td>${fmtUSD(p.loss_usd)}<small>${fmtPct(p.loss_ratio)}</small></td></tr>
-      <tr${on(1)}><th>bias-corrected${p.factor_warning ? ' <span class="warn" title="Correction factor above ' + S.data.factor_warning_above + '">!</span>' : ""}</th><td>${fmtUSD(p.loss_usd_c)}<small>${fmtPct(p.loss_ratio_c)}</small></td></tr>
-      <tr class="sub"><th>correction factor</th><td>${p.factor === null ? "–" : `× ${p.factor.toFixed(2)}`}</td></tr>
+      <tr${on(1)}><th>bias-corrected, per cell${p.factor_warning ? ' <span class="warn" title="Correction factor above ' + S.data.factor_warning_above + '">!</span>' : ""}</th><td>${fmtUSD(p.loss_usd_c)}<small>${fmtPct(p.loss_ratio_c)}</small></td></tr>
+      <tr${on(2)}><th>bias-corrected, per region</th><td>${fmtUSD(p.loss_usd_r)}<small>${fmtPct(p.loss_ratio_r)}</small></td></tr>
+      <tr class="sub"><th>per-cell correction factor</th><td>${p.factor === null ? "–" : `× ${p.factor.toFixed(2)}`}</td></tr>
       <tr><th>Chance of hail ≥ 2 in</th><td class="mute">per year</td></tr>
       <tr${on(0)}><th>as reported</th><td>${fmtPct(p.p2in, 2)}</td></tr>
-      <tr${on(1)}><th>bias-corrected</th><td>${fmtPct(p.p2in_c, 2)}</td></tr>
+      <tr${on(1)}><th>bias-corrected, per cell</th><td>${fmtPct(p.p2in_c, 2)}</td></tr>
+      <tr${on(2)}><th>bias-corrected, per region</th><td>${fmtPct(p.p2in_r, 2)}</td></tr>
       <tr><th>Largest radar hail over the plant</th><td>${p.radar_max_mm ? `${p.radar_max_mm} mm<small>${esc(p.radar_max_day)}</small>` : `none ≥ 30 mm`}</td></tr>
     </table>
     <div class="d-sec charts"><div id="ch-sizes"></div><div id="ch-curve"></div><div id="ch-days"></div></div>
@@ -239,6 +243,7 @@ function renderDetail() {
         ${(d?.notes ?? []).map((n) => `<li>${esc(n)}</li>`).join("")}
       </ul></details>
     ${group(`Hail from reports, ${S.data.periods.reports}`, [["Report circle radius", `${(d?.circle.radius_km ?? p.radius_km).toFixed(1)} km`], ["Hail reports inside", p.reports], ["Share of circle inside the reporting region", d ? fmtPct(d.circle.share_inside_region, 0) : null], ["Reports per 100 km² per year", x.hail_reports_per_100km2_per_year], ["Median size", mm(x.hail_size_median_mm)], ["90th percentile size", mm(x.hail_size_p90_mm)], ["Largest size", mm(x.hail_size_largest_mm)], ["Chance of hail ≥ 1 in, as reported", pc(x.annual_chance_hail_1in_or_more)], ["Chance of hail ≥ 1 in, bias-corrected", pc(x.annual_chance_hail_1in_or_more_bias_corrected)], ["Fitted reporting rate", pc(x.reporting_rate_fitted, 0)], ["Hit area (footprint and plant)", x.hail_hit_area_km2 == null ? null : `${x.hail_hit_area_km2} km²`], ["Flag", x.hail_flag]])}
+    ${group("Bias correction per region", d?.region ? [["Region (H3 resolution 3)", d.region.id], ["Cells in the region (Texas)", d.region.cells], ["Hail reports in the region", d.region.reports], ["Mean fitted reporting rate", pc(d.region.mean_reporting_rate, 0)], ["Corrected reports per 100 km² per year", d.region.rate_per_100km2_year]] : [])}
     ${group("Loss, more figures", [["Damage ratio if 2-inch hail covers the plant", pc(x.loss_damage_ratio_if_2in_hail, 1)], ["Damage ratio exceeded 1 year in 100, as reported", pc(x.loss_damage_ratio_exceeded_1_in_100, 2)], ["Same, bias-corrected", pc(x.loss_damage_ratio_exceeded_1_in_100_bias_corrected, 2)], ["Value basis", x.value_basis]])}
     ${group(`Radar over the plant, ${S.data.periods.radar}`, [["Hail days ≥ 30 mm per year, 25 km mean", p.radar_days === null ? null : p.radar_days.toFixed(2)], ["Days with hail ≥ 30 mm", x.radar_hail_days_30mm_or_more_over_plant], ["Days with hail ≥ 50 mm", x.radar_hail_days_50mm_or_more_over_plant], ["Largest size", p.radar_max_mm ? `${p.radar_max_mm} mm on ${p.radar_max_day}` : "none ≥ 30 mm"]])}
     ${group("Thunderstorm wind (cell curve, m/s)", [["Gust return levels", x.gust_return_levels_ms]])}

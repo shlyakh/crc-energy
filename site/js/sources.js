@@ -119,6 +119,7 @@ const PANE = `
       <input type="range" id="time-slider" min="0" max="1000" value="0" aria-label="Time">
       <span id="time-clock" class="clock num"></span>
     </div>
+    <div id="near-row" class="hidden"><label class="check"><input type="checkbox" id="near-all"> Show all Texas reports</label><span id="near-note" class="mute small"></span></div>
     <div id="timeline"></div>
     <div id="timeline-note" class="mute small"></div>
     <div id="timeline-tip" class="tip hidden"></div>
@@ -138,7 +139,7 @@ const PANE = `
 </section>`;
 
 const EMPTY_HINT = {
-  tracks: "Pick a storm in the list or on the map. Its track is emphasised, its wind extent is shaded, and the time bar under the map plays it with the storm reports of those days.",
+  tracks: "Pick a storm in the list or on the map. Its track is emphasised, its wind extent is shaded, and the time bar under the map plays it with the storm reports of those days near its track.",
   "points-binary": "Click a report on the map, or switch on the date window and click a mark on the timeline. The report is ringed on the map.",
   "h3-cells": "Click a cell for its curve: the values at every return period, as crc-sdk evaluated them. The cell is outlined on the map.",
   "h3-compare": "Click a cell to see hail days per year from all four sources side by side. The cell is outlined on the map.",
@@ -239,7 +240,8 @@ function buildCaveats(payload) {
     }
   }
   if (state.source === "storm_events" && state.events) items.push(...state.events.index.known_biases.slice(0, 4).map((t) => `<b>Reports:</b> ${esc(t)}`));
-  if (state.source === "ibtracs" && state.tracks) items.push(`<b>Wind extent:</b> shaded bands are US agency estimates of how far 34, 50 and 64 kt winds reached in each quadrant (${state.tracks.storms.filter((x) => x.extent_points.r34).length} of ${state.tracks.storms.length} storms, from 2001), joined along the track; they are not observed damage footprints, and storms without them show a line only.`);
+  if (state.source === "ibtracs" && state.tracks) items.push(`<b>Wind extent:</b> shaded bands are US agency estimates of how far 34, 50 and 64 kt winds reached in each quadrant (${state.tracks.storms.filter((x) => x.extent_points.r34).length} of ${state.tracks.storms.length} storms, from 2001), joined along the track; they are not observed damage footprints. Where a fix has no 34 kt radii, a dashed circle shows the one radius the record has (outermost closed isobar, else radius of maximum wind): a single average radius, not an observed wind extent; fixes with neither show a line only.`);
+  if (state.time && state.time.mode === "storm" && state.time.rule) items.push(`<b>Reports near the track:</b> the player shows and counts only reports whose point lies inside the storm's 34 kt wind radius (the largest of the four quadrant radii at the fix nearest in time, measured from the storm centre at the report's begin time) or, where that fix has no 34 kt radii, within ${state.time.rule.nm} nmi (${Math.round(state.time.rule.nm * 1.852)} km) of the track line. ${state.time.rule.nm} nmi is the median of that largest radius over the ${state.time.rule.fixes} fixes of ${state.time.rule.storms} storms in this file that have one. County/zone reports have no point and are left out; tick “Show all Texas reports” to see everything again.`);
   if (state.time) items.push(`<b>Timeline:</b> storm reports are placed at their begin time (NCEI local standard time converted to UTC); most hail and wind reports are instants. Reports appear when the clock passes them and stay.`);
   if (state.source === "ibtracs" && state.tracks) items.push(`<b>Winds:</b> ${esc(state.tracks.wind_note)}. Snapshot SHA-256 ${esc((state.tracks.sha256 || "").slice(0, 12))}…, retrieved ${esc((state.tracks.retrieved_at || "").slice(0, 10))}. Cite: ${esc(state.tracks.citation)}.`);
   for (const l of state.registry.layers) {

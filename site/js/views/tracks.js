@@ -1,5 +1,5 @@
 // Tropical cyclone tracks (IBTrACS) with wind extent, moved from site/app.js.
-import { $, state, api, esc, LineLayer, SolidPolygonLayer, PathLayer, layerById, fetchJSON, ramp, colorAt, rgbCss, parseT, kv, openDetail, closeDetail } from "./core.js";
+import { $, state, api, esc, LineLayer, SolidPolygonLayer, PathLayer, layerById, fetchJSON, ramp, colorAt, rgbCss, parseT, kv, openDetail, closeDetail, quantile } from "./core.js";
 import { drawSeries } from "./charts.js";
 
 const WIND_DOMAIN = [20, 140];
@@ -57,6 +57,12 @@ export function tracksLegend(layer) {
     for (const [k, t, range] of CATEGORIES) rows.push({ color: rgbCss(layer.style.category_colors[k]), shape: "line", label: t, n: range });
   }
   if (state.extent) { const b = stops[5]; ["34 kt", "50 kt", "64 kt"].forEach((t, i) => rows.push({ color: `rgba(${b.join(",")},${BAND_ALPHA[i]})`, shape: "box", label: `${t} wind radius (estimate)` })); }
+  const chosen = state.extent && state.storm !== null ? match.find((s) => s.sid === state.storm) : null;
+  const avg = chosen ? avgSummary(chosen) : [];
+  if (avg.length) {
+    rows.push({ color: rgbCss(stops[6]), shape: "ring dashed", label: "average radius, not observed" });
+    section.foot = `Dashed circle: at fixes with no 34 kt radii, one radius from the agency record drawn as a circle (${avg.map(avgText).join("; ")}). A single average radius, not an observed wind extent. ${section.foot}`;
+  }
   section.rows = rows;
   return section;
 }
@@ -70,7 +76,7 @@ export function tracksLayers(layer) {
   const dim = state.storm !== null;
   const color = (d) => { const base = f.colorBy === "wind" ? windColor(stops, d.w) : categoryColor(layer, d.cat); return [...base, dim && d.sid !== state.storm ? 70 : 230]; };
   const chosen = dim ? match.find((s) => s.sid === state.storm) : null;
-  return [...(state.extent ? swathLayers(layer, match) : []),
+  return [...(state.extent ? swathLayers(layer, match) : []), ...(state.extent && chosen ? avgRadiusLayers(layer, chosen) : []),
     // the selected track on a white casing, so it reads over the dimmed ones
     ...(chosen ? [new PathLayer({ id: "sel-track", data: [chosen.points.map((p) => [p[0], p[1]])], getPath: (d) => d, getColor: [255, 255, 255, 235], widthUnits: "pixels", getWidth: 8, jointRounded: true, capRounded: true, pickable: false })] : []),
     new LineLayer({
@@ -101,9 +107,88 @@ export function fixAt(s, ms) {
   let lo = 0, hi = n - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (t[mid] <= ms) lo = mid; else hi = mid; }
   const a = s.points[lo], b = s.points[hi]; const f = t[hi] === t[lo] ? 0 : (ms - t[lo]) / (t[hi] - t[lo]);
   const mix = (x, y) => (x === null || y === null ? (f < 0.5 ? x : y) : x + (y - x) * f);
-  return { lon: a[0] + (b[0] - a[0]) * f, lat: a[1] + (b[1] - a[1]) * f, wind: mix(a[2], b[2]), r: [lerpR(a[7], b[7], f), lerpR(a[8], b[8], f), lerpR(a[9], b[9], f)] };
+  // the single radius follows the nearer fix; it is interpolated only when the other fix carries the same kind
+  const near = avgRadius(f < 0.5 ? a : b), far = avgRadius(f < 0.5 ? b : a);
+  const avg = near && far && far.kind === near.kind ? { kind: near.kind, nm: near.nm + (far.nm - near.nm) * (f < 0.5 ? f : 1 - f) } : near;
+  return { lon: a[0] + (b[0] - a[0]) * f, lat: a[1] + (b[1] - a[1]) * f, wind: mix(a[2], b[2]), r: [lerpR(a[7], b[7], f), lerpR(a[8], b[8], f), lerpR(a[9], b[9], f)], avg };
 }
-const fixAt0 = (p) => ({ lon: p[0], lat: p[1], wind: p[2], r: [p[7], p[8], p[9]] });
+const fixAt0 = (p) => ({ lon: p[0], lat: p[1], wind: p[2], r: [p[7], p[8], p[9]], avg: avgRadius(p) });
+// ---------- a single radius where the fix has no 34 kt quadrant radii ----------
+// IBTrACS carries two single radii per fix (USA_ROCI, USA_RMW; nautical miles). Neither is a wind extent: the outermost closed
+// isobar is the storm's outer size on the pressure map, the radius of maximum wind is the inner core. The outer one is preferred.
+export const NM_KM = 1.852;
+export const AVG_NAME = { roci: "radius of the outermost closed isobar", rmw: "radius of maximum wind" };
+export const nmKm = (nm) => `${Math.round(nm)} nmi (${Math.round(nm * NM_KM)} km)`;
+const maxR34 = (p) => (p[7] ? Math.max(...p[7].map((v) => v || 0)) : 0);
+export function avgRadius(p) {
+  if (maxR34(p) > 0) return null;
+  return p[11] > 0 ? { kind: "roci", nm: p[11] } : p[10] > 0 ? { kind: "rmw", nm: p[10] } : null;
+}
+// per kind: how many fixes of the storm get the circle, and the range of the radius
+export function avgSummary(s) {
+  if (!s._avg) {
+    const by = {}; for (const p of s.points) { const a = avgRadius(p); if (!a) continue; const k = (by[a.kind] ||= { kind: a.kind, n: 0, min: Infinity, max: -Infinity }); k.n++; k.min = Math.min(k.min, a.nm); k.max = Math.max(k.max, a.nm); }
+    s._avg = ["roci", "rmw"].map((k) => by[k]).filter(Boolean);
+  }
+  return s._avg;
+}
+const avgText = (a) => `${AVG_NAME[a.kind]}, ${a.min === a.max ? nmKm(a.min) : `${Math.round(a.min)}–${nmKm(a.max)}`} at ${a.n} fix${a.n > 1 ? "es" : ""}`;
+// a circle as short dashes (deck.gl's PathLayer has no dash without an extension)
+export function dashedRing(lon, lat, nm) {
+  const step = nm < 40 ? 15 : 5; const ring = ringAt(lon, lat, [nm, nm, nm, nm], step); const out = [];
+  for (let i = 0; i < ring.length; i += 2) out.push([ring[i], ring[i + 1]]);
+  return out;
+}
+function avgRadiusLayers(layer, s) {
+  // along the whole track only for storms with no 34 kt radii at all; elsewhere the player draws the circle at the current fix
+  if (s.extent_points.r34 || !avgSummary(s).length) return [];
+  const data = []; for (const p of s.points) { const a = avgRadius(p); if (a) data.push(...dashedRing(p[0], p[1], a.nm)); }
+  return [new PathLayer({ id: "avg-radius", data, getPath: (d) => d, getColor: [...ramp(layer.style)[6], 110], widthUnits: "pixels", getWidth: 1, pickable: false })];
+}
+// ---------- reports near the track ----------
+// The fixed distance used where a fix has no 34 kt radii: the median, over every fix in this file that has them, of the
+// largest quadrant radius, rounded to 5 nmi.
+export function nearDistance() {
+  const T = state.tracks;
+  if (!T._near) {
+    const v = []; let storms = 0;
+    for (const s of T.storms) { let any = false; for (const p of s.points) { const m = maxR34(p); if (m > 0) { v.push(m); any = true; } } storms += any; }
+    v.sort((a, b) => a - b); const median = quantile(v, 0.5);
+    T._near = { nm: Math.round(median / 5) * 5, median, fixes: v.length, storms };
+  }
+  return T._near;
+}
+// (lon, lat, ms) -> is the report near the storm? Inside the largest 34 kt quadrant radius of the nearest-in-time fix, measured
+// from the storm centre at the report's time; where that fix has no 34 kt radii, within the fixed distance of the track line.
+export function nearTester(s) {
+  const t = stormTimes(s); const n = t.length; const D = nearDistance().nm; const r34 = s.points.map(maxR34);
+  const rad = Math.PI / 180;
+  return (lon, lat, ms) => {
+    let i = 0; while (i < n - 1 && t[i + 1] <= ms) i++; if (i < n - 1 && t[i + 1] - ms < ms - t[i]) i++;
+    const cos = Math.cos(lat * rad); const dx = (p) => (p[0] - lon) * cos * 60, dy = (p) => (p[1] - lat) * 60; // nautical miles, flat around the report
+    if (r34[i] > 0) { const c = fixAt(s, ms); return Math.hypot(dx([c.lon, c.lat]), dy([c.lon, c.lat])) <= r34[i]; }
+    let best = Infinity;
+    for (let k = 0; k + 1 < n; k++) {
+      const ax = dx(s.points[k]), ay = dy(s.points[k]), bx = dx(s.points[k + 1]), by = dy(s.points[k + 1]);
+      const l2 = (bx - ax) ** 2 + (by - ay) ** 2; const u = l2 ? Math.min(1, Math.max(0, -(ax * (bx - ax) + ay * (by - ay)) / l2)) : 0;
+      best = Math.min(best, Math.hypot(ax + (bx - ax) * u, ay + (by - ay) * u)); if (best <= D) return true;
+    }
+    return false;
+  };
+}
+// the rule in words for the stretch [t0, t1] of one storm
+export function nearRule(s, t0, t1) {
+  const t = stormTimes(s); const d = nearDistance(); let lo = Infinity, hi = -Infinity, withR = 0, without = 0;
+  s.points.forEach((p, i) => { if (t[i] < t0 || t[i] > t1) return; const m = maxR34(p); if (m > 0) { withR++; lo = Math.min(lo, m); hi = Math.max(hi, m); } else without++; });
+  const fixed = `within ${nmKm(d.nm)} of the track line`;
+  const origin = `${d.nm} nmi is the median 34 kt radius in this file (largest quadrant, ${d.fixes} fixes of ${d.storms} storms${d.median === d.nm ? "" : `, ${d.median.toFixed(1)} rounded`})`;
+  const km = (v) => Math.round(v * NM_KM);
+  const text = withR
+    ? `Near the track = inside the 34 kt wind radius at the nearest fix in time (${lo === hi ? nmKm(lo) : `${Math.round(lo)}–${Math.round(hi)} nmi, ${km(lo)}–${km(hi)} km`} here)${without ? `; where the fix has none, ${fixed}, the median 34 kt radius in this file` : ""}.`
+    : `Near the track = ${fixed}: this storm has no 34 kt wind radii in the record; ${d.nm} nmi is the median 34 kt radius of the storms that have them.`;
+  const title = `The 34 kt radius is the largest of the four quadrant radii, measured from the storm centre at the report's begin time; ${withR} of ${withR + without} fixes in this window have one. ${origin}.`;
+  return { text, title, withR, without, lo, hi, ...d };
+}
 const BAND_ALPHA = [0.2, 0.36, 0.55];
 function swathLayers(layer, match) {
   // One translucent band per threshold along the track. Overlaps must not pile up, so the bands are drawn
@@ -120,11 +205,12 @@ function swathLayers(layer, match) {
       for (let b = 0; b < 3; b++) if (fx.r[b] && fx.r[b].some((v) => v > 0)) rings[b].push(ringAt(fx.lon, fx.lat, fx.r[b]));
     }
   }
-  return rings.map((data, b) => new SolidPolygonLayer({
+  // a band with no rings is left out altogether: handed an empty list, the layer kept drawing the previous storm's band
+  return rings.map((data, b) => data.length === 0 ? null : new SolidPolygonLayer({
     id: `swath-${b}`, data, getPolygon: (d) => d, pickable: false, filled: true,
     getFillColor: [base[0] * BAND_ALPHA[b], base[1] * BAND_ALPHA[b], base[2] * BAND_ALPHA[b], 255 * BAND_ALPHA[b]],
     parameters: { blend: true, blendColorOperation: "max", blendAlphaOperation: "max", blendColorSrcFactor: "one", blendColorDstFactor: "one", blendAlphaSrcFactor: "one", blendAlphaDstFactor: "one", depthCompare: "always" },
-  }));
+  })).filter(Boolean);
 }
 export function trackHover(d) { return `<b>${esc(d.label)}</b><br>${d.w === null ? "wind not given" : `${d.w} kt`}${d.cat !== null && d.cat > 0 ? ` · category ${d.cat}` : ""}<br><span>${esc(d.t)} UTC</span>`; }
 export function showStorm(s) {
@@ -136,6 +222,7 @@ export function showStorm(s) {
     ["Peak wind over the Texas box", s.max_wind_kt_in_texas === null ? "–" : `${s.max_wind_kt_in_texas} kt`],
     ["Lowest pressure", s.min_pressure_mb === null ? "–" : `${s.min_pressure_mb} mb`], ["Highest category", s.max_category === null ? "–" : s.max_category <= 0 ? "below hurricane strength" : `${s.max_category} <small>Saffir-Simpson, NOAA USA_SSHS</small>`],
     ["Storm id", esc(s.sid)], ["Season", s.season],
+    ["Size where no wind radii", `${avgSummary(s).length ? `dashed circle: ${avgSummary(s).map(avgText).join("; ")}. A single average radius from the agency record, not an observed wind extent.` : "no single radius (outermost closed isobar or maximum wind) in the record at fixes without 34 kt radii"}<br><small id="storm-avg-now"></small>`],
     ["Wind extent", s.extent_points.r34 ? `34 kt radii at ${s.extent_points.r34} fixes, 64 kt at ${s.extent_points.r64}${s.extent_points.rmw ? `; radius of maximum wind at ${s.extent_points.rmw}` : ""}` : `no wind-radius estimate in IBTrACS for this storm${s.extent_points.rmw ? ` (radius of maximum wind at ${s.extent_points.rmw} fixes)` : ""}`],
     ["In the Texas box", `${esc(s.first_texas_point)} to ${esc(s.last_texas_point)} UTC`], ["Track shown", `${s.points.length} points, ${esc(first)} to ${esc(last)} UTC`], ["Wind source", s.wind_source === "wmo" ? "WMO agency" : s.wind_source === "usa" ? "US agency" : "WMO where present, else US agency"],
   ], true);

@@ -122,6 +122,10 @@
 #timebar .timectl select { height: 26px; }
 #timebar .timectl input[type="range"] { flex: 1; min-width: 60px; accent-color: var(--ink); }
 #timebar .clock { font-size: var(--f-s); white-space: nowrap; text-align: right; }
+#near-row { display: flex; align-items: baseline; gap: var(--s3); margin-top: 4px; }
+#near-row .check { flex: none; white-space: nowrap; margin: 0; }
+#near-row #near-note { line-height: 1.35; }
+#src-legend .row .ring.dashed { width: 11px; height: 11px; border-style: dashed; border-width: 1.5px; background: none; }
 #timeline svg { display: block; width: 100%; margin-top: 4px; }
 #timeline .row-label { font-size: 11px; fill: var(--ink); }
 #timeline .axis text { font-size: 10.5px; fill: var(--ink-2); }

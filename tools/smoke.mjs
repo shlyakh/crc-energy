@@ -254,7 +254,7 @@ const perSource = {
     await srcReset(); const hover = await clickMap(t.lon, t.lat, 7); await srcReady();
     check("ibtracs: hover readout names the storm with wind in kt", hover.shown && /HARVEY/i.test(hover.text) && /\d+ kt/.test(hover.text), hover);
     let d = await detailState(); let ids = await layerIds();
-    check("ibtracs: track click fills the detail column", d.open && d.title === t.label && d.rows === 10 && d.svg && d.picked === "storm" && (await J("S.storm")) === t.sid, d);
+    check("ibtracs: track click fills the detail column", d.open && d.title === t.label && d.rows === 11 && d.svg && d.picked === "storm" && (await J("S.storm")) === t.sid, d);
     check("ibtracs: selected track is emphasised and marked in the list", ids.includes("sel-track") && ids.includes("storm-marker") && (await ev("document.querySelector('#tracks-list li.sel')?.dataset.sid")) === t.sid, ids);
     // the storm player
     const dd = await data();
@@ -265,12 +265,39 @@ const perSource = {
     await at(0.2); await ev("document.getElementById('time-play').click()"); await sleep(2000); const p = await data();
     check("ibtracs: play advances the clock", p.playing === "1" && p.now > "2017-08" && Number(p.frameMs) >= 0 && (await at(0.2)).now < p.now, { now: p.now, playing: p.playing });
     check("ibtracs: scrubbing pauses the player", (await data()).playing === "" && (await text("time-play")) === "▶");
+    // reports near the track only (the default), and the checkbox that brings all Texas reports back
+    const nearEnd = await at(1); const nd = await data(); const rule = await text("near-note"); const note = await text("timeline-note");
+    check("ibtracs: the player counts only reports near the track and says so", nd.near === "1" && Number(nd.timelineTotal) > 0 && Number(nd.timelineTotal) < Number(nd.timelineAll) && nearEnd.shown === Number(nd.timelineTotal) && / \d+ near track/.test(await text("time-clock")) && /reports near the track begin/.test(note) && /no point.*left out/.test(note), { total: nd.timelineTotal, all: nd.timelineAll, shown: nearEnd.shown, note });
+    check("ibtracs: the rule for near the track is on screen with its distances", /34 kt wind radius/.test(rule) && /\d+–\d+ nmi, \d+–\d+ km/.test(rule) && /within \d+ nmi \(\d+ km\) of the track line/.test(rule) && /median 34 kt radius/.test(rule) && (await ev("(() => { const r = document.getElementById('near-row').getBoundingClientRect(), b = document.getElementById('timebar').getBoundingClientRect(); return r.height > 0 && r.top >= b.top && r.bottom <= b.bottom + 1; })()")) === true, rule);
+    await ev("document.getElementById('near-all').click()"); await sleep(400); const allEnd = await at(1); const ad = await data();
+    check("ibtracs: Show all Texas reports restores the larger count", ad.near === "" && Number(ad.timelineTotal) === Number(ad.timelineAll) && Number(ad.timelineTotal) > Number(nd.timelineTotal) && allEnd.shown > nearEnd.shown && /in all of Texas/.test(await text("timeline-note")) && / \d+ in Texas/.test(await text("time-clock")), { near: nearEnd.shown, all: allEnd.shown, timelineNear: nd.timelineTotal, timelineAll: ad.timelineTotal });
+    console.log(`     Harvey 2017 reports: near the track ${nd.timelineTotal} on the timeline / ${nearEnd.shown} on the map; all Texas ${ad.timelineTotal} / ${allEnd.shown}; no point, left out ${nd.timelineNoPoint}`);
+    await ev("document.getElementById('near-all').click()"); await sleep(400);
+    check("ibtracs: unticking returns to near-track reports", (await data()).near === "1" && (await at(1)).shown === nearEnd.shown);
     await at(0.45); await sleep(500); await shot("s-ibtracs-player");
     await escape(); d = await detailState(); ids = await layerIds();
     check("ibtracs: Escape clears the storm and closes the player", d.empty && (await J("S.storm")) === null && !ids.includes("sel-track") && (await ev("document.getElementById('timebar').classList.contains('hidden')")) === true, ids);
     await srcReady(); await press("#tracks-list li"); d = await detailState();
     check("ibtracs: list click selects a storm", d.open && d.picked === "storm" && (await layerIds()).includes("sel-track"), d);
     await srcReset(); await ev("document.getElementById('detail-close').click()"); await srcReady();
+    // storms with no 34 kt radii: the record's single radius as a dashed circle, flagged as an average
+    for (const [name, kind, words] of [["Alicia", "rmw", "radius of maximum wind"], ["Unnamed", "roci", "radius of the outermost closed isobar"]]) {
+      const st = await J(`(() => { const s = S.tracks.storms.find((x) => x.name === '${name}' && !x.extent_points.r34 && x.extent_points.${kind}); return { sid: s.sid, label: s.label }; })()`);
+      await setValue("tracks-name", st.label.split(" ")[0], "input"); await srcReset(); await press(`#tracks-list li[data-sid="${st.sid}"]`); await srcReady();
+      // a fix inside the player's window that carries the radius
+      const fixT = "Date.parse(q[5].replace(' ', 'T') + ':00Z')";
+      Object.assign(st, await J(`(() => { const s = S.tracks.storms.find((x) => x.sid === '${st.sid}'); const p = s.points.find((q) => q[${kind === "roci" ? 11 : 10}] > 0 && ${fixT} >= S.time.t0 && ${fixT} <= S.time.t1); const q = p; return p ? { t: p[5], nm: p[${kind === "roci" ? 11 : 10}], f: (${fixT} - S.time.t0) / (S.time.t1 - S.time.t0) } : { f: -1 }; })()`));
+      const f = st.f;
+      if (f >= 0 && f <= 1) { await ev(`document.dispatchEvent(new CustomEvent('crc:time', { detail: ${f} }))`); await sleep(400); }
+      await ev("document.getElementById('src-reset').click()"); await sleep(900);
+      ids = await layerIds(); lg = await legendText(); const meta = await text("detail-meta"); const av = (await data()).avgRadius;
+      check(`ibtracs: ${st.label} has no 34 kt radii and draws the ${kind} circle along the track, with no wind bands`, ids.includes("avg-radius") && !ids.includes("storm-outline") && !ids.some((x) => x.startsWith("swath-")), ids);
+      check(`ibtracs: ${st.label} the legend and the detail flag an average radius, not an observed extent`, /average radius, not observed/.test(lg) && lg.includes(words) && /not an observed wind extent/.test(lg) && meta.includes(words) && /single average radius from the agency record, not an observed wind extent/.test(meta) && /nmi \(\d+ km\)/.test(meta), { lg, meta });
+      if (f >= 0 && f <= 1) check(`ibtracs: ${st.label} the player draws the circle at a fix that has the radius and gives its value`, ids.includes("storm-avg-radius") && av === `${kind}:${Math.round(st.nm)}` && (await text("storm-avg-now")).includes(`${words} ${Math.round(st.nm)} nmi (${Math.round(st.nm * 1.852)} km)`), { ids, av, now: await text("storm-avg-now") });
+      else check(`ibtracs: ${st.label} has a fix with the radius inside the player window`, false, st);
+      await sleep(400); await shot(`s-ibtracs-avg-${kind}`);
+      await ev("document.getElementById('detail-close').click()"); await srcReady();
+    }
     await setValue("tracks-name", "", "input"); await ev("document.getElementById('src-reset').click()"); await sleep(900);
   },
   coops: () => stationClick("coops"),
@@ -305,6 +332,20 @@ check("deep link opens CRC data on the linked source", d.tab === "crc" && d.sour
 await open(`${URL}#tab=risk&plant=${other.id}&measure=p2in&basis=1`); await sleep(1500); d = await data();
 check("deep link restores plant, measure and basis", d.selected === other.id && d.measure === "p2in" && d.basis === "1", d);
 await shot("n4-deep-link");
+
+// ---------- third basis (bias-corrected per region), thin-film flag, EIA wording ----------
+await open(URL); await sleep(500);
+check("plant count names the EIA list", / of \d+ in the EIA list/.test(await ev("document.getElementById('plant-count').textContent")) && /in the EIA list/.test(await ev("document.getElementById('risk-legend').innerText")));
+await ev("(() => { const s = document.getElementById('measure'); s.value = 'loss_usd'; s.onchange(); const m = document.getElementById('min-mw'); m.value = '0'; m.onchange(); })()"); await sleep(400);
+await ev("document.querySelector('#basis [data-basis=\"2\"]').click()"); await sleep(600);
+{ const tt = JSON.parse(await ev("JSON.stringify(__risk.data.totals)")); const dd = await data();
+  check("per-region basis: switch, column head, total and legend", dd.basis === "2" && (await ev("document.getElementById('th-corrected').textContent")) === "Per region" && (await ev("document.querySelector('#plants tfoot').innerText")).includes((tt.loss_usd_r / 1e6).toFixed(2)) && /per region/i.test(await ev("document.getElementById('risk-legend').innerText")), [dd.basis, await ev("document.querySelector('#plants tfoot').innerText")]);
+  check("the three totals differ and are positive", tt.loss_usd > 0 && tt.loss_usd_c > tt.loss_usd && tt.loss_usd_r > tt.loss_usd && tt.loss_usd_r !== tt.loss_usd_c, tt);
+  const thin = await ev("__risk.data.plants.find((p) => p.thin_film && p.mw >= 20).id"); await ev(`__app.selectPlant('${thin}')`); await sleep(2500);
+  const dt = await ev("document.getElementById('risk-detail').innerText");
+  check("thin-film plant is flagged; detail shows all three bases and the region", /thin-film modules/i.test(dt) && /per cell/.test(dt) && /per region/.test(dt) && /Bias correction per region/i.test(dt) && (await ev(`document.querySelector('#plants tr[data-id="${thin}"]').innerText`)).includes("thin film"), dt.slice(0, 300));
+  await shot("r-regional");
+  await ev("__app.selectPlant(null)"); await ev("document.querySelector('#basis [data-basis=\"0\"]').click()"); }
 
 // ---------- two projects, Methods, About, the tour ----------
 await open(URL); await sleep(500);

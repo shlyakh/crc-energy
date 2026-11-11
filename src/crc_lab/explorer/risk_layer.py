@@ -44,37 +44,42 @@ MORE = (
     "loss_damage_ratio_exceeded_1_in_100", "loss_damage_ratio_exceeded_1_in_100_bias_corrected",
 )  # fmt: skip
 
-# id, label, unit, multiplier to the display unit, decimals, fields (reports, bias-corrected)
+# id, label, unit, multiplier to the display unit, fields per basis
+# (reports as they are, bias-corrected per cell, bias-corrected per region)
 MEASURES: list[dict[str, Any]] = [
     {
         "id": "loss_ratio",
         "label": "Expected hail loss, share of plant value",
         "unit": "% per year",
         "scale": 100.0,
-        "fields": ["loss_ratio", "loss_ratio_c"],
+        "fields": ["loss_ratio", "loss_ratio_c", "loss_ratio_r"],
     },
     {
         "id": "loss_usd",
         "label": "Expected hail loss",
         "unit": "$ million per year",
         "scale": 1e-6,
-        "fields": ["loss_usd", "loss_usd_c"],
+        "fields": ["loss_usd", "loss_usd_c", "loss_usd_r"],
     },
     {
         "id": "p2in",
         "label": "Annual chance of hail of 2 inches or more",
         "unit": "% per year",
         "scale": 100.0,
-        "fields": ["p2in", "p2in_c"],
+        "fields": ["p2in", "p2in_c", "p2in_r"],
     },
     {
         "id": "radar_days",
         "label": "Radar hail days, 30 mm or more, 25 km mean",
         "unit": "days per year",
         "scale": 1.0,
-        "fields": ["radar_days", "radar_days"],
+        "fields": ["radar_days", "radar_days", "radar_days"],
     },
 ]
+
+
+def rnd(value: float | None, digits: int) -> float | None:
+    return None if value is None else (round(value) if digits == 0 else round(value, digits))
 
 
 def nice(value: float) -> float:
@@ -198,6 +203,12 @@ def build(
                 "loss_usd_c": None
                 if ratio_c is None
                 else round(o["expected_annual_loss_usd_corrected"]),
+                "loss_ratio_r": rnd(o["expected_annual_damage_ratio_regional"], 6),
+                "loss_usd_r": rnd(o["expected_annual_loss_usd_regional"], 0),
+                "p2in_r": rnd(o["annual_prob_ge_2in_regional"], 5),
+                "region": o["region"],
+                "thin_film": bool(r["thin_film_cdte"])
+                or "thin-film" in (r["uspvdb_module_tech"] or ""),
                 "factor": None if factor is None else round(factor, 2),
                 "factor_warning": bool(factor is not None and factor > FACTOR_WARNING),
                 "p2in": r["hail_annual_prob_ge_2in"],
@@ -239,6 +250,13 @@ def build(
             },
             "hail_days": hail_days(r["latitude"], r["longitude"]),
             "more": {k: props.get(r["asset_id"], {}).get(k) for k in MORE},
+            "region": {
+                "id": o["region"],
+                "cells": o["region_cells"],
+                "reports": o["region_reports"],
+                "mean_reporting_rate": rnd(o["region_mean_reporting_rate"], 3),
+                "rate_per_100km2_year": rnd(o["region_rate_per_100km2_year"], 4),
+            },
             "stow_basis": params["stow_basis"],
             "notes": params["notes"],
         }
@@ -266,6 +284,7 @@ def build(
             "value": sum(p["value"] for p in plants),
             "loss_usd": sum(p["loss_usd"] for p in plants),
             "loss_usd_c": sum(p["loss_usd_c"] or 0 for p in plants),
+            "loss_usd_r": sum(p["loss_usd_r"] or 0 for p in plants),
         },
         "plants": plants,
     }

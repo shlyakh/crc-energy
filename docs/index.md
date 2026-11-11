@@ -7,6 +7,8 @@ Current work (agreed 2026-11-10; explorer first, storm sources and assets deferr
   for solar plants, buildings and cars (built as Phase 5)
 - [Implementation plan](implementation-plan.md)
 - [How hail data is processed](hail-data-processing.md): from raw reports and radar to the numbers at a plant
+- [Algorithms](algorithms.md): each calculation, its formula, what it averages over, its parameters and its weakness
+- [Plan: loss from radar hail, and buildings](plan-radar-loss-and-buildings.md) (draft for review)
 - [Decisions and their effect](decisions.md): each choice, its alternatives and a chart of the difference
 - [Data source catalog](data-sources.md): every source in use, probed or proposed, with what was checked
 - [Open questions for review](open-questions.md): every question waiting for Yuri, explained, with options

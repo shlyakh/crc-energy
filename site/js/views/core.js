@@ -20,6 +20,7 @@ export const state = {
   events: null, eventsFilter: { from: null, to: null, types: null }, eventsShown: null,
   tracks: null, tracksFilter: { from: null, to: null, name: "", minWind: 0, colorBy: "wind" }, storm: null,
   extent: true,              // draw wind-radius swaths where IBTrACS has them
+  nearOnly: true,            // storm player: only the reports near the track (false = all Texas reports)
   win: { on: false, start: "2024-03-14", days: 3 },   // Storm reports date window
   time: null,                // player: { key, mode, t0, t1, now, playing, speed, shade, range }
   baseLayers: [], series: null,
@@ -140,7 +141,7 @@ export function renderLegend(sections) {
     s.title ? `<h3>${esc(s.title)}</h3>` : "",
     s.unit ? `<div class="unit">${esc(s.unit)}</div>` : "",
     ...(s.ramps || []).map((r) => `${r.label ? `<div class="ramp-label">${esc(r.label)}</div>` : ""}<div class="ramp"><div class="bar" style="background:${r.css}"></div><div class="ticks num">${r.ticks.map((t, i) => tick(t, i, r.ticks.length)).join("")}</div></div>`),
-    ...(s.rows || []).map((r) => `<div class="row"><span class="${r.shape || "dot"}" style="background:${r.color}"></span>${esc(r.label)}${r.n !== undefined && r.n !== null ? `<span class="n num">${esc(typeof r.n === "number" ? r.n.toLocaleString("en-US") : r.n)}</span>` : ""}</div>`),
+    ...(s.rows || []).map((r) => `<div class="row"><span class="${r.shape || "dot"}" style="${(r.shape || "").startsWith("ring") ? "border-color" : "background"}:${r.color}"></span>${esc(r.label)}${r.n !== undefined && r.n !== null ? `<span class="n num">${esc(typeof r.n === "number" ? r.n.toLocaleString("en-US") : r.n)}</span>` : ""}</div>`),
     s.foot ? `<div class="foot">${esc(s.foot)}</div>` : "",
   ].join("")).join('<div class="sep"></div>');
   document.body.dataset.legend = $("src-legend").innerText.replace(/\s+/g, " ").slice(0, 400);

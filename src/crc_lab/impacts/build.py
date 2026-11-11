@@ -23,7 +23,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from crc_lab import PINNED
-from crc_lab.assets import exposure
+from crc_lab.assets import exposure, regional
 from crc_lab.assets.build import mounting, reporting_rates
 from crc_lab.curves import annual_maxima as am_mod
 from crc_lab.curves import fit
@@ -147,6 +147,8 @@ def main(argv: list[str] | None = None) -> int:
     local: list[
         dict[str, Any]
     ] = []  # per plant: sizes and the rate per km2, for the sensitivity runs
+    bias_path = args.assets / "reporting_bias.parquet"
+    regions = regional.build(bias_path, reports) if bias_path.exists() else None
     for r in rows:
         sizes, radius, _, fraction = exposure.local_reports(
             r["longitude"], r["latitude"], reports, rule, region=region
@@ -162,6 +164,19 @@ def main(argv: list[str] | None = None) -> int:
         plain = annual.annual_loss(touch_rate, damage)
         fixed = annual.annual_loss(touch_rate / rr, damage) if rr else None
         value = r["value_usd"]
+        # regional variant: the region's corrected rate and its pooled report sizes, no circle
+        reg = regions.at(r["longitude"], r["latitude"]) if regions else None
+        wide = None
+        if reg is not None and reg.reports:
+            ratio_r = hc.pv_plant_hail(reg.sizes_mm, **curve_arguments(params))
+            shares = annual.covered_shares(plant_area, rule.footprint_km2)
+            wide = annual.annual_loss(
+                reg.rate_per_km2_year * exposure.hit_area_km2(rule.footprint_km2, plant_area),
+                np.outer(ratio_r, shares).ravel(),
+            )
+            hit = exposure.hit_area_km2(rule.footprint_km2, plant_area)
+            rate_2in = reg.rate_per_km2_year * float((reg.sizes_mm >= 50.8).mean())
+            p2in_regional = 1 - math.exp(-rate_2in * hit)
         local.append(
             {
                 "sizes": sizes,
@@ -201,6 +216,17 @@ def main(argv: list[str] | None = None) -> int:
                 if fixed
                 else None,
                 "expected_annual_loss_usd_corrected": fixed.expected * value if fixed else None,
+                "region": reg.name if reg else None,
+                "region_reports": reg.reports if reg else None,
+                "region_cells": reg.cells if reg else None,
+                "region_mean_reporting_rate": reg.mean_reporting_rate if reg else None,
+                "region_rate_per_100km2_year": reg.rate_per_km2_year * 100 if reg else None,
+                "expected_annual_damage_ratio_regional": wide.expected if wide else None,
+                "damage_ratio_exceeded_1_in_100_regional": wide.exceeded_with_chance(0.01)
+                if wide
+                else None,
+                "expected_annual_loss_usd_regional": wide.expected * value if wide else None,
+                "annual_prob_ge_2in_regional": p2in_regional if wide else None,
             }
         )
 
@@ -234,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:
     total_value = sum(r["value_usd"] for r in rows)
     total = sum(o["expected_annual_loss_usd"] for o in out)
     total_fixed = sum(o["expected_annual_loss_usd_corrected"] or 0 for o in out)
+    total_regional = sum(o["expected_annual_loss_usd_regional"] or 0 for o in out)
     total_uncapped = sum(
         o["expected_annual_damage_ratio_uncapped"] * r["value_usd"]
         for o, r in zip(out, rows, strict=True)
@@ -290,12 +317,14 @@ def main(argv: list[str] | None = None) -> int:
             "partial_cover": "plant and footprint are discs; an event damages the covered share of the plant",
             "year": "damage ratios of a year's events are added and capped at 1",
             "bias_corrected": "the event rate divided by the fitted reporting rate around the plant (report 5); sizes unchanged",
+            "bias_corrected_regional": "no circle: reports in the plant's model region (H3 resolution-3 parent) / (years x sum of reporting rate x cell area); sizes of all the region's reports",
         },
         "totals": {
             "plants": len(rows),
             "value_usd": total_value,
             "expected_annual_loss_usd": total,
             "expected_annual_loss_usd_corrected": total_fixed,
+            "expected_annual_loss_usd_regional": total_regional,
         },
         "crc_expressions": {
             k: {
@@ -387,6 +416,75 @@ def main(argv: list[str] | None = None) -> int:
         f"hail loss: {len(out)} plants, expected annual loss {money(total)} (bias-corrected {money(total_fixed)}) of {money(total_value)}; {time.time() - started:.0f}s"
     )
     return 0
+
+
+def regional_section(
+    rows: list[dict[str, Any]], out: list[dict[str, Any]], card: dict[str, Any]
+) -> list[str]:
+    """Report section comparing the per-cell and the regional bias correction."""
+    have = [
+        (r, o)
+        for r, o in zip(rows, out, strict=True)
+        if o["expected_annual_damage_ratio_regional"] is not None
+        and o["expected_annual_damage_ratio_corrected"]
+    ]
+    if not have:
+        return []
+    t = card["totals"]
+    plain = np.array([o["expected_annual_damage_ratio"] for _, o in have])
+    local = np.array([o["expected_annual_damage_ratio_corrected"] for _, o in have])
+    wide = np.array([o["expected_annual_damage_ratio_regional"] for _, o in have])
+    ratio = wide / local
+
+    def spread(v: np.ndarray) -> str:
+        return f"{pct(float(np.quantile(v, 0.1)))} / {pct(float(np.median(v)))} / {pct(float(np.quantile(v, 0.9)))}"
+
+    def rank_corr(a: np.ndarray, b: np.ndarray) -> float:
+        ra, rb = np.argsort(np.argsort(a)), np.argsort(np.argsort(b))
+        return float(np.corrcoef(ra, rb)[0, 1])
+
+    regions = {o["region"] for _, o in have}
+    moved = sorted(
+        have,
+        key=lambda x: (
+            -abs(
+                math.log(
+                    (x[1]["expected_annual_damage_ratio_regional"] or 1e-12)
+                    / x[1]["expected_annual_damage_ratio_corrected"]
+                )
+            )
+        ),
+    )[:8]
+    return [
+        "## Bias correction: per cell or per region (tried 2026-11-11)",
+        "",
+        "Two ways to correct for reporting, both from the same reporting-bias model:",
+        "",
+        "- **Per cell (local).** Keep the plant's circle; divide its report rate by the mean fitted reporting rate of the cells in the circle.",
+        "- **Per region.** Drop the circle. Use the plant's model region (an H3 resolution-3 cell, about 12,000 km²): rate = reports in the region ÷ (years × sum over its cells of reporting rate × cell area). Report sizes are pooled over the region. Every plant in a region gets the same hail rate and size mix; only its glass type, mounting and area differ.",
+        "",
+        "| Basis | Portfolio loss per year | Share of value | Damage ratio per year, 10th / 50th / 90th percentile of plants |",
+        "| --- | --- | --- | --- |",
+        f"| Reports as they are | {money(t['expected_annual_loss_usd'])} | {pct(t['expected_annual_loss_usd'] / t['value_usd'])} | {spread(plain)} |",
+        f"| Corrected per cell | {money(t['expected_annual_loss_usd_corrected'])} | {pct(t['expected_annual_loss_usd_corrected'] / t['value_usd'])} | {spread(local)} |",
+        f"| Corrected per region | {money(t['expected_annual_loss_usd_regional'])} | {pct(t['expected_annual_loss_usd_regional'] / t['value_usd'])} | {spread(wide)} |",
+        "",
+        f"- The plants fall in {len(regions)} regions. Regional ÷ per-cell loss: median {float(np.median(ratio)):.2f}, 10th to 90th percentile {float(np.quantile(ratio, 0.1)):.2f} to {float(np.quantile(ratio, 0.9)):.2f}.",
+        f"- The spread between plants narrows: 90th ÷ 10th percentile of the damage ratio is {float(np.quantile(local, 0.9) / np.quantile(local, 0.1)):.1f} per cell and {float(np.quantile(wide, 0.9) / np.quantile(wide, 0.1)):.1f} per region.",
+        f"- Rank agreement between the two (Spearman): {rank_corr(local, wide):.2f}; between reports as they are and per region: {rank_corr(plain, wide):.2f}.",
+        "",
+        "Plants that move most between the two corrections:",
+        "",
+        "| Plant (county) | MW | Reports as they are | Per cell | Per region | Reports in region | Region mean reporting rate |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+        *[
+            f"| {r['name']} ({r['county']}) | {r['capacity_ac_mw']:,.0f} | {pct(o['expected_annual_damage_ratio'])} | {pct(o['expected_annual_damage_ratio_corrected'])} | {pct(o['expected_annual_damage_ratio_regional'])} | {o['region_reports']:,} | {pct(o['region_mean_reporting_rate'], 0)} |"
+            for r, o in moved
+        ],
+        "",
+        "What the regional value gains and loses: it does not depend on how many reports happen to lie near the plant, so it is steadier and cannot be driven by one town; but it assumes hail climate is uniform over about 110 km, and it erases real differences inside a region. Regions at the state border hold only their Texas cells.",
+        "",
+    ]
 
 
 def markdown(
@@ -507,6 +605,7 @@ def markdown(
         "",
         "The report-based loss here is small because few large-hail reports lie near these plants; the radar column shows what the reports miss. A loss from radar hail is not computed: the spec keeps observed size and radar size as separate inputs, and v0 has no curve keyed to radar size.",
         "",
+        *regional_section(rows, out, card),
         "## Sensitivity of the portfolio total",
         "",
         "Expected annual loss over all plants (the cap is left out here; it moves the total by less than the rounding).",

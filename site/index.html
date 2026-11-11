@@ -37,7 +37,7 @@
   <section class="col col-table" aria-label="Plants">
     <div class="col-head">
       <span class="label">Plants</span><span id="plant-count" class="num mute"></span>
-      <input id="plant-filter" type="search" placeholder="Filter by name or county" aria-label="Filter plants">
+      <input id="plant-filter" type="search" placeholder="Name or county" aria-label="Filter plants">
     </div>
     <div class="col-sub">
       <label class="field"><span class="label">Capacity</span>
@@ -52,7 +52,7 @@
           <th data-sort="name" class="l">Plant</th>
           <th data-sort="mw">MW</th>
           <th data-sort="reports" id="th-reports">Reports</th>
-          <th data-sort="corrected" id="th-corrected">Corrected</th>
+          <th data-sort="corrected" id="th-corrected">Per cell</th>
         </tr></thead>
         <tbody></tbody>
         <tfoot></tfoot>
@@ -65,10 +65,11 @@
     <div class="toolbar">
       <label class="field"><span class="label">Colour by</span>
         <select id="measure"></select></label>
-      <div class="field"><span class="label">Hail rate</span>
+      <div class="field"><span class="label">Bias correction</span>
         <div class="seg" id="basis" role="radiogroup" aria-label="Hail rate basis">
-          <button data-basis="0" role="radio">As reported</button>
-          <button data-basis="1" role="radio">Bias-corrected</button>
+          <button data-basis="0" role="radio" title="Reports as they are, no correction">None</button>
+          <button data-basis="1" role="radio" title="Bias-corrected: the plant's circle, divided by the reporting rate of its cells">Per cell</button>
+          <button data-basis="2" role="radio" title="Bias-corrected: the rate of the plant's model region (about 12,000 km²), no circle">Per region</button>
         </div></div>
       <button id="reset-view" class="btn">Texas</button>
     </div>

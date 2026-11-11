@@ -44,7 +44,8 @@ button, select, input { font: inherit; color: inherit; }
 .col-table { border-right: 1px solid var(--rule-2); }
 .col-detail { border-left: 1px solid var(--rule-2); overflow-y: auto; }
 .col-head { display: flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--rule); height: var(--tool); flex: none; }
-.col-head input { margin-left: auto; width: 170px; height: 26px; padding: 0 var(--s2); border: 1px solid var(--rule-2); border-radius: 3px; background: #fff; font-size: var(--f-s); }
+.col-head > span { white-space: nowrap; }
+.col-head input { margin-left: auto; width: 110px; min-width: 0; flex: 0 1 110px; height: 26px; padding: 0 var(--s2); border: 1px solid var(--rule-2); border-radius: 3px; background: #fff; font-size: var(--f-s); }
 
 .col-sub { display: flex; align-items: center; gap: var(--s2); padding: 6px var(--s3); border-bottom: 1px solid var(--rule); flex: none; font-size: var(--f-s); }
 .col-sub select { height: 24px; min-width: 104px; }
@@ -178,7 +179,8 @@ table.plain td { border-bottom: 1px solid var(--rule); padding: 6px var(--s3) 6p
   .doc .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); } .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .col-head input { width: 120px; }
   table.data .offcol { display: none; }
-  select { max-width: 190px; }
+  select { max-width: 150px; }
+  .toolbar .field > .label { display: none; }
   .toolbar { gap: var(--s3); }
 }
 @media (max-width: 999px) {

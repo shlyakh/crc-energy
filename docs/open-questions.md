@@ -9,13 +9,18 @@ Claude the question number and the letter.
 | 1 | Comparison map: one colour scale for all sources, or one per source? | Settled 2026-11-10 by the redesign plan: own range in one-source view, shared in swipe |
 | 2 | Comparison map: which two sources should the ratio view open on? | Settled: radar ÷ reports, with radar ÷ corrected one click away |
 | 3 | Should the 30-second demo show the comparison map? | Settled: yes, in the rewritten demo |
-| 4 | Radar hail-day threshold: 30 mm or 33 mm? | 30 mm |
-| 5 | Should the reporting-bias correction have an upper limit? | No limit (up to 13 times) |
-| 6 | Bias correction at a plant: per cell, or the smoother regional value? | Per cell |
-| 7 | Solar loss: are plants built before 2021 really the stronger glass type? | Yes, by the spec's rule |
-| 8 | Solar loss: what to do with thin-film plants? | Treated like the others, marked |
-| 9 | What comes after Phase 5: loss from radar, or buildings? | Nothing started |
-| 10 | Five older questions about the storm player | Unchanged |
+| 4 | Radar hail-day threshold: 30 mm or 33 mm? | **Answered 2026-11-11: 30 mm** (33 was a typo) |
+| 5 | Should the reporting-bias correction have an upper limit? | **Answered: keep the current method** (no limit; plants above 5 are flagged) |
+| 6 | Bias correction at a plant: per cell, or the smoother regional value? | **Answered: try the regional value.** Built as a third basis beside the other two; see [algorithms.md](algorithms.md) 7 and 8 |
+| 7 | Solar loss: are plants built before 2021 really the stronger glass type? | **Answered: not enough evidence; keep the rule, note for the future** |
+| 8 | Solar loss: what to do with thin-film plants? | **Answered: flag them** (done on the Risk tab; to go into the asset description later) |
+| 9 | What comes after Phase 5: loss from radar, or buildings? | **Answered: plan both.** See [plan-radar-loss-and-buildings.md](plan-radar-loss-and-buildings.md) |
+| 10 | Five older questions about the storm player | **Answered:** no fading; reports near the track only; window as it is; draw the outer size where radii are missing, flagged as an average, not observed; the 5.3 MB file is fine |
+| 11 | Default capacity threshold on the Risk tab | Open. EIA's utility-scale definition is 1 MW, which every plant in the list meets, so it would hide nothing. Today: 20 MW, with the notice naming the EIA list |
+
+Still open after 2026-11-11: question 11 above; the questions at the end of
+[plan-radar-loss-and-buildings.md](plan-radar-loss-and-buildings.md); and, for later, real module data for the
+largest plants (question 7) and a thin-film breakage table (question 8).
 
 ## Background for questions 1 to 3
 

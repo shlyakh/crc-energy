@@ -43,6 +43,7 @@ def test_committed_plant_files_agree() -> None:
         values = [p[f] * m["scale"] for p in plants for f in m["fields"] if p[f] is not None]
         assert min(values) < m["breaks"][0] and m["breaks"][-1] < max(values)
         assert m["has_basis"] == (m["fields"][0] != m["fields"][1])
+        assert len(m["fields"]) == 3
     for p in plants:
         d = detail[p["id"]]
         assert d["circle"]["reports"] == len(d["reports"]) == p["reports"]
@@ -105,3 +106,23 @@ def test_curves_file_matches_the_curve_module() -> None:
         "p_stow",
         "module_cost_share",
     ]
+
+
+def test_regional_rate_is_reports_over_reporting_weighted_area() -> None:
+    import numpy as np
+
+    from crc_lab.assets import regional
+
+    # two cells of 250 km2: one reports everything, one reports a quarter; 30 years; 150 reports
+    rate = regional.regional_rate(150, np.array([1.0, 0.25]), np.array([250.0, 250.0]), 30)
+    assert rate == pytest.approx(150 / (30 * (250 + 62.5)))
+    assert regional.regional_rate(0, np.array([0.5]), np.array([250.0]), 30) == 0.0
+    assert regional.regional_rate(10, np.array([0.0]), np.array([250.0]), 30) == 0.0
+    payload = json.loads((SITE / "plants.json").read_text())
+    by_region: dict[str, set[float]] = {}
+    detail = json.loads((SITE / "plants_detail.json").read_text())
+    for p in payload["plants"]:
+        by_region.setdefault(p["region"], set()).add(
+            detail[p["id"]]["region"]["rate_per_100km2_year"]
+        )
+    assert all(len(rates) == 1 for rates in by_region.values())  # one rate per region

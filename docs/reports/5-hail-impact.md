@@ -65,6 +65,38 @@ Fort Bend is where the hailstorm of 16 March 2024 damaged the Fighting Jays plan
 
 The report-based loss here is small because few large-hail reports lie near these plants; the radar column shows what the reports miss. A loss from radar hail is not computed: the spec keeps observed size and radar size as separate inputs, and v0 has no curve keyed to radar size.
 
+## Bias correction: per cell or per region (tried 2026-11-11)
+
+Two ways to correct for reporting, both from the same reporting-bias model:
+
+- **Per cell (local).** Keep the plant's circle; divide its report rate by the mean fitted reporting rate of the cells in the circle.
+- **Per region.** Drop the circle. Use the plant's model region (an H3 resolution-3 cell, about 12,000 km²): rate = reports in the region ÷ (years × sum over its cells of reporting rate × cell area). Report sizes are pooled over the region. Every plant in a region gets the same hail rate and size mix; only its glass type, mounting and area differ.
+
+| Basis | Portfolio loss per year | Share of value | Damage ratio per year, 10th / 50th / 90th percentile of plants |
+| --- | --- | --- | --- |
+| Reports as they are | $82.43 million | 0.182% | 0.029% / 0.142% / 0.470% |
+| Corrected per cell | $321.84 million | 0.712% | 0.125% / 0.378% / 1.337% |
+| Corrected per region | $311.62 million | 0.689% | 0.151% / 0.448% / 1.312% |
+
+- The plants fall in 45 regions. Regional ÷ per-cell loss: median 1.09, 10th to 90th percentile 0.56 to 2.05.
+- The spread between plants narrows: 90th ÷ 10th percentile of the damage ratio is 10.7 per cell and 8.7 per region.
+- Rank agreement between the two (Spearman): 0.86; between reports as they are and per region: 0.69.
+
+Plants that move most between the two corrections:
+
+| Plant (county) | MW | Reports as they are | Per cell | Per region | Reports in region | Region mean reporting rate |
+| --- | --- | --- | --- | --- | --- | --- |
+| SunE CPS3 LLC (Bexar) | 11 | 0.021% | 0.031% | 0.154% | 1,071 | 56% |
+| PowerFin Kingsbery (Travis) | 3 | 1.331% | 1.331% | 0.321% | 812 | 48% |
+| GVEC (Guadalupe) | 2 | 0.015% | 0.031% | 0.130% | 812 | 48% |
+| RP SCG Texas Solar (Travis) | 2 | 4.043% | 4.043% | 0.999% | 812 | 48% |
+| OCI Alamo 7 LLC (Haskell) | 100 | 0.271% | 2.055% | 0.544% | 1,228 | 25% |
+| North Gainesville Solar (Cooke) | 5 | 1.574% | 2.698% | 0.764% | 2,541 | 63% |
+| Niagara Bottling - Seguin (Guadalupe) | 5 | 0.192% | 0.285% | 0.970% | 1,071 | 56% |
+| BT Cooke Solar, LLC (Cooke) | 59 | 0.454% | 1.142% | 0.338% | 2,541 | 63% |
+
+What the regional value gains and loses: it does not depend on how many reports happen to lie near the plant, so it is steadier and cannot be driven by one town; but it assumes hail climate is uniform over about 110 km, and it erases real differences inside a region. Regions at the state border hold only their Texas cells.
+
 ## Sensitivity of the portfolio total
 
 Expected annual loss over all plants (the cap is left out here; it moves the total by less than the rounding).
