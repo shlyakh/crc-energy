@@ -13,8 +13,8 @@ from crc_sdk.types import SourceProvenance
 
 from crc_lab.curves import annual_maxima as am_mod
 from crc_lab.curves import fit, sensitivity
-from crc_lab.explorer.hazards import write_horizon_files
-from crc_lab.explorer.texas import intersecting_cells, texas_boundary
+from lab_common.horizons import write_horizon_files
+from lab_common.texas import intersecting_cells, texas_boundary
 
 
 def main(argv: list[str] | None = None) -> int:

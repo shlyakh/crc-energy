@@ -9,7 +9,8 @@ import pyarrow as pa
 import pytest
 import shapely
 
-from crc_lab.explorer import hazards, texas
+from crc_data_explorer import hazards
+from lab_common import texas
 
 
 def test_intersecting_cells_covers_a_small_polygon() -> None:

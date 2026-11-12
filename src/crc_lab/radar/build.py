@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
 
     geojson = Path("site/data/assets/solar_tx.geojson")
     if geojson.exists():
-        from crc_lab.explorer.texas import write_json_atomic
+        from lab_common.texas import write_json_atomic
 
         collection = json.loads(geojson.read_text())
         by_id = {o["asset_id"]: o for o in out_rows}

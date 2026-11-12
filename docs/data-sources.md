@@ -14,10 +14,10 @@ Status: **in use** (built into a pipeline here) · **probed** (read from this re
 | CRC Open (RiskThinking.AI) | Pre-fitted curves, 63 hazards, SSP5-8.5, H3 cells | in use | `explorer/` | crc-sdk `HazardDataset.crc_open()` | CC BY-NC 4.0 | Release `ssp585-global-2026-10-20-v1`; 8 hazards built and verified against `for_assets` |
 | NOAA NCEI Storm Events (bulk CSV) | Storm reports 1950 on: type, time, size, location | in use | `storm_events/`, `curves/`, `assets/exposure.py` | NCEI directory listing | U.S. government work | 231 files, SHA-256 manifest; 166,214 Texas events |
 | Storm Events copy (Earth Genome, Source Cooperative) | The same events as one GeoParquet, one point each | probed | `storm_events/compare.py` | `data.source.coop/earthgenome/storm-events-db` | not stated | Compared event by event; lags NCEI; local time without offset |
-| NOAA IBTrACS v04r01 | Tropical cyclone tracks, winds, wind radii | in use | `explorer/tracks.py` | crc-sdk `IBTrACSPlan` | U.S. government work | 91 storms crossing Texas, 30 with radii |
-| NOAA CO-OPS extreme water levels | Published return levels at tide stations | in use (prototype) | `explorer/sources.py` | crc-sdk `NOAAExtremeWaterLevelPlan` | U.S. government work | 9 of 39 Texas stations publish them |
-| NOAA GHCNh stations | Hourly station temperature, fitted curves | in use (prototype) | `explorer/sources.py` | crc-sdk `HazardDataset.ghcnh` | CC0 | 8 stations with 15 or more valid years of 40 probed |
-| ERA5 (WeatherBench2 1.5° copy) | Annual hottest day 1991–2020, fitted | in use (prototype) | `explorer/sources.py` | crc-sdk `HazardDataset.era5` | CC BY 4.0 (Copernicus) | 1,439 r4 cells |
+| NOAA IBTrACS v04r01 | Tropical cyclone tracks, winds, wind radii | in use | `crc_data_explorer/tracks.py` | crc-sdk `IBTrACSPlan` | U.S. government work | 91 storms crossing Texas, 30 with radii |
+| NOAA CO-OPS extreme water levels | Published return levels at tide stations | in use (prototype) | `crc_data_explorer/sources.py` | crc-sdk `NOAAExtremeWaterLevelPlan` | U.S. government work | 9 of 39 Texas stations publish them |
+| NOAA GHCNh stations | Hourly station temperature, fitted curves | in use (prototype) | `crc_data_explorer/sources.py` | crc-sdk `HazardDataset.ghcnh` | CC0 | 8 stations with 15 or more valid years of 40 probed |
+| ERA5 (WeatherBench2 1.5° copy) | Annual hottest day 1991–2020, fitted | in use (prototype) | `crc_data_explorer/sources.py` | crc-sdk `HazardDataset.era5` | CC BY 4.0 (Copernicus) | 1,439 r4 cells |
 | NOAA ISD, USGS streamflow, USDA CDL, sea-level scenarios | Station curves; gauge flows; crop classes; scenarios | probed | — | crc-sdk plans | U.S. government works | See `docs/sources-track/requirements.md` |
 | CHIRPS, GloFAS | Monthly rain; flood depth rasters | probed, could not verify | — | crc-sdk | CC BY 4.0 | rasterio does not load on this Mac |
 | EFAS, EDO, ECCC, HYDAT | European and Canadian sources | not usable | — | crc-sdk | — | No Texas coverage |
@@ -46,7 +46,7 @@ Status: **in use** (built into a pipeline here) · **probed** (read from this re
 
 | Source | What it gives | Status | Where used | Licence | Checked |
 | --- | --- | --- | --- | --- | --- |
-| Census cartographic boundaries (state, county, 2024) | Texas outline, county polygons | in use | `explorer/texas.py`, `storm_events/geometry.py` | Public domain | 254 Texas counties |
+| Census cartographic boundaries (state, county, 2024) | Texas outline, county polygons | in use | `lab_common/texas.py`, `storm_events/geometry.py` | Public domain | 254 Texas counties |
 | NWS public forecast zones (`z_16ap26`) | Zone polygons for zone-located events | in use | `storm_events/geometry.py` | U.S. government work | 298 Texas zones; 1,694 events carry retired zone codes |
 | OpenFreeMap / OpenMapTiles / OpenStreetMap | Basemap | in use | `site/` | ODbL data, attribution | — |
 | Census 2020 tract populations and TIGER 2024 primary and secondary roads | Covariates of the reporting-bias model | in use | `assets/reporting_bias.py` | Census Bureau | Public domain | See `docs/reports/5-reporting-bias.md` for files and checksums |

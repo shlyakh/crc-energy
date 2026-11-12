@@ -7,7 +7,7 @@ from typing import Any
 
 from crc_sdk.providers.crc_open import CRCCatalog
 
-from crc_lab.explorer.texas import write_json_atomic
+from lab_common.texas import write_json_atomic
 
 
 def catalog_payload(catalog: CRCCatalog) -> dict[str, Any]:

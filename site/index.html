@@ -3,102 +3,71 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Texas hail risk explorer · Texas CRC data</title>
-<meta name="description" content="Hail risk at Texas utility-scale solar plants: expected loss, the hail record behind it, and the Climate Risk Commons data around it.">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.css">
+<title>crc-lab: projects built on Climate Risk Commons</title>
+<meta name="description" content="crc-lab holds separate projects built on Climate Risk Commons: hail risk at Texas solar plants, and a validation tool for the data sources of climate-risk frameworks.">
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="sources.css">
-<!-- No build step. Pinned 2026-11-10: h3-js 4.5.0, deck.gl 9.4.0 (global `deck`, needs the global `h3` first), maplibre-gl 6.16.0 (ESM). -->
-<script src="https://cdn.jsdelivr.net/npm/h3-js@4.5.0/dist/h3-js.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.4.0/dist.min.js"></script>
+<!-- Addresses from before the split (V5) carried the tab in the fragment. Send them to the page that now holds that tab,
+     before anything is drawn. A bare address shows this landing page. -->
+<script>
+const forward = () => {
+  const tab = new URLSearchParams(location.hash.slice(1)).get("tab");
+  const demo = new URLSearchParams(location.search).get("demo") === "1";
+  const to = tab === "crc" || tab === "crc-about" ? "validation/explore/" : tab || demo ? "hail/" : null;
+  if (to) location.replace(to + location.search + location.hash);
+};
+forward();
+// The same for an old address typed or pasted while this page is already open.
+window.addEventListener("hashchange", forward);
+</script>
+<link rel="stylesheet" href="shared/style.css">
+<link rel="stylesheet" href="landing.css">
 </head>
-<body>
+<body class="landing">
 <header class="top">
-  <!-- Two projects share this page: the hail risk work (new, built on CRC) and an explorer of the data crc-sdk already reaches. -->
-  <div class="projects" role="tablist" aria-label="Project">
-    <button class="proj" role="tab" data-project="hail"><b>Texas hail risk</b><small>new work, built on Climate Risk Commons</small></button>
-    <button class="proj" role="tab" data-project="crc"><b>Texas CRC data</b><small>explorer of what crc-sdk already reaches</small></button>
-  </div>
-  <div class="top-right">
-    <button id="demo-start" class="btn" title="A guided tour of this page, about 40 seconds">▶ Tour</button>
-    <span id="build" class="mute"></span>
-  </div>
+  <nav class="projects" aria-label="Projects">
+    <a class="proj home" href="./" aria-current="page"><b>crc-lab</b><small>all projects</small></a>
+    <a class="proj" href="hail/"><b>Texas hail risk</b><small>new work, built on Climate Risk Commons</small></a>
+    <a class="proj" href="validation/"><b>Source validation</b><small>crc-sdk's data sources, checked and explored</small></a>
+  </nav>
 </header>
-<!-- Second row: the tabs of the chosen project only. -->
-<nav class="tabs subnav" role="tablist" aria-label="View">
-  <button class="tab" role="tab" data-tab="risk" data-project="hail">Risk</button>
-  <button class="tab" role="tab" data-tab="evidence" data-project="hail">Hail evidence</button>
-  <button class="tab" role="tab" data-tab="methods" data-project="hail">Methods</button>
-  <button class="tab" role="tab" data-tab="crc" data-project="crc">Data</button>
-  <button class="tab" role="tab" data-tab="crc-about" data-project="crc">About</button>
-</nav>
+<main>
+  <h1>Projects built on Climate Risk Commons</h1>
+  <p class="lead">crc-lab holds separate projects. Each has its own page, code, documents and reports. They share one repository and the pinned versions of <code>crc-sdk</code> and <code>crc-framework</code>.</p>
 
-<main id="tab-risk" class="pane">
-  <section class="col col-table" aria-label="Plants">
-    <div class="col-head">
-      <span class="label">Plants</span><span id="plant-count" class="num mute"></span>
-      <input id="plant-filter" type="search" placeholder="Name or county" aria-label="Filter plants">
-    </div>
-    <div class="col-sub">
-      <label class="field"><span class="label">Capacity</span>
-        <select id="min-mw" aria-label="Minimum capacity">
-          <option value="0">all plants</option><option value="5">≥ 5 MW</option><option value="20">≥ 20 MW</option><option value="50">≥ 50 MW</option><option value="100">≥ 100 MW</option>
-        </select></label>
-      <span id="hidden-note" class="hidden-note"></span>
-    </div>
-    <div class="table-wrap">
-      <table id="plants" class="data">
-        <thead><tr>
-          <th data-sort="name" class="l">Plant</th>
-          <th data-sort="mw">MW</th>
-          <th data-sort="reports" id="th-reports">Reports</th>
-          <th data-sort="corrected" id="th-corrected">Per cell</th>
-        </tr></thead>
-        <tbody></tbody>
-        <tfoot></tfoot>
-      </table>
-    </div>
-    <p id="table-note" class="note"></p>
+  <section class="cards" aria-label="Projects">
+    <article class="card" id="card-hail">
+      <span class="label">Project</span>
+      <h2><a href="hail/">Texas hail risk</a></h2>
+      <p>Expected hail loss at Texas utility-scale solar plants, from NOAA storm reports, radar and hail impact functions. New and experimental work that uses Climate Risk Commons' formats and curves.</p>
+      <ul>
+        <li><a href="hail/#tab=risk">Risk</a>: loss per plant, with and without a correction for where people report</li>
+        <li><a href="hail/#tab=evidence">Hail evidence</a>: the reports, curves and radar behind it</li>
+        <li><a href="hail/#tab=methods">Methods</a>: how a report becomes a loss, and the limits</li>
+      </ul>
+      <p class="foot">Regional screening, not site engineering.</p>
+    </article>
+
+    <article class="card" id="card-validation">
+      <span class="label">Project</span>
+      <h2><a href="validation/">Source validation</a></h2>
+      <p>What does a climate-risk framework do to each data source between the publisher's files and its output? Each source of <code>crc-sdk</code> is explored, then verified by recomputing from the publisher's files, and later validated for a stated use.</p>
+      <ul>
+        <li><a href="validation/">Assessments</a>: the inventory of sources, the checks and the findings</li>
+        <li><a href="validation/explore/">Texas data</a>: a map explorer of what crc-sdk already reaches for Texas</li>
+      </ul>
+      <p class="foot">Assessments are drafts until a person has reviewed them.</p>
+    </article>
   </section>
 
-  <section class="col col-map">
-    <div class="toolbar">
-      <label class="field"><span class="label">Colour by</span>
-        <select id="measure"></select></label>
-      <div class="field"><span class="label">Bias correction</span>
-        <div class="seg" id="basis" role="radiogroup" aria-label="Hail rate basis">
-          <button data-basis="0" role="radio" title="Reports as they are, no correction">None</button>
-          <button data-basis="1" role="radio" title="Bias-corrected: the plant's circle, divided by the reporting rate of its cells">Per cell</button>
-          <button data-basis="2" role="radio" title="Bias-corrected: the rate of the plant's model region (about 12,000 km²), no circle">Per region</button>
-        </div></div>
-      <button id="reset-view" class="btn">Texas</button>
-    </div>
-    <div id="risk-map-wrap">
-      <div id="risk-map"></div>
-      <div id="risk-hover" class="hover hidden"></div>
-      <div id="risk-legend" class="legend"></div>
-      <div id="risk-coords" class="coords num"></div>
-      <div id="risk-msg" class="map-msg hidden"></div>
-    </div>
-  </section>
-
-  <section class="col col-detail" aria-label="Selected plant">
-    <div id="risk-empty" class="empty">
-      <span class="label">No plant selected</span>
-      <p>Pick a plant in the table or on the map. Its report circle, the hail reports inside it and its array outline are drawn on the map.</p>
-    </div>
-    <div id="risk-detail" class="hidden"></div>
+  <section class="more">
+    <h3>Also here</h3>
+    <ul>
+      <li>Explainer: <a href="explainers/primer.html">Climate risk curves, animated</a></li>
+      <li>Explainer: <a href="explainers/anatomy.html">Anatomy of one CRC question</a></li>
+      <li><a href="https://github.com/shlyakh/crc-lab">The repository on GitHub</a></li>
+    </ul>
+    <p class="mute">An address from before the projects were split, such as one ending in <code>#tab=risk</code>, opens the page that now holds that view.</p>
   </section>
 </main>
-
-<!-- Hail evidence and CRC data share one pane; js/sources.js fills it and filters the sources by origin. -->
-<main id="tab-sources" class="pane hidden"></main>
-<main id="tab-methods" class="pane doc hidden"></main>
-<main id="tab-crc-about" class="pane doc hidden"></main>
-
-<div id="demo-bar" class="demo-bar hidden" role="status"><span id="demo-step" class="label"></span><span id="demo-caption"></span><button id="demo-stop" class="btn">Stop</button><i id="demo-progress"></i></div>
-
-<script type="module" src="js/main.js"></script>
 </body>
 </html>

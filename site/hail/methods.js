@@ -1,6 +1,6 @@
-// Methods (hail project) and About (CRC data project): reading pages built from the same files the maps use.
-// Curves are shipped as values by src/crc_lab/explorer/risk_layer.py; the sliders pick among them.
-import { esc, fmtUSD, fmtInt } from "./util.js";
+// Methods (hail project): a reading page built from the same files the maps use.
+// Curves are shipped as values by src/crc_lab/risk_layer.py; the sliders pick among them.
+import { esc, fmtUSD, fmtInt } from "../shared/util.js";
 import { lineChart } from "./charts.js";
 
 const GH = "https://github.com/shlyakh/crc-lab/blob/main/";
@@ -10,7 +10,8 @@ const ph = '<span class="pill ph">placeholder</span>';
 
 export async function showMethods(el, dataUrl) {
   if (done.has(el.id)) return;
-  const [plants, curves, registry] = await Promise.all([json(`${dataUrl}assets/plants.json`), json(`${dataUrl}assets/curves.json`), json("layers.json")]);
+  const root = dataUrl.replace(/data\/?$/, "");
+  const [plants, curves, registry] = await Promise.all([json(`${dataUrl}assets/plants.json`), json(`${dataUrl}assets/curves.json`), json(`${root}layers.json`)]);
   const t = plants.totals, rule = plants.rule, d = curves.solar.defaults;
   const big = plants.plants.filter((p) => p.mw >= 20), sum = (f) => big.reduce((a, p) => a + (p[f] ?? 0), 0);
   const hail = registry.sources.filter((s) => s.origin === "crc-lab");
@@ -98,35 +99,6 @@ export async function showMethods(el, dataUrl) {
   lineChart($("m-bld-swiss"), { title: "Buildings: Swiss claims curve", sub: "share of building value · lower bound", xs, width: 330, height: 200, digits: 2, series: [{ label: "Damage ratio", ys: B.swiss.damage_ratio, color: "var(--c3)" }] });
   lineChart($("m-bld-roof"), { title: "Buildings: roof curve", sub: "share of building value · upper bound", xs, width: 330, height: 200, digits: 0, series: [{ label: "Laminated shingle", ys: B.roof.asphalt_laminated, color: "var(--c3)" }, { label: "3-tab shingle", ys: B.roof.asphalt_3tab, color: "var(--report)", dash: "5 3" }] });
   lineChart($("m-car"), { title: "Cars: Swiss fleet curve", sub: "share of insured value · general fleet, not open lots", xs, width: 330, height: 200, digits: 2, series: [{ label: "Damage ratio", ys: curves.cars.swiss.damage_ratio, color: "var(--c3)" }] });
-  $("m-video").innerHTML = `<h3>The tour, recorded</h3><p>The same tour as the Tour button at the top right, about 35 seconds.</p><video controls preload="none" src="demo.webm"></video>`;
+  $("m-video").innerHTML = `<h3>The tour, recorded</h3><p>The same tour as the Tour button at the top right, about 35 seconds.</p><video controls preload="none" src="${root}demo.webm"></video>`;
   done.add(el.id); document.body.dataset.methods = "1";
-}
-
-export async function showCrcAbout(el, dataUrl) {
-  if (done.has(el.id)) return;
-  const [registry, catalog, manifest] = await Promise.all([json("layers.json"), json("sources.json"), json(`${dataUrl}manifest.json`).catch(() => null)]);
-  const group = registry.groups.find((g) => g.id === "crc-sdk"), shown = registry.sources.filter((s) => s.origin === "crc-sdk");
-  const versions = manifest?.versions ? Object.entries(manifest.versions).map(([k, v]) => `${k} ${v}`).join(", ") : "";
-  el.innerHTML = `<div class="doc-in">
-    <h2>About the Texas CRC data explorer</h2>
-    <p class="lead">A look at what Climate Risk Commons' SDK already reaches for Texas, shown as the SDK returns it.</p>
-    <p>${esc(group.blurb)} Nothing on the Data tab is modelled here: every value is read through <code>crc-sdk</code>${versions ? ` (${esc(versions)})` : ""} and drawn as its source publishes it. The hail risk work in the other project is new and experimental; this part is an explorer.</p>
-    <h3>Shown on the Data tab</h3>
-    <table class="plain"><thead><tr><th>Source</th><th>What it is</th><th>Licence</th></tr></thead><tbody>
-      ${shown.map((s) => `<tr><td>${esc(s.title)}</td><td>${esc(s.short || s.returns || "")}</td><td>${esc(s.licence || "")}</td></tr>`).join("")}
-    </tbody></table>
-    <h3>Everything crc-sdk reaches</h3>
-    <p>From the SDK's own source pages for the pinned version. Texas coverage was probed on 2026-11-10.</p>
-    <table class="plain"><thead><tr><th>Source</th><th>Entry point</th><th>Returns</th><th>Coverage</th><th>Licence</th></tr></thead><tbody>
-      ${catalog.sources.map((s) => `<tr><td>${esc(s.name)}</td><td><code>${esc(s.entry || "")}</code></td><td>${esc(s.returns || "")}</td><td>${esc(s.coverage || "")}</td><td>${esc(s.licence || "")}</td></tr>`).join("")}
-    </tbody></table>
-    <h3>Reading the data</h3>
-    <ul>
-      <li>Cell values are regional screening: a resolution-5 cell is about 253 km².</li>
-      <li>CRC Open projections are CC BY-NC 4.0: non-commercial use, with attribution.</li>
-      <li>Curves are evaluated by the SDK and shipped as values; the page never re-implements a curve.</li>
-    </ul>
-    <p>${fmtInt(shown.length)} sources are on the map today. <a href="https://github.com/RiskThinking/crc-sdk">crc-sdk on GitHub</a> · <a href="${GH}docs/sources-track/">notes on the other sources</a></p>
-  </div>`;
-  done.add(el.id); document.body.dataset.crcAbout = "1";
 }

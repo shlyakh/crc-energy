@@ -1,6 +1,6 @@
 // Small SVG charts for the detail column. Each takes a target element; marks carry a hover readout
 // shown in the chart's caption line. One hue for magnitude; values are labelled in ink, not in colour.
-import { esc } from "./util.js";
+import { esc } from "../shared/util.js";
 
 const W = 308;
 const svg = (h, body) => `<svg viewBox="0 0 ${W} ${h}" width="100%" role="img" style="display:block;overflow:visible">${body}</svg>`;

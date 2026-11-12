@@ -117,6 +117,11 @@ list, a range between the two curves, and a check against damage in the public r
 1. Open the proposal for the hail curves and the hail factor (section 2, first row).
 2. Propose the Storm Events plan and the event-table schema.
 3. File the two smaller items.
+
+   Order chosen on 2026-11-11: the NEX-GDDP-CMIP6 item goes first, as a small bug-fix pull request
+   (built, awaiting review: [reports/u1-nex-bytes-fix.md](reports/u1-nex-bytes-fix.md)). Step 2 follows as
+   a raw adapter in the IBTrACS pattern, carrying the hail design questions of step 1 in its description
+   instead of a separate proposal: [plan-upstream-storm-events.md](plan-upstream-storm-events.md), not started.
 4. After each accepted change: raise the pin, rerun `just all`, compare the numbers, log it in `CHANGELOG-upstream.md`.
 
 ### Stage E: beyond Texas solar

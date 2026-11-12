@@ -1,4 +1,4 @@
-"""``python -m crc_lab.explorer.risk_layer``: files behind the explorer's Risk tab.
+"""``python -m crc_lab.risk_layer``: files behind the explorer's Risk tab.
 
 Reads the Phase 4 plant table, the Phase 5 loss table and the radar plant table, and writes two
 committed files under ``site/data/assets/``:
@@ -24,9 +24,9 @@ import pyarrow.parquet as pq
 
 from crc_lab.assets import exposure, solar
 from crc_lab.curves import annual_maxima as am_mod
-from crc_lab.explorer.texas import write_json_atomic
 from crc_lab.impacts import hail_curves as hc
 from crc_lab.impacts.build import curve_arguments, plant_parameters
+from lab_common.texas import write_json_atomic
 
 NICE = (1.0, 1.5, 2.0, 3.0, 5.0, 7.0)
 CURVE_GRID_MM = [float(x) for x in np.arange(0.0, 112.5, 2.5)]

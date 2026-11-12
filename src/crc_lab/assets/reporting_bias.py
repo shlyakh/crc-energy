@@ -265,7 +265,7 @@ def build_cells(events: Path, cache: Path, end: int) -> dict[str, np.ndarray]:
     import pyarrow as pa
     import shapely
 
-    from crc_lab.explorer.texas import intersecting_cells, texas_boundary
+    from lab_common.texas import intersecting_cells, texas_boundary
 
     boundary = texas_boundary(cache)
     cells = sorted(intersecting_cells(boundary.wkb, 5))
@@ -455,7 +455,7 @@ def run(
 
     from crc_lab.curves.annual_maxima import last_complete_year
     from crc_lab.curves.sensitivity import CITIES
-    from crc_lab.explorer.texas import texas_boundary
+    from lab_common.texas import texas_boundary
 
     manifest = fetch(cache)
     end = last_complete_year(str(events), duckdb.connect())

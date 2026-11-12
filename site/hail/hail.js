@@ -1,37 +1,33 @@
-// Shell for two projects on one page: "Texas hail risk" (new work: Risk, Hail evidence, Methods) and
-// "Texas CRC data" (an explorer of the sources crc-sdk already reaches: Data, About). No build step.
-import { $, esc, readAddress, writeAddress } from "./util.js";
+// Shell of the Texas hail risk page: Risk, Hail evidence, Methods. No build step.
+// The map viewer (../shared/sources.js) and the data files under ../data/ are shared with the Texas CRC data explorer.
+import { $, esc, readAddress, writeAddress } from "../shared/util.js";
 import { initRisk, riskAddress, select as selectPlant, setBasis, setMeasure } from "./risk.js";
 
-const DATA = "data/";
-// tab -> its project, the pane it shows and, for the two source tabs, the origin of the sources listed
+const ROOT = "../", DATA = `${ROOT}data/`;
+export const EXPLORER = `${ROOT}validation/explore/`;
+// tab -> the pane it shows and, for the source tab, the origin of the sources listed
 const TABS = {
-  risk: { project: "hail", pane: "tab-risk" },
-  evidence: { project: "hail", pane: "tab-sources", origin: "crc-lab" },
-  methods: { project: "hail", pane: "tab-methods" },
-  crc: { project: "crc", pane: "tab-sources", origin: "crc-sdk" },
-  "crc-about": { project: "crc", pane: "tab-crc-about" },
+  risk: { pane: "tab-risk" },
+  evidence: { pane: "tab-sources", origin: "crc-lab" },
+  methods: { pane: "tab-methods" },
 };
-const FIRST = { hail: "risk", crc: "crc" };
-const shell = { tab: "risk", last: { ...FIRST } };
+const shell = { tab: "risk" };
 let sources = null, methods = null; // modules, loaded on first use
 let address = {};
 
 export async function showTab(tab) {
   shell.tab = TABS[tab] ? tab : "risk";
-  const t = TABS[shell.tab]; shell.last[t.project] = shell.tab;
+  const t = TABS[shell.tab];
   for (const pane of new Set(Object.values(TABS).map((x) => x.pane))) $(pane).classList.toggle("hidden", pane !== t.pane);
-  for (const b of document.querySelectorAll(".tab")) { b.classList.toggle("hidden", b.dataset.project !== t.project); b.setAttribute("aria-selected", String(b.dataset.tab === shell.tab)); }
-  for (const b of document.querySelectorAll(".proj")) b.setAttribute("aria-selected", String(b.dataset.project === t.project));
-  document.body.dataset.tab = shell.tab; document.body.dataset.project = t.project;
-  document.title = t.project === "hail" ? "Texas hail risk explorer" : "Texas CRC data explorer";
+  for (const b of document.querySelectorAll(".tab")) b.setAttribute("aria-selected", String(b.dataset.tab === shell.tab));
+  document.body.dataset.tab = shell.tab; document.body.dataset.project = "hail";
   try {
     if (t.origin) {
-      if (!sources) { sources = await import("./sources.js"); await sources.initSources({ dataUrl: DATA, address, onChange: syncAddress }); }
+      if (!sources) { sources = await import("../shared/sources.js"); await sources.initSources({ dataUrl: DATA, address, onChange: syncAddress }); }
       await sources.showSources(t.origin);
-    } else if (t.pane !== "tab-risk") {
+    } else if (shell.tab === "methods") {
       if (!methods) methods = await import("./methods.js");
-      await (shell.tab === "methods" ? methods.showMethods($(t.pane), DATA) : methods.showCrcAbout($(t.pane), DATA));
+      await methods.showMethods($(t.pane), DATA);
     }
     delete document.body.dataset.error;
   } catch (e) { $(t.pane).innerHTML = `<div class="doc-in"><h2>Could not open this tab</h2><p>${esc(e.message || e)}</p></div>`; document.body.dataset.error = String(e.message || e); }
@@ -42,8 +38,9 @@ export function syncAddress() { writeAddress({ tab: shell.tab, ...(shell.tab ===
 
 async function main() {
   for (const b of document.querySelectorAll(".tab")) b.onclick = () => showTab(b.dataset.tab);
-  for (const b of document.querySelectorAll(".proj")) b.onclick = () => showTab(shell.last[b.dataset.project]);
   address = readAddress();
+  // An address from before the split that names a tab of the data explorer: send it there with its state.
+  if (address.tab === "crc" || address.tab === "crc-about") { location.replace(EXPLORER + location.search + location.hash); return; }
   try {
     await initRisk(DATA, address, syncAddress);
     document.body.dataset.ready = "1";
@@ -53,8 +50,8 @@ async function main() {
     $("risk-msg").classList.remove("hidden");
   }
   await showTab(address.tab || "risk");
-  // What the tour (js/demo.js) and the smoke test drive.
-  const app = { showTab, selectPlant, setBasis, setMeasure, sources: () => sources };
+  // What the tour (demo.js) and the smoke test drive.
+  const app = { showTab, selectPlant, setBasis, setMeasure, sources: () => sources, explorer: EXPLORER };
   globalThis.__app = app;
   const tour = async () => { const demo = await import("./demo.js"); demo.runDemo(app); };
   $("demo-start").onclick = tour;

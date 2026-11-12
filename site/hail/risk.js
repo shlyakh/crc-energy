@@ -2,7 +2,7 @@
 // One selection state drives the table row, the map (ring, outline, report circle, reports) and the detail column.
 import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.mjs";
 import { histogram, curve, bars } from "./charts.js";
-import { $, esc, css, rgb, classOf, classVar, fmtMeasure, fmtBreak, fmtInt, fmtMW, fmtUSD, fmtPct, circleRing } from "./util.js";
+import { $, esc, css, rgb, classOf, classVar, fmtMeasure, fmtBreak, fmtInt, fmtMW, fmtUSD, fmtPct, circleRing } from "../shared/util.js";
 
 const { MapboxOverlay, ScatterplotLayer, GeoJsonLayer, PolygonLayer } = globalThis.deck;
 const BASIS = ["as reported", "bias-corrected per cell", "bias-corrected per region"];
@@ -29,7 +29,7 @@ export async function initRisk(dataUrl, address, onChange) {
   S.onChange = onChange; S.detailUrl = `${dataUrl}assets/plants_detail.json`;
   const [data, registry, texas] = await Promise.all([
     fetch(`${dataUrl}assets/plants.json`).then((r) => { if (!r.ok) throw new Error(`plants.json ${r.status}`); return r.json(); }),
-    fetch("layers.json").then((r) => r.json()),
+    fetch(`${dataUrl.replace(/data\/?$/, "")}layers.json`).then((r) => r.json()),
     fetch(`${dataUrl}texas.geojson`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
   ]);
   S.data = data; S.texas = texas;

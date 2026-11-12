@@ -29,7 +29,9 @@ button, select, input { font: inherit; color: inherit; }
 .proj b { font-size: var(--f-l); font-weight: 650; letter-spacing: -.005em; line-height: 1.15; }
 .proj small { font-size: 10.5px; color: var(--mute); line-height: 1.15; }
 .proj:hover { color: var(--ink); }
-.proj[aria-selected="true"] { background: var(--ink); color: #fff; } .proj[aria-selected="true"] small { color: #c3c2b7; }
+.proj[aria-selected="true"], .proj[aria-current="page"] { background: var(--ink); color: #fff; } .proj[aria-selected="true"] small, .proj[aria-current="page"] small { color: #c3c2b7; }
+a.proj, a.proj:hover { text-decoration: none; }
+a.tab { display: flex; align-items: center; text-decoration: none; } a.tab.link::before { content: "‹ "; white-space: pre; }
 .tabs { height: var(--sub); display: flex; align-items: stretch; gap: var(--s1); padding: 0 var(--s4) 0 var(--s2); background: var(--surface); border-bottom: 1px solid var(--rule-2); border-top: 2px solid var(--ink); }
 .tab { border: 0; background: none; padding: 0 var(--s3); font-size: var(--f-s); color: var(--ink-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .tab:hover { color: var(--ink); }
@@ -186,4 +188,9 @@ table.plain td { border-bottom: 1px solid var(--rule); padding: 6px var(--s3) 6p
 @media (max-width: 999px) {
   #tab-risk { grid-template-columns: minmax(0, 1fr) 300px; }
   .col-table { display: none; }
+}
+/* Phone width: the three project links and the Tour button must fit one row. */
+@media (max-width: 640px) {
+  .top { gap: var(--s2); padding-right: var(--s2); } .top-right { gap: var(--s2); }
+  .proj { padding: 0 var(--s2); } .proj b { font-size: var(--f-s); }
 }

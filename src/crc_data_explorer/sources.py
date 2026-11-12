@@ -1,6 +1,6 @@
 """Sources track (S1): schematic explorer layers for crc-sdk sources other than CRC Open.
 
-``python -m crc_lab.explorer.sources [--only name ...]`` writes GeoJSON files under
+``python -m crc_data_explorer.sources [--only name ...]`` writes GeoJSON files under
 ``site/data/sources/`` plus a ``manifest.json`` data card (G2). Layers are registered in
 ``site/layers.json`` with kind ``points`` or ``lines``; the page draws them generically.
 
@@ -22,9 +22,9 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-from crc_lab import PINNED
-from crc_lab.explorer.hazards import RETURN_PERIODS, _params, _round
-from crc_lab.explorer.texas import write_json_atomic
+from crc_data_explorer.hazards import RETURN_PERIODS, _params, _round
+from lab_common import PINNED
+from lab_common.texas import write_json_atomic
 
 TEXAS = (-106.645646, 25.837377, -93.508292, 36.500704)
 GHCNH_YEARS = (2000, 2024)
@@ -88,8 +88,8 @@ def in_box(lon: float, lat: float, box: tuple[float, float, float, float]) -> bo
 
 # ---------------------------------------------------------------- IBTrACS (tracks)
 def build_ibtracs(cache_dir: Path, out: Path) -> dict[str, Any]:
-    """Explorer v2: storm records with per-point wind, from ``crc_lab.explorer.tracks``."""
-    from crc_lab.explorer.tracks import build_tracks
+    """Explorer v2: storm records with per-point wind, from ``crc_data_explorer.tracks``."""
+    from crc_data_explorer.tracks import build_tracks
 
     return build_tracks(cache_dir, out)
 
@@ -349,7 +349,7 @@ def build_era5(cache_dir: Path, out_dir: Path, *, workers: int | None = None) ->
     from crc_sdk.workflows import BlockExtremaPolicy, HazardDataset
     from crc_sdk.workflows.distributions import return_periods_to_probabilities
 
-    from crc_lab.explorer.hazards import KINDS, evaluate
+    from crc_data_explorer.hazards import KINDS, evaluate
 
     started = time.time()
     cache = cache_dir / "era5"

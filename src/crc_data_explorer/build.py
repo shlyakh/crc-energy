@@ -1,4 +1,4 @@
-"""``python -m crc_lab.explorer.build``: rebuild every explorer data file (G5; ``just data``)."""
+"""``python -m crc_data_explorer.build``: rebuild every explorer data file (G5; ``just data``)."""
 
 from __future__ import annotations
 
@@ -11,16 +11,16 @@ from pathlib import Path
 
 from crc_sdk.workflows import HazardDataset
 
-from crc_lab import PINNED
-from crc_lab.explorer.catalog import write_catalog
-from crc_lab.explorer.hazards import (
+from crc_data_explorer.catalog import write_catalog
+from crc_data_explorer.hazards import (
     HAZARDS,
     HORIZONS,
     RETURN_PERIODS,
     build_hazard,
     verify_against_for_assets,
 )
-from crc_lab.explorer.texas import (
+from lab_common import PINNED
+from lab_common.texas import (
     intersecting_cells,
     texas_boundary,
     write_geojson,

@@ -28,9 +28,9 @@ from crc_lab.assets.build import mounting, reporting_rates
 from crc_lab.curves import annual_maxima as am_mod
 from crc_lab.curves import fit
 from crc_lab.curves.sensitivity import CITIES
-from crc_lab.explorer.texas import write_json_atomic
 from crc_lab.impacts import annual, crc_adapter
 from crc_lab.impacts import hail_curves as hc
+from lab_common.texas import write_json_atomic
 
 GLASS_GLASS_FROM_YEAR = (
     2021  # spec: 2.0 mm glass-glass "for tracker plants built from about 2021" [I]

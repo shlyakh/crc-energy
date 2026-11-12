@@ -22,7 +22,7 @@ from crc_lab.assets import eia, exposure, solar, value
 from crc_lab.curves import annual_maxima as am_mod
 from crc_lab.curves import fit
 from crc_lab.curves.sensitivity import CITIES
-from crc_lab.explorer.texas import texas_boundary, write_json_atomic
+from lab_common.texas import texas_boundary, write_json_atomic
 
 RETURN_PERIODS = (2, 5, 10, 20, 50, 100)
 SENSITIVITY_RULES = [

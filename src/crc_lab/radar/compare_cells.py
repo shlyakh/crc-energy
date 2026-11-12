@@ -22,8 +22,8 @@ import h3
 import numpy as np
 import pyarrow.parquet as pq
 
-from crc_lab.explorer.texas import intersecting_cells, texas_boundary, write_json_atomic
 from crc_lab.radar import analysis
+from lab_common.texas import intersecting_cells, texas_boundary, write_json_atomic
 
 MRMS_MM = 30.0
 SIGNATURE_IN = 1.25

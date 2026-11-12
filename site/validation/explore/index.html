@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Texas CRC data explorer · Source validation</title>
+<meta name="description" content="What crc-sdk already reaches for Texas, shown on a map as the SDK returns it: the exploration side of the source validation project.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.16.0/dist/maplibre-gl.css">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../shared/style.css">
+<link rel="stylesheet" href="../../shared/sources.css">
+<!-- No build step. Pinned 2026-11-10: h3-js 4.5.0, deck.gl 9.4.0 (global `deck`, needs the global `h3` first), maplibre-gl 6.16.0 (ESM). -->
+<script src="https://cdn.jsdelivr.net/npm/h3-js@4.5.0/dist/h3-js.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.4.0/dist.min.js"></script>
+</head>
+<body>
+<header class="top">
+  <!-- One project per page since V5. This page is the map explorer of the source validation project. -->
+  <nav class="projects" aria-label="Projects">
+    <a class="proj home" href="../../"><b>crc-lab</b><small>all projects</small></a>
+    <a class="proj" href="../../hail/"><b>Texas hail risk</b><small>new work, built on Climate Risk Commons</small></a>
+    <a class="proj" href="../" aria-current="page"><b>Source validation</b><small>crc-sdk's data sources, checked and explored</small></a>
+  </nav>
+  <div class="top-right"><span id="build" class="mute"></span></div>
+</header>
+<!-- Second row: the views of this project. Assessments is the other page of the project. -->
+<nav class="tabs subnav" role="tablist" aria-label="View">
+  <a class="tab link" href="../">Assessments</a>
+  <button class="tab" role="tab" data-tab="crc">Texas data</button>
+  <button class="tab" role="tab" data-tab="crc-about">About</button>
+</nav>
+
+<!-- ../../shared/sources.js fills this pane with the sources whose origin is crc-sdk. -->
+<main id="tab-sources" class="pane"></main>
+<main id="tab-crc-about" class="pane doc hidden"></main>
+
+<div id="demo-bar" class="demo-bar hidden" role="status"><span id="demo-step" class="label"></span><span id="demo-caption"></span><button id="demo-stop" class="btn">Stop</button><i id="demo-progress"></i></div>
+
+<script type="module" src="explore.js"></script>
+</body>
+</html>

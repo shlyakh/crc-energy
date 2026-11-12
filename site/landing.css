@@ -1,0 +1,20 @@
+/* Landing page of crc-lab. Tokens and the header come from shared/style.css. */
+body.landing { height: auto; overflow: auto; }
+.landing .top { border-bottom: 2px solid var(--ink); }
+.landing main { max-width: 1040px; margin: 0 auto; padding: var(--s5) var(--s4) 64px; }
+.landing h1 { font-size: 26px; font-weight: 650; letter-spacing: -.015em; margin: var(--s4) 0 var(--s2); text-wrap: balance; }
+.landing .lead { font-size: var(--f-l); max-width: 70ch; color: var(--ink-2); margin: 0 0 var(--s5); }
+.landing code { font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--hover); padding: 0 3px; border-radius: 2px; }
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); }
+.card { background: var(--surface); border: 1px solid var(--rule-2); border-top: 2px solid var(--ink); padding: var(--s4) var(--s4) var(--s3); display: flex; flex-direction: column; }
+.card h2 { font-size: var(--f-xl); font-weight: 650; letter-spacing: -.01em; margin: var(--s1) 0 var(--s2); }
+.card h2 a { color: var(--ink); } .card h2 a::after { content: " →"; color: var(--accent); }
+.card p { margin: 0 0 var(--s2); color: var(--ink-2); max-width: 60ch; }
+.card ul, .more ul { margin: var(--s1) 0 var(--s3); padding-left: 18px; } .card li, .more li { margin: 3px 0; color: var(--ink-2); }
+.card .foot { margin-top: auto; padding-top: var(--s2); border-top: 1px solid var(--rule); font-size: var(--f-s); color: var(--mute); }
+.more { margin-top: var(--s5); } .more h3 { font-size: var(--f-xs); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); font-weight: 600; margin: 0 0 var(--s1); padding-bottom: var(--s2); border-bottom: 1px solid var(--rule-2); }
+.more p { font-size: var(--f-s); max-width: 74ch; }
+@media (max-width: 760px) {
+  .cards { grid-template-columns: minmax(0, 1fr); }
+  .landing .top { height: auto; flex-wrap: wrap; } .landing .projects { flex-wrap: wrap; margin-left: 0; } .landing .proj { padding: var(--s2) var(--s3); }
+}

@@ -15,7 +15,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from crc_lab.explorer.texas import write_json_atomic
+from lab_common.texas import write_json_atomic
 
 TEXAS = (-106.645646, 25.837377, -93.508292, 36.500704)
 WIDE_BOX = (-110.0, 14.0, -75.0, 45.0)

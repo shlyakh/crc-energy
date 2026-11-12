@@ -27,3 +27,5 @@ site/data/*
 site/explainers/
 .DS_Store
 .claude/worktrees/
+# drafts for Yuri's private review (upstream issues and pull requests); never committed
+local/

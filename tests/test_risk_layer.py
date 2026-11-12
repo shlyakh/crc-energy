@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from crc_lab.explorer import risk_layer
+from crc_lab import risk_layer
 
 SITE = Path(__file__).resolve().parents[1] / "site" / "data" / "assets"
 

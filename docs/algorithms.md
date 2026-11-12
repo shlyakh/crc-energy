@@ -291,7 +291,7 @@ plants and all three bases together, round each to the nearest of 1, 1.5, 2, 3, 
 and drop duplicates. The same breaks are used whichever basis is shown, so switching the bias correction
 darkens or lightens plants instead of re-ranking the colours.
 
-**Code:** `src/crc_lab/explorer/risk_layer.py` (`class_breaks`).
+**Code:** `src/crc_lab/risk_layer.py` (`class_breaks`).
 
 ## 14. Reports near a storm's track (storm player)
 
@@ -315,7 +315,7 @@ storm's inner core, not its outer size.
 **Weakness.** "Near" is a screen filter, not attribution: a hail report inside the radius need not be caused
 by the storm.
 
-**Code:** `site/js/views/tracks.js` (`nearDistance`), `time.js`.
+**Code:** `site/shared/views/tracks.js` (`nearDistance`), `time.js`.
 
 ## What is averaged over what: a summary
 

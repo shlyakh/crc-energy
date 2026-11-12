@@ -1,13 +1,18 @@
-// Headless smoke test of the explorer (Chrome DevTools protocol, no npm dependencies).
+// Headless smoke test of the hail page and the Texas data explorer (Chrome DevTools protocol, no npm dependencies).
+// Since V5 the site has a landing page (<url>), the hail project (<url>hail/) and the data explorer
+// (<url>validation/explore/); tools/smoke-validation.mjs covers the assessments page.
 //   python3 -m http.server 8770 --bind 127.0.0.1 --directory site   (in another shell)
 //   node tools/smoke.mjs <out dir> [url] [width] [height]
-// Covers the Risk tab, then every source of the Hail evidence and CRC data tabs (js/sources.js).
+// Covers the Risk tab, then every source of the Hail evidence tab and of the explorer (shared/sources.js),
+// then the landing page and the forwarding of addresses from before the split.
 // Exits 1 on any failed check, console message or script error; writes screenshots to <out dir>.
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 
 const CHROME = process.env.CHROME || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const [S, URL = "http://127.0.0.1:8770/", W = "1440", H = "900"] = process.argv.slice(2);
+const HAIL = `${URL}hail/`, EXPLORE = `${URL}validation/explore/`;
+const pageOf = (tab) => (tab === "crc" || tab === "crc-about" ? EXPLORE : HAIL);
 const port = Number(process.env.CDP_PORT) || 9336; mkdirSync(S, { recursive: true });
 const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", `--remote-debugging-port=${port}`, `--user-data-dir=${S}/cdp-profile`, `--window-size=${W},${H}`, "about:blank"], { stdio: "ignore" });
 process.on("exit", () => chrome.kill());
@@ -25,11 +30,11 @@ const ev = async (e) => { const r = await send("Runtime.evaluate", { expression:
 await send("Runtime.enable"); await send("Page.enable"); await send("Log.enable"); await send("Network.enable"); await send("Network.setCacheDisabled", { cacheDisabled: true });
 await send("Emulation.setDeviceMetricsOverride", { width: +W, height: +H, deviceScaleFactor: 1, mobile: false });
 const shot = async (name) => { const s = await send("Page.captureScreenshot", { format: "png" }); writeFileSync(`${S}/${name}.png`, Buffer.from(s.result.data, "base64")); };
-const open = async (url) => { await send("Page.navigate", { url }); for (let i = 0; i < 120; i++) { await sleep(250); const d = await ev("document.body.dataset.ready || document.body.dataset.error || ''"); if (d) break; } await sleep(2500); };
+const open = async (url) => { await send("Page.navigate", { url }); for (let i = 0; i < 120; i++) { await sleep(250); const d = await ev("document.body ? (document.body.dataset.ready || document.body.dataset.error || (document.body.classList.contains('landing') ? 'landing' : '')) : ''"); if (d) break; } await sleep(2500); };
 const failures = []; const check = (name, ok, got) => { console.log(`${ok ? "ok  " : "FAIL"} ${name}${ok ? "" : ` — got ${JSON.stringify(got)}`}`); if (!ok) failures.push(name); };
 const data = async () => JSON.parse(await ev("JSON.stringify(document.body.dataset)"));
 
-await open(URL);
+await open(HAIL);
 // Default view: plants under 20 MW are hidden, and the page says so in the table head, the legend and the note.
 { const dd = JSON.parse(await ev("JSON.stringify(document.body.dataset)")); const small = await ev("__risk.data.plants.filter((p) => p.mw < 20).length");
   check("default hides plants under 20 MW", dd.minMw === "20" && Number(dd.hidden) === small && small > 0 && Number(dd.rows) === (await ev("__risk.data.plants.length")) - small, dd);
@@ -92,7 +97,7 @@ check("radar measure disables the basis switch", (await ev("document.querySelect
 await ev("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))"); await sleep(400);
 check("Escape clears the selection", ((await data()).selected || "") === "" && (await ev("document.querySelectorAll('.tag').length")) === 0);
 
-// tabs: Hail evidence and CRC data share the pane #tab-sources
+// tabs: Hail evidence (hail page) and Texas data (explorer page) are the same viewer in a pane #tab-sources
 const PANE = { risk: "tab-risk", evidence: "tab-sources", crc: "tab-sources", methods: "tab-methods" };
 const srcReady = async () => { for (let i = 0; i < 240; i++) { await sleep(125); if (await ev("document.body.dataset.sourcesReady || document.body.dataset.sourcesError || document.body.dataset.error || ''")) break; } await sleep(700); };
 const srcReset = () => ev("document.body.dataset.sourcesReady = ''");
@@ -100,13 +105,14 @@ const srcReset = () => ev("document.body.dataset.sourcesReady = ''");
 // That is the test server, not the page: say so, forget that one message and load once more. Anything else stays a failure.
 let retries = 0;
 const dropped = async () => { const k = messages.findIndex((m) => /ERR_SOCKET_NOT_CONNECTED/.test(m)); if (k < 0 || retries >= 2 || !/dynamically imported module/.test((await data()).error || "")) return false; retries++; console.log(`note retrying after a dropped connection: ${messages[k]}`); messages.splice(k, 1); return true; };
-const openTabOnce = async (tab) => { const wait = (tab === "evidence" || tab === "crc") && (await ev("document.body.dataset.origin || ''")) !== { evidence: "crc-lab", crc: "crc-sdk" }[tab]; if (wait) await srcReset(); await ev(`document.querySelector('.tab[data-tab="${tab}"]').click()`); if (wait) await srcReady(); else await sleep(300); };
-const openTab = async (tab) => { await openTabOnce(tab); if (await dropped()) { await open(URL); await openTabOnce(tab); } };
+const onPage = async (page) => (await ev("location.href")).split("#")[0].split("?")[0] === page;
+const openTabOnce = async (tab) => { if (!(await onPage(pageOf(tab)))) { await open(pageOf(tab)); if (pageOf(tab) === EXPLORE) await srcReady(); } const wait = (tab === "evidence" || tab === "crc") && (await ev("document.body.dataset.origin || ''")) !== { evidence: "crc-lab", crc: "crc-sdk" }[tab]; if (wait) await srcReset(); await ev(`document.querySelector('.tab[data-tab="${tab}"]').click()`); if (wait) await srcReady(); else await sleep(300); };
+const openTab = async (tab) => { await openTabOnce(tab); if (await dropped()) { await open(pageOf(tab)); await openTabOnce(tab); } };
 const openLink = async (url) => { await open(url); await srcReady(); if (await dropped()) { await open(url); await srcReady(); } };
 for (const tab of ["evidence", "crc", "methods", "risk"]) { await openTab(tab); check(`tab ${tab} opens`, (await data()).tab === tab && (await ev(`!document.getElementById('${PANE[tab]}').classList.contains('hidden')`)) === true && !(await data()).error, await data()); }
 
 // ---------- Hail evidence and CRC data: every source of each origin ----------
-const registry = JSON.parse(await ev("fetch('layers.json').then((r) => r.text())"));
+const registry = JSON.parse(await ev(`fetch('${URL}layers.json').then((r) => r.text())`));
 const S_ = (expr) => ev(`(() => { const S = __sources; return ${expr}; })()`);
 const J = async (expr) => JSON.parse(await ev(`JSON.stringify((() => { const S = __sources; return ${expr}; })())`));
 const text = (id) => ev(`document.getElementById('${id}').innerText`);
@@ -324,17 +330,17 @@ await walk("crc", "crc-sdk");
 check("sources map has a metric scale bar and a coordinate readout", /km|\bm\b/.test(await ev("document.querySelector('#src-map-wrap .maplibregl-ctrl-scale')?.textContent || ''")) && /° N\s+[\d.]+° W/.test(await text("src-coords")), await text("src-coords"));
 check("sources pane never sets the shell's ready flag by itself", (await data()).ready === "1");
 // deep link to a source
-await openLink(`${URL}#tab=evidence&source=hail_compare`); d = await data();
+await openLink(`${HAIL}#tab=evidence&source=hail_compare`); d = await data();
 check("deep link opens Hail evidence on the linked source", d.tab === "evidence" && d.source === "hail_compare" && d.origin === "crc-lab" && d.sourcesReady === "1" && (await ev("location.hash")).includes("source=hail_compare") && (await layerIds()).includes("cmp"), d);
 await shot("s-deep-link-hail_compare");
-await openLink(`${URL}#tab=crc&source=crc_open`); d = await data();
-check("deep link opens CRC data on the linked source", d.tab === "crc" && d.source === "crc_open" && (await layerIds()).includes("cells"), d);
-await open(`${URL}#tab=risk&plant=${other.id}&measure=p2in&basis=1`); await sleep(1500); d = await data();
+await openLink(`${EXPLORE}#tab=crc&source=crc_open`); d = await data();
+check("deep link opens the data explorer on the linked source", d.tab === "crc" && d.source === "crc_open" && (await layerIds()).includes("cells"), d);
+await open(`${HAIL}#tab=risk&plant=${other.id}&measure=p2in&basis=1`); await sleep(1500); d = await data();
 check("deep link restores plant, measure and basis", d.selected === other.id && d.measure === "p2in" && d.basis === "1", d);
 await shot("n4-deep-link");
 
 // ---------- third basis (bias-corrected per region), thin-film flag, EIA wording ----------
-await open(URL); await sleep(500);
+await open(HAIL); await sleep(500);
 check("plant count names the EIA list", / of \d+ in the EIA list/.test(await ev("document.getElementById('plant-count').textContent")) && /in the EIA list/.test(await ev("document.getElementById('risk-legend').innerText")));
 await ev("(() => { const s = document.getElementById('measure'); s.value = 'loss_usd'; s.onchange(); const m = document.getElementById('min-mw'); m.value = '0'; m.onchange(); })()"); await sleep(400);
 await ev("document.querySelector('#basis [data-basis=\"2\"]').click()"); await sleep(600);
@@ -347,25 +353,28 @@ await ev("document.querySelector('#basis [data-basis=\"2\"]').click()"); await s
   await shot("r-regional");
   await ev("__app.selectPlant(null)"); await ev("document.querySelector('#basis [data-basis=\"0\"]').click()"); }
 
-// ---------- two projects, Methods, About, the tour ----------
-await open(URL); await sleep(500);
+// ---------- one project per page, Methods, About, the tour ----------
+await open(HAIL); await sleep(500);
 { const g = JSON.parse(await ev("JSON.stringify((() => { const r = (q) => document.querySelector(q).getBoundingClientRect(); const top = r('.top'), nav = r('.tabs'), pane = r('#tab-risk'), tab = r('.tab:not(.hidden)'); return { topB: top.bottom, navT: nav.top, navB: nav.bottom, tabT: tab.top, paneT: pane.top, paneB: pane.bottom, h: innerHeight, inTop: !!document.querySelector('.top .tab') }; })())"));
-  check("tabs sit in their own row under the projects, and the pane fills the rest", !g.inTop && Math.abs(g.navT - g.topB) < 1 && g.tabT >= g.topB && Math.abs(g.paneT - g.navB) < 1 && Math.abs(g.paneB - g.h) < 1, g); }
+  check("tabs sit in their own row under the project links, and the pane fills the rest", !g.inTop && Math.abs(g.navT - g.topB) < 1 && g.tabT >= g.topB && Math.abs(g.paneT - g.navB) < 1 && Math.abs(g.paneB - g.h) < 1, g); }
 check("opens on the hail project with its three tabs", (await data()).project === "hail" && (await ev("[...document.querySelectorAll('.tab:not(.hidden)')].map((b) => b.dataset.tab).join()")) === "risk,evidence,methods");
-await ev("document.querySelector('.proj[data-project=\"crc\"]').click()"); await sleep(4000); d = await data();
-check("project switch opens Texas CRC data with its own tabs", d.project === "crc" && d.tab === "crc" && d.origin === "crc-sdk" && (await ev("[...document.querySelectorAll('.tab:not(.hidden)')].map((b) => b.dataset.tab).join()")) === "crc,crc-about" && (await ev("document.title")).includes("CRC data"), d);
+check("header links lead to the landing page and to the other project", (await ev("[...document.querySelectorAll('.top a.proj')].map((a) => a.getAttribute('href')).join()")) === "../,./,../validation/" && (await ev("document.querySelector('.proj[aria-current]').textContent")).includes("Texas hail risk"));
+await open(EXPLORE); await srcReady(); d = await data();
+check("the data explorer is its own page with its own tabs", d.project === "crc" && d.tab === "crc" && d.origin === "crc-sdk" && d.ready === "1" && (await ev("[...document.querySelectorAll('button.tab')].map((b) => b.dataset.tab).join()")) === "crc,crc-about" && (await ev("document.querySelector('a.tab').getAttribute('href')")) === "../" && (await ev("document.title")).includes("CRC data") && (await ev("document.querySelector('.proj[aria-current]').textContent")).includes("Source validation"), d);
+await shot("p-explore");
 await ev("document.querySelector('.tab[data-tab=\"crc-about\"]').click()"); await sleep(1500);
 const about = await ev("document.getElementById('tab-crc-about').innerText");
 check("CRC About lists the sources shown and the SDK catalogue", (await data()).crcAbout === "1" && /Tropical cyclone tracks/.test(about) && /HazardDataset/.test(about) && /crc-sdk 0\.\d+/.test(about), about.slice(0, 200));
 await shot("p-crc-about");
-await ev("document.querySelector('.proj[data-project=\"hail\"]').click()"); await sleep(800);
-check("switching back returns to the hail project's last tab", (await data()).project === "hail" && (await data()).tab === "risk", await data());
+check("About links to the hail project and to the assessments", (await ev("[...document.querySelectorAll('#tab-crc-about a')].map((a) => a.getAttribute('href')).join(' ')")).includes("../../hail/") && (await ev("[...document.querySelectorAll('#tab-crc-about a')].some((a) => a.getAttribute('href') === '../')")) === true);
+await open(HAIL); await sleep(500);
+check("the hail page opens on Risk", (await data()).project === "hail" && (await data()).tab === "risk", await data());
 await ev("document.querySelector('.tab[data-tab=\"methods\"]').click()"); await sleep(2000);
 const mText = await ev("document.getElementById('tab-methods').innerText");
 check("Methods has the steps, the placeholders and the limits", (await data()).methods === "1" && /Report circle/.test(mText) && /PLACEHOLDER/i.test(mText) && /Known limits/i.test(mText) && (await ev("document.querySelectorAll('#tab-methods .flow .box').length")) === 5, mText.slice(0, 200));
 check("four curve charts drawn", (await ev("document.querySelectorAll('#tab-methods svg path[stroke]').length")) >= 6);
 // the stow sliders pick among curves shipped as values: at the defaults the curve gives the spec's 0.1248 at 2 inches
-const curves = JSON.parse(await ev("fetch('data/assets/curves.json').then((r) => r.text())"));
+const curves = JSON.parse(await ev(`fetch('${URL}data/assets/curves.json').then((r) => r.text())`));
 const at2 = (glass, tilt, p) => curves.solar.plant[glass][`${tilt}|${p}`][curves.d_mm.indexOf(50)];
 check("solar curve at the defaults matches the shipped values", Math.abs(Number(await ev("document.getElementById('tab-methods').dataset.solarAt2in")) - at2("glass_glass_2.0", 60, 0.8)) < 1e-9 && Math.abs(at2("glass_glass_2.0", 60, 0.8) - 0.1161) < 0.02);
 await ev("(() => { const s = document.querySelector('#m-p'); s.value = '0'; s.dispatchEvent(new Event('input')); const t = document.querySelector('#m-tilt'); t.value = String(t.max); t.dispatchEvent(new Event('input')); })()"); await sleep(300);
@@ -375,21 +384,36 @@ await shot("p-methods");
 if (!process.argv.includes("--no-demo")) {
   await ev("document.getElementById('demo-start').click()"); await sleep(1500);
   check("tour starts with a caption", (await data()).demo === "running" && (await ev("document.getElementById('demo-caption').textContent.length")) > 20);
-  const seen = new Set(); const clocks = new Set(); let beryl = false;
-  for (let i = 0; i < 120 && (await data()).demo === "running"; i++) {
-    seen.add(`${(await data()).project}/${(await data()).tab}`); if (i === 30) await shot("p-tour-mid");
-    if ((await data()).playing === "1") { if (!beryl) { beryl = (await ev("__sources.storm === (__sources.tracks.storms.find((x) => x.name === 'Beryl' && x.season === 2024) || {}).sid")) === true; } clocks.add(await ev("document.getElementById('time-clock').textContent")); if (clocks.size === 6) await shot("p-tour-beryl"); }
+  const seen = new Set(); const clocks = new Set(); let beryl = false; const began = Date.now(); let st = "running";
+  // The last part plays on the explorer's page, so the document changes under us once: read its state defensively.
+  const state = async () => { try { return JSON.parse(await ev("document.body ? JSON.stringify(document.body.dataset) : '{}'")); } catch { return {}; } };
+  for (let i = 0; i < 140; i++) {
+    const s = await state(); st = s.demo || st;
+    if (s.demo && s.demo !== "running") break;
+    if (s.project) seen.add(`${s.project}/${s.tab}`); if (i === 30) await shot("p-tour-mid");
+    if (s.playing === "1") { if (!beryl) { beryl = (await ev("__sources.storm === (__sources.tracks.storms.find((x) => x.name === 'Beryl' && x.season === 2024) || {}).sid")) === true; } clocks.add(await ev("document.getElementById('time-clock').textContent")); if (clocks.size === 6) await shot("p-tour-beryl"); }
     await sleep(500);
   }
+  const took = Date.now() - began;
   check("tour plays Beryl 2024 in the storm player", beryl && clocks.size >= 6, { beryl, clocks: [...clocks].slice(0, 12) });
   d = await data();
-  check("tour finishes in 30 to 45 seconds without a failed step", d.demo === "done" && Number(d.demoMs) > 30000 && Number(d.demoMs) < 45000 && !d.demoError, d);
-  check("tour visits both projects and returns to Risk", ["hail/risk", "hail/evidence", "hail/methods", "crc/crc"].every((s) => seen.has(s)) && d.tab === "risk", [...seen]);
+  check("tour finishes in 30 to 50 seconds without a failed step", d.demo === "done" && took > 30000 && took < 50000 && !d.demoError, { demo: d.demo, took, error: d.demoError });
+  check("tour visits the hail tabs and ends in the data explorer", ["hail/risk", "hail/evidence", "hail/methods", "crc/crc"].every((s) => seen.has(s)) && d.tab === "crc" && (await ev("location.pathname")).endsWith("/validation/explore/") && (await ev("location.search")) === "", [...seen]);
 }
 
-// the old /next/ address forwards to the main page and keeps the address state
-await send("Page.navigate", { url: `${URL}next/#tab=methods` }); await sleep(4000);
-check("old /next/ address forwards with its state", !(await ev("location.pathname")).includes("/next") && (await data()).tab === "methods", await ev("location.href"));
+// ---------- landing page, and addresses from before the split ----------
+await open(URL); await sleep(300);
+check("landing page lists the projects and does not forward a bare address", (await ev("location.href")).split("#")[0] === URL && (await ev("[...document.querySelectorAll('.card h2 a')].map((a) => a.getAttribute('href')).join()")) === "hail/,validation/" && (await ev("!!document.querySelector('.card a[href=\"validation/explore/\"]')")) === true);
+check("landing page fits the window width", (await ev("document.documentElement.scrollWidth <= innerWidth")) === true);
+await shot("p-landing");
+await open(`${URL}#tab=risk&plant=${other.id}&measure=p2in&basis=1`); await sleep(1500); d = await data();
+check("old address of a plant forwards to the hail page with its state", (await ev("location.pathname")).endsWith("/hail/") && d.selected === other.id && d.measure === "p2in" && d.basis === "1", [await ev("location.href"), d]);
+await openLink(`${URL}#tab=crc&source=crc_open`); d = await data();
+check("old address of a CRC source forwards to the data explorer with its state", (await ev("location.pathname")).endsWith("/validation/explore/") && d.tab === "crc" && d.source === "crc_open", [await ev("location.href"), d]);
+await openLink(`${HAIL}#tab=crc&source=ibtracs`); d = await data();
+check("a data-explorer tab asked of the hail page is sent on", (await ev("location.pathname")).endsWith("/validation/explore/") && d.source === "ibtracs", [await ev("location.href"), d]);
+await open(`${URL}next/#tab=methods`); await sleep(2500);
+check("old /next/ address forwards with its state", (await ev("location.pathname")).endsWith("/hail/") && (await data()).tab === "methods", await ev("location.href"));
 check("no console messages or script errors", messages.length === 0, messages);
 writeFileSync(`${S}/smoke-report.json`, JSON.stringify({ url: URL, failures, messages }, null, 1));
 ws.close(); chrome.kill();

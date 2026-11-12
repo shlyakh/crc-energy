@@ -20,7 +20,7 @@ import numpy as np
 import pyarrow.parquet as pq
 
 from crc_lab.assets import eia, exposure, solar
-from crc_lab.explorer.texas import texas_boundary
+from lab_common.texas import texas_boundary
 
 INK, MUTE, LINE, BG = "#2a2a28", "#7a7976", "#d9d7d2", "#faf9f6"
 BLUE, ORANGE = "#2a78d6", "#eb6834"

@@ -25,11 +25,11 @@ fix:
 
 # Rebuild every explorer data file from CRC Open and the Census boundary (needs the network)
 data:
-    uv run python -m crc_lab.explorer.build
+    uv run python -m crc_data_explorer.build
 
 # Same, then check shipped values against crc-sdk's for_assets at sampled cells
 verify:
-    uv run python -m crc_lab.explorer.build --verify
+    uv run python -m crc_data_explorer.build --verify
 
 # NOAA Storm Events: snapshot (about 400 MB, cached), Texas event table, explorer layer
 storm-events:
@@ -40,7 +40,7 @@ storm-events-compare:
     uv run python -m crc_lab.storm_events.build --compare
 # Sources track: IBTrACS tracks, CO-OPS water-level stations, GHCNh station curves (network, ~10 min)
 sources:
-    uv run python -m crc_lab.explorer.sources --verify
+    uv run python -m crc_data_explorer.sources --verify
 
 # Hail-size and thunderstorm-gust curves from the Storm Events table, into CRC and the explorer
 curves:
@@ -72,15 +72,62 @@ radar:
 # Phase 5: hail loss per solar plant from the v0 impact curves (after assets, reporting-bias and radar)
 impacts:
     uv run python -m crc_lab.impacts.build
-    uv run python -m crc_lab.explorer.risk_layer
+    uv run python -m crc_lab.risk_layer
 
 # The decisions document with its charts (after all builds)
 decisions:
     uv run python -m crc_lab.decisions
 
-# Check that the static site is complete: every registry layer has its files
-site:
-    uv run python -m crc_lab.explorer.check_site
+# Source validation project: inventory, findings and page data from the installed crc-sdk (no network)
+validation:
+    uv run python -m data_source_check.build
+
+# Source validation: assess one source against its publisher (network; then rebuilds the page data)
+validation-assess source:
+    uv run python -m data_source_check.build {{source}} --live
+
+# Source validation: has a publisher file or the framework changed since each assessment? (network)
+validation-monitor:
+    uv run python -m data_source_check.monitor
+
+# Source validation: also re-run what is stale into a staging folder (does not publish)
+validation-monitor-rerun:
+    uv run python -m data_source_check.monitor --rerun
+
+# Source validation: publish a staged re-run after reading docs/validation/monitoring.md
+validation-accept source:
+    uv run python -m data_source_check.monitor --accept {{source}}
+
+# Source validation: what the inventory knows about an unassessed source, for whoever drafts its assessment
+validation-brief source:
+    uv run python -m data_source_check.draft brief {{source}}
+
+# Source validation: run a drafted assessment into the draft folder (never the page); add --live by hand to download
+validation-draft source:
+    uv run python -m data_source_check.build {{source}} --draft
+
+# Source validation: is a draft complete? (deterministic gate)
+validation-draft-check source:
+    uv run python -m data_source_check.draft check {{source}}
+
+# Source validation: a person publishes a complete draft's records
+validation-draft-accept source:
+    uv run python -m data_source_check.draft accept {{source}}
+
+# Check that the static site is complete, project by project
+site: site-hail site-explorer site-validation
+
+# Texas hail risk: page files and the layers of origin crc-lab
+site-hail:
+    uv run python -m crc_lab.check_site
+
+# Texas CRC data explorer (under the validation project): page files and the layers of origin crc-sdk
+site-explorer:
+    uv run python -m crc_data_explorer.check_site
+
+# Source validation: the assessments page and its records
+site-validation:
+    uv run python -m data_source_check.check_site
 
 # Everything: all data, then site
 all: data storm-events curves assets sources site

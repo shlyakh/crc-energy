@@ -7,7 +7,7 @@ from pathlib import Path
 
 import shapely
 
-from crc_lab.explorer import sources, tracks
+from crc_data_explorer import sources, tracks
 
 
 def _track_row(

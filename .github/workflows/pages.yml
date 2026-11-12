@@ -1,4 +1,4 @@
-# Build the explorer data from CRC Open and publish site/ to GitHub Pages (E8).
+# Build the data of each project and publish site/ (landing page, hail/, validation/) to GitHub Pages.
 name: pages
 on:
   push:
@@ -19,11 +19,17 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --group dev
       - run: uv run pytest -q
-      - run: uv run python -m crc_lab.explorer.build --verify
+      # Texas CRC data explorer (shown under validation/explore/)
+      - run: uv run python -m crc_data_explorer.build --verify
+      # Texas hail risk
       - run: uv run python -m crc_lab.storm_events.build
       - run: uv run python -m crc_lab.curves.build
       # site/data/assets and site/data/hail_compare are built locally (radar pulls, bias model) and committed
-      - run: uv run python -m crc_lab.explorer.check_site
+      # Source validation: the page data is committed; rebuild the inventory offline so it matches the pinned crc-sdk
+      - run: uv run python -m data_source_check.build
+      - run: uv run python -m crc_lab.check_site
+      - run: uv run python -m crc_data_explorer.check_site
+      - run: uv run python -m data_source_check.check_site
       # Keep the D0 explainers at their existing Pages URL (/explainers/...)
       - run: mkdir -p site/explainers && cp docs/explainers/*.html docs/explainers/README.md site/explainers/
       - uses: actions/upload-pages-artifact@v3

@@ -1,4 +1,4 @@
-/* Hail evidence and CRC data tabs (js/sources.js). Uses the tokens of style.css; everything is scoped to #tab-sources. */
+/* Hail evidence (hail page) and Texas data (explorer page): the viewer in sources.js. Uses the tokens of style.css; everything is scoped to #tab-sources. */
 #tab-sources { display: grid; grid-template-columns: 340px minmax(0, 1fr) 340px; }
 #tab-sources .src-left { border-right: 1px solid var(--rule-2); }
 #tab-sources .src-mid { background: var(--page); }
