@@ -2,7 +2,10 @@
 
 Date: 2026-11-11 · crc-sdk `main` at `9c56bb0` (0.11.1) · h5netcdf 1.8.2, h5py 3.16.0
 
-**Status: built and checked locally. Nothing is pushed, no fork exists and no pull request is open.**
+**Status: sent on 2026-11-12 as pull request [#42](https://github.com/RiskThinking/crc-sdk/pull/42) from the fork
+`shlyakh/crc-sdk`, branch `fix/nex-bytes-attributes`. The sections below describe the state before sending.**
+A second small fix went with it: [#43](https://github.com/RiskThinking/crc-sdk/pull/43), IBTrACS subset `active`
+(finding CRC-010-IBT), branch `fix/ibtracs-active-subset`.
 This is the first, deliberately small, contribution to upstream. The Storm Events adapter follows later
 ([plan-upstream-storm-events.md](../plan-upstream-storm-events.md)).
 
@@ -93,7 +96,12 @@ Title: `fix(nex): accept one-character unit attributes (temperature recipes fail
 >
 > Tests: a fixture with `units` stored as a one-character fixed-length string; `txx` and `tnn` now return
 > values, a wrong one-character unit is still rejected with a readable message, and missing units still
-> raise. Checked against the real ACCESS-CM2 historical 2014 files for `tasmax` and `tasmin`.
+> raise. Checked against the real ACCESS-CM2 historical 2014 files for `tasmax` and `tasmin`. With the
+> fix, every temperature value in a Texas box (8,632 values, two years) equals an independent
+> recomputation from NASA's files.
+>
+> While testing on real files we noticed NASA now serves `v2.0` files, which the version check refuses;
+> happy to open a separate issue.
 
 ## Waiting for Yuri
 

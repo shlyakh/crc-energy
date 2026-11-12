@@ -19,7 +19,8 @@ evidence = [
   "check records nex-gddp-cmip6/units[txx ...] and units[tnn ...] (site/validation/data/records/nex-gddp-cmip6.json), run of 2026-11-12",
 ]
 basis = "reproduced"
-status = "open"
+status = "reported upstream"
+upstream_ref = "https://github.com/RiskThinking/crc-sdk/pull/42"
 found_on = "2026-11-10"
 framework_version = "0.11.1"
 
@@ -159,7 +160,8 @@ evidence = [
   "check record ibtracs/address (site/validation/data/records/ibtracs.json), run of 2026-11-12",
 ]
 basis = "reproduced"
-status = "open"
+status = "reported upstream"
+upstream_ref = "https://github.com/RiskThinking/crc-sdk/pull/43"
 found_on = "2026-11-12"
 framework_version = "0.11.1"
 

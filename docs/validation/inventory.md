@@ -39,7 +39,7 @@ Option values (recipes, datasets, versions) not yet assessed: 35.
 
 | Id | Source | Kind | Finding | Basis | Status |
 | --- | --- | --- | --- | --- | --- |
-| CRC-001-NEX | nex-gddp-cmip6 | defect | Temperature recipes (txx, tnn) fail on real NEX files | reproduced | open |
+| CRC-001-NEX | nex-gddp-cmip6 | defect | Temperature recipes (txx, tnn) fail on real NEX files | reproduced | reported upstream |
 | CRC-002-FWK | framework | doc-code difference | The 20-year minimum counts the years requested, not the years valid in each cell | code reading | open |
 | CRC-003-JRC | jrc-flood | doc-code difference | JRC flood and EDO output files do not carry licence, attribution, retrieval time or checksum | code reading | open |
 | CRC-004-EDO | jrc-edo | doc-code difference | EDO drought curves are labelled with the last year of the record, not the centre year | code reading | open |
@@ -48,7 +48,7 @@ Option values (recipes, datasets, versions) not yet assessed: 35.
 | CRC-007-OPEN | crc-open | observation | retrieved_at in a CRC Open file is the time the file was written, not the time the data were downloaded | code reading | open |
 | CRC-008-OSC | os-climate | doc-code difference | The OS-Climate licence is documented as read from layer metadata; no code that reads it was found | code reading | open |
 | CRC-009-CDL | usda-cdl | observation | The Cropland Data Layer is read from a moving branch and its output records no provenance | code reading | open |
-| CRC-010-IBT | ibtracs | defect | The subset "active" is accepted but NOAA has no file under that name | reproduced | open |
+| CRC-010-IBT | ibtracs | defect | The subset "active" is accepted but NOAA has no file under that name | reproduced | reported upstream |
 | CRC-011-IBT | ibtracs | observation | The snapshot's manifest has a terms address and a citation but no licence field; the batches carry no provenance | reproduced | open |
 | CRC-012-NEX | nex-gddp-cmip6 | observation | NASA serves files of version 2.0, which cannot be requested | reproduced | open |
 
@@ -58,7 +58,7 @@ Option values (recipes, datasets, versions) not yet assessed: 35.
 - **Observed:** The files declare kelvin, but h5netcdf returns the one-character unit as bytes (b'K') and the unit check compares its text form with 'K'. The call raises: 'tasmax' is published in "b'K'", but recipe 'txx' converts from 'K'. Precipitation is unaffected.
 - **Consequence:** No temperature extremes can be read from NEX-GDDP-CMIP6 at this version.
 - **Evidence:** crc_sdk/providers/cmip6.py:952; crc_sdk/workflows/nex.py:39-47; docs/reports/u1-nex-bytes-fix.md (crc-lab): real file headers, failing test, fix; check records nex-gddp-cmip6/units[txx ...] and units[tnn ...] (site/validation/data/records/nex-gddp-cmip6.json), run of 2026-11-12
-- **Basis:** reproduced · **Status:** open · found 2026-11-10 at crc-sdk 0.11.1
+- **Basis:** reproduced · **Status:** reported upstream (https://github.com/RiskThinking/crc-sdk/pull/42) · found 2026-11-10 at crc-sdk 0.11.1
 
 ### CRC-002-FWK: The 20-year minimum counts the years requested, not the years valid in each cell
 
@@ -129,7 +129,7 @@ Option values (recipes, datasets, versions) not yet assessed: 35.
 - **Observed:** crc-sdk requests .../ibtracs.active.list.v04r01.csv and NOAA answers 404. NOAA's directory holds ibtracs.ACTIVE.list.v04r01.csv (capitals). IBTrACSPlan("active", ...).prefetch() raises HTTPError 404; IBTrACSPlan("ACTIVE", ...) is refused as an invalid subset. The other ten names are served.
 - **Consequence:** Currently active storms cannot be read through IBTrACSPlan at this version. The other subsets are unaffected.
 - **Evidence:** crc_sdk/workflows/ibtracs.py:28-41; crc_sdk/workflows/ibtracs.py:70-71; check record ibtracs/address (site/validation/data/records/ibtracs.json), run of 2026-11-12
-- **Basis:** reproduced · **Status:** open · found 2026-11-12 at crc-sdk 0.11.1
+- **Basis:** reproduced · **Status:** reported upstream (https://github.com/RiskThinking/crc-sdk/pull/43) · found 2026-11-12 at crc-sdk 0.11.1
 
 ### CRC-011-IBT: The snapshot's manifest has a terms address and a citation but no licence field; the batches carry no provenance
 

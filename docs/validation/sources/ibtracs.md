@@ -205,7 +205,7 @@ Fields of the manifest crc-sdk writes beside the snapshot, and the metadata atta
 
 | Id | Kind | Finding | Basis | Status |
 | --- | --- | --- | --- | --- |
-| CRC-010-IBT | defect | The subset "active" is accepted but NOAA has no file under that name | reproduced | open |
+| CRC-010-IBT | defect | The subset "active" is accepted but NOAA has no file under that name | reproduced | reported upstream |
 | CRC-011-IBT | observation | The snapshot's manifest has a terms address and a citation but no licence field; the batches carry no provenance | reproduced | open |
 
 Details are in [the inventory](../inventory.md#findings).

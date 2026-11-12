@@ -17,9 +17,9 @@
    "kind": "defect",
    "observed": "The files declare kelvin, but h5netcdf returns the one-character unit as bytes (b'K') and the unit check compares its text form with 'K'. The call raises: 'tasmax' is published in \"b'K'\", but recipe 'txx' converts from 'K'. Precipitation is unaffected.",
    "source": "nex-gddp-cmip6",
-   "status": "open",
+   "status": "reported upstream",
    "title": "Temperature recipes (txx, tnn) fail on real NEX files",
-   "upstream_ref": ""
+   "upstream_ref": "https://github.com/RiskThinking/crc-sdk/pull/42"
   },
   {
    "basis": "code reading",
@@ -192,9 +192,9 @@
    "kind": "defect",
    "observed": "crc-sdk requests .../ibtracs.active.list.v04r01.csv and NOAA answers 404. NOAA's directory holds ibtracs.ACTIVE.list.v04r01.csv (capitals). IBTrACSPlan(\"active\", ...).prefetch() raises HTTPError 404; IBTrACSPlan(\"ACTIVE\", ...) is refused as an invalid subset. The other ten names are served.",
    "source": "ibtracs",
-   "status": "open",
+   "status": "reported upstream",
    "title": "The subset \"active\" is accepted but NOAA has no file under that name",
-   "upstream_ref": ""
+   "upstream_ref": "https://github.com/RiskThinking/crc-sdk/pull/43"
   },
   {
    "basis": "reproduced",
@@ -436,7 +436,7 @@
   ],
   "unclaimed_symbols": []
  },
- "generated": "2026-11-12T15:13:30Z",
+ "generated": "2026-11-12T23:18:25Z",
  "schema": "data_source_check/0.1",
  "sources": [
   {

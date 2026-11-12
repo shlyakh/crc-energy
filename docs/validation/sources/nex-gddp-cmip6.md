@@ -174,7 +174,7 @@ For each variable and year assessed, ask NASA (HEAD) for file versions 1.0, 1.1,
 
 | Id | Kind | Finding | Basis | Status |
 | --- | --- | --- | --- | --- |
-| CRC-001-NEX | defect | Temperature recipes (txx, tnn) fail on real NEX files | reproduced | open |
+| CRC-001-NEX | defect | Temperature recipes (txx, tnn) fail on real NEX files | reproduced | reported upstream |
 | CRC-012-NEX | observation | NASA serves files of version 2.0, which cannot be requested | reproduced | open |
 
 Details are in [the inventory](../inventory.md#findings).
