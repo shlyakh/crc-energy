@@ -1,6 +1,6 @@
 # IBTrACS tropical cyclone tracks: assessment
 
-Generated from the records of the run of 2026-11-12T04:28:02Z against crc-framework 0.6.0, crc-sdk 0.11.1. **Draft: not yet reviewed.**
+Generated from the records of the run of 2026-11-12T23:31:55Z against crc-framework 0.6.0, crc-sdk 0.11.1. **Draft: not yet reviewed.**
 Do not edit: change the source file or re-run the assessment and rebuild.
 
 - **Purpose (the framework's documentation):** Best-track points of tropical cyclones by basin, as published, for inspection. Not asset winds or return-period curves.
@@ -17,16 +17,16 @@ Counted from NOAA's files by the reference reader.
 
 | File | Rows | Storms | Seasons | Columns | Values missing | Last modified by publisher |
 | --- | --- | --- | --- | --- | --- | --- |
-| ALL | 730,580 | 13,635 | 1842 to 2027 | 174 | 82.4 % | Tue, 10 Nov 2026 10:02:56 GMT |
-| EP | 101,566 | 1,735 | 1876 to 2026 | 174 | 80.5 % | Tue, 10 Nov 2026 10:03:01 GMT |
-| NA | 128,186 | 2,312 | 1851 to 2026 | 174 | 85.0 % | Tue, 10 Nov 2026 10:03:06 GMT |
-| NI | 62,910 | 1,861 | 1842 to 2026 | 174 | 84.5 % | Tue, 10 Nov 2026 10:03:09 GMT |
-| SA | 119 | 3 | 2004 to 2011 | 174 | 84.4 % | Tue, 10 Nov 2026 10:03:09 GMT |
-| SI | 171,095 | 2,890 | 1848 to 2027 | 174 | 82.9 % | Tue, 10 Nov 2026 10:03:15 GMT |
-| SP | 77,223 | 1,258 | 1897 to 2027 | 174 | 82.0 % | Tue, 10 Nov 2026 10:03:30 GMT |
-| WP | 249,305 | 4,258 | 1884 to 2026 | 174 | 80.2 % | Tue, 10 Nov 2026 10:03:40 GMT |
-| last3years | 24,985 | 411 | 2023 to 2027 | 174 | 77.8 % | Tue, 10 Nov 2026 10:03:02 GMT |
-| since1980 | 312,366 | 5,017 | 1980 to 2027 | 174 | 79.8 % | Tue, 10 Nov 2026 10:03:27 GMT |
+| ALL | 730,608 | 13,635 | 1842 to 2027 | 174 | 82.4 % | Thu, 12 Nov 2026 10:05:57 GMT |
+| EP | 101,582 | 1,735 | 1876 to 2026 | 174 | 80.5 % | Thu, 12 Nov 2026 10:06:01 GMT |
+| NA | 128,186 | 2,312 | 1851 to 2026 | 174 | 85.0 % | Thu, 12 Nov 2026 10:06:08 GMT |
+| NI | 62,910 | 1,861 | 1842 to 2026 | 174 | 84.5 % | Thu, 12 Nov 2026 10:06:10 GMT |
+| SA | 119 | 3 | 2004 to 2011 | 174 | 84.4 % | Thu, 12 Nov 2026 10:06:10 GMT |
+| SI | 171,095 | 2,890 | 1848 to 2027 | 174 | 82.9 % | Thu, 12 Nov 2026 10:06:18 GMT |
+| SP | 77,223 | 1,258 | 1897 to 2027 | 174 | 82.0 % | Thu, 12 Nov 2026 10:06:36 GMT |
+| WP | 249,317 | 4,258 | 1884 to 2026 | 174 | 80.2 % | Thu, 12 Nov 2026 10:06:46 GMT |
+| last3years | 25,013 | 411 | 2023 to 2027 | 174 | 77.8 % | Thu, 12 Nov 2026 10:06:02 GMT |
+| since1980 | 312,394 | 5,017 | 1980 to 2027 | 174 | 79.8 % | Thu, 12 Nov 2026 10:06:32 GMT |
 
 Longitudes in NOAA's files are not wrapped to -180..180 (values up to 266.9 occur where a track crosses the date line); crc-sdk passes them through as strings. SEASON runs to 2027 because southern-hemisphere seasons are labelled by their second year. About four values in five are missing: most columns belong to one agency each.
 
@@ -63,16 +63,16 @@ SHA-256 of the file crc-sdk cached against SHA-256 of an independent download of
 
 | Check | Outcome | Result |
 | --- | --- | --- |
-| bytes[ALL] | confirmed | 333,258,934 bytes; SHA-256 43ed2e72f1de… on both sides |
-| bytes[EP] | confirmed | 47,304,602 bytes; SHA-256 e1822a9902a1… on both sides |
+| bytes[ALL] | confirmed | 333,271,989 bytes; SHA-256 b67770d3d12e… on both sides |
+| bytes[EP] | confirmed | 47,312,133 bytes; SHA-256 9e74f5e88338… on both sides |
 | bytes[NA] | confirmed | 57,593,323 bytes; SHA-256 666681be5b12… on both sides |
 | bytes[NI] | confirmed | 27,907,168 bytes; SHA-256 137d896f68f8… on both sides |
 | bytes[SA] | confirmed | 56,442 bytes; SHA-256 34ba989f7051… on both sides |
 | bytes[SI] | confirmed | 77,976,781 bytes; SHA-256 e1af4a4927a5… on both sides |
 | bytes[SP] | confirmed | 35,689,127 bytes; SHA-256 cd20fa2b45ed… on both sides |
-| bytes[WP] | confirmed | 114,731,962 bytes; SHA-256 8eb287ed6054… on both sides |
-| bytes[last3years] | confirmed | 11,836,912 bytes; SHA-256 91022a2d3a02… on both sides |
-| bytes[since1980] | confirmed | 145,355,979 bytes; SHA-256 e99866ac5e14… on both sides |
+| bytes[WP] | confirmed | 114,737,486 bytes; SHA-256 83bf4b39a266… on both sides |
+| bytes[last3years] | confirmed | 11,849,967 bytes; SHA-256 deb60be5fd2b… on both sides |
+| bytes[since1980] | confirmed | 145,369,034 bytes; SHA-256 2200fc253d53… on both sides |
 
 ### header
 
@@ -97,16 +97,16 @@ Every data row of NOAA's file, read with Python's csv module, trimmed, empty val
 
 | Check | Outcome | Result |
 | --- | --- | --- |
-| values[ALL] | confirmed | 730,580 rows against 730,580; 127,120,920 values compared, 0 differ |
-| values[EP] | confirmed | 101,566 rows against 101,566; 17,672,484 values compared, 0 differ |
+| values[ALL] | confirmed | 730,608 rows against 730,608; 127,125,792 values compared, 0 differ |
+| values[EP] | confirmed | 101,582 rows against 101,582; 17,675,268 values compared, 0 differ |
 | values[NA] | confirmed | 128,186 rows against 128,186; 22,304,364 values compared, 0 differ |
 | values[NI] | confirmed | 62,910 rows against 62,910; 10,946,340 values compared, 0 differ |
 | values[SA] | confirmed | 119 rows against 119; 20,706 values compared, 0 differ |
 | values[SI] | confirmed | 171,095 rows against 171,095; 29,770,530 values compared, 0 differ |
 | values[SP] | confirmed | 77,223 rows against 77,223; 13,436,802 values compared, 0 differ |
-| values[WP] | confirmed | 249,305 rows against 249,305; 43,379,070 values compared, 0 differ |
-| values[last3years] | confirmed | 24,985 rows against 24,985; 4,347,390 values compared, 0 differ |
-| values[since1980] | confirmed | 312,366 rows against 312,366; 54,351,684 values compared, 0 differ |
+| values[WP] | confirmed | 249,317 rows against 249,317; 43,381,158 values compared, 0 differ |
+| values[last3years] | confirmed | 25,013 rows against 25,013; 4,352,262 values compared, 0 differ |
+| values[since1980] | confirmed | 312,394 rows against 312,394; 54,356,556 values compared, 0 differ |
 
 ### storm-filter
 
@@ -139,7 +139,7 @@ years(a, b) against the same selection made on NOAA's file: rows whose SID is in
 | season-filter[SI] | confirmed | 39,966 rows against 39,966; 6,954,084 values compared, 0 differ |
 | season-filter[SP] | confirmed | 40,832 rows against 40,832; 7,104,768 values compared, 0 differ |
 | season-filter[WP] | confirmed | 121,980 rows against 121,980; 21,224,520 values compared, 0 differ |
-| season-filter[last3years] | confirmed | 12,951 rows against 12,951; 2,253,474 values compared, 0 differ |
+| season-filter[last3years] | confirmed | 12,979 rows against 12,979; 2,258,346 values compared, 0 differ |
 | season-filter[since1980] | confirmed | 79,050 rows against 79,050; 13,754,700 values compared, 0 differ |
 
 ### both-filters
@@ -180,26 +180,26 @@ Fields of the manifest crc-sdk writes beside the snapshot, and the metadata atta
 
 | Role | File | SHA-256 | Retrieved |
 | --- | --- | --- | --- |
-| reference download | ibtracs.ALL.list.v04r01.csv | 43ed2e72f1de414078b543794d3557c2e0bcb1e006457885b9964a4e75e14d08 | 2026-11-12T03:44:42Z |
-| crc-sdk snapshot | ibtracs.ALL.list.v04r01.csv | 43ed2e72f1de414078b543794d3557c2e0bcb1e006457885b9964a4e75e14d08 | 2026-11-12T03:45:02.496410+00:00 |
-| reference download | ibtracs.EP.list.v04r01.csv | e1822a9902a12e1fdac04407b90ac766225484a9b6dd68c3b1d8efeadd666c2c | 2026-11-12T03:46:01Z |
-| crc-sdk snapshot | ibtracs.EP.list.v04r01.csv | e1822a9902a12e1fdac04407b90ac766225484a9b6dd68c3b1d8efeadd666c2c | 2026-11-12T03:46:03.585909+00:00 |
-| reference download | ibtracs.NA.list.v04r01.csv | 666681be5b12caf5bad7a511bae5f6e5fa8b03789f7f6dd00ee2f0aaa41c2c97 | 2026-11-12T03:46:13Z |
-| crc-sdk snapshot | ibtracs.NA.list.v04r01.csv | 666681be5b12caf5bad7a511bae5f6e5fa8b03789f7f6dd00ee2f0aaa41c2c97 | 2026-11-12T03:46:16.149521+00:00 |
-| reference download | ibtracs.NI.list.v04r01.csv | 137d896f68f8dd12d365ec646d77b6e32128770847ac8ef37e1d0f662ac34915 | 2026-11-12T03:46:27Z |
-| crc-sdk snapshot | ibtracs.NI.list.v04r01.csv | 137d896f68f8dd12d365ec646d77b6e32128770847ac8ef37e1d0f662ac34915 | 2026-11-12T03:46:28.956347+00:00 |
-| reference download | ibtracs.SA.list.v04r01.csv | 34ba989f7051026707d2df9ca59070b1d4a2b5acf22f8f24a489fd2dd9ffd081 | 2026-11-12T03:46:34Z |
-| crc-sdk snapshot | ibtracs.SA.list.v04r01.csv | 34ba989f7051026707d2df9ca59070b1d4a2b5acf22f8f24a489fd2dd9ffd081 | 2026-11-12T03:46:34.559803+00:00 |
-| reference download | ibtracs.SI.list.v04r01.csv | e1af4a4927a5ae27625ddcb4ef3ad4180fe0854e94a91a5ce963b847fe478122 | 2026-11-12T03:46:37Z |
-| crc-sdk snapshot | ibtracs.SI.list.v04r01.csv | e1af4a4927a5ae27625ddcb4ef3ad4180fe0854e94a91a5ce963b847fe478122 | 2026-11-12T03:46:40.739222+00:00 |
-| reference download | ibtracs.SP.list.v04r01.csv | cd20fa2b45ed73f5a7bd5815a429c39336979fb40beff03b8b303c7ee17ebe3c | 2026-11-12T03:46:55Z |
-| crc-sdk snapshot | ibtracs.SP.list.v04r01.csv | cd20fa2b45ed73f5a7bd5815a429c39336979fb40beff03b8b303c7ee17ebe3c | 2026-11-12T03:46:57.034864+00:00 |
-| reference download | ibtracs.WP.list.v04r01.csv | 8eb287ed6054c42e21c95b2a4ac5eb52d3f657940616d7575908c7cdeedfb442 | 2026-11-12T03:47:07Z |
-| crc-sdk snapshot | ibtracs.WP.list.v04r01.csv | 8eb287ed6054c42e21c95b2a4ac5eb52d3f657940616d7575908c7cdeedfb442 | 2026-11-12T03:47:12.128150+00:00 |
-| reference download | ibtracs.last3years.list.v04r01.csv | 91022a2d3a02cc1eae77e5d2bed3a5ad278a045dc45e36066d65b3954c032ac8 | 2026-11-12T03:47:32Z |
-| crc-sdk snapshot | ibtracs.last3years.list.v04r01.csv | 91022a2d3a02cc1eae77e5d2bed3a5ad278a045dc45e36066d65b3954c032ac8 | 2026-11-12T03:47:33.797232+00:00 |
-| reference download | ibtracs.since1980.list.v04r01.csv | e99866ac5e14909495a4cdbd09490b44ff287f56a69c4f12bcdf74355f0b4e75 | 2026-11-12T03:47:41Z |
-| crc-sdk snapshot | ibtracs.since1980.list.v04r01.csv | e99866ac5e14909495a4cdbd09490b44ff287f56a69c4f12bcdf74355f0b4e75 | 2026-11-12T03:47:47.894365+00:00 |
+| reference download | ibtracs.ALL.list.v04r01.csv | b67770d3d12eae605d7bc0ef393d0c2164fd2180a76785b29bc9b5eec7d0fd5f | 2026-11-12T23:28:34Z |
+| crc-sdk snapshot | ibtracs.ALL.list.v04r01.csv | b67770d3d12eae605d7bc0ef393d0c2164fd2180a76785b29bc9b5eec7d0fd5f | 2026-11-12T23:28:47.038675+00:00 |
+| reference download | ibtracs.EP.list.v04r01.csv | 9e74f5e88338bde0a56a3378b7c1572aea3c08dd3087a9922c9e06ff25023af6 | 2026-11-12T23:29:45Z |
+| crc-sdk snapshot | ibtracs.EP.list.v04r01.csv | 9e74f5e88338bde0a56a3378b7c1572aea3c08dd3087a9922c9e06ff25023af6 | 2026-11-12T23:29:47.849492+00:00 |
+| reference download | ibtracs.NA.list.v04r01.csv | 666681be5b12caf5bad7a511bae5f6e5fa8b03789f7f6dd00ee2f0aaa41c2c97 | 2026-11-12T23:29:58Z |
+| crc-sdk snapshot | ibtracs.NA.list.v04r01.csv | 666681be5b12caf5bad7a511bae5f6e5fa8b03789f7f6dd00ee2f0aaa41c2c97 | 2026-11-12T23:30:00.572174+00:00 |
+| reference download | ibtracs.NI.list.v04r01.csv | 137d896f68f8dd12d365ec646d77b6e32128770847ac8ef37e1d0f662ac34915 | 2026-11-12T23:30:11Z |
+| crc-sdk snapshot | ibtracs.NI.list.v04r01.csv | 137d896f68f8dd12d365ec646d77b6e32128770847ac8ef37e1d0f662ac34915 | 2026-11-12T23:30:12.905968+00:00 |
+| reference download | ibtracs.SA.list.v04r01.csv | 34ba989f7051026707d2df9ca59070b1d4a2b5acf22f8f24a489fd2dd9ffd081 | 2026-11-12T23:30:18Z |
+| crc-sdk snapshot | ibtracs.SA.list.v04r01.csv | 34ba989f7051026707d2df9ca59070b1d4a2b5acf22f8f24a489fd2dd9ffd081 | 2026-11-12T23:30:18.205625+00:00 |
+| reference download | ibtracs.SI.list.v04r01.csv | e1af4a4927a5ae27625ddcb4ef3ad4180fe0854e94a91a5ce963b847fe478122 | 2026-11-12T23:30:21Z |
+| crc-sdk snapshot | ibtracs.SI.list.v04r01.csv | e1af4a4927a5ae27625ddcb4ef3ad4180fe0854e94a91a5ce963b847fe478122 | 2026-11-12T23:30:23.980892+00:00 |
+| reference download | ibtracs.SP.list.v04r01.csv | cd20fa2b45ed73f5a7bd5815a429c39336979fb40beff03b8b303c7ee17ebe3c | 2026-11-12T23:30:39Z |
+| crc-sdk snapshot | ibtracs.SP.list.v04r01.csv | cd20fa2b45ed73f5a7bd5815a429c39336979fb40beff03b8b303c7ee17ebe3c | 2026-11-12T23:30:40.716530+00:00 |
+| reference download | ibtracs.WP.list.v04r01.csv | 83bf4b39a266b327a80ad2e6a701afb730f3ed7e47cf07891ce207551950e569 | 2026-11-12T23:30:51Z |
+| crc-sdk snapshot | ibtracs.WP.list.v04r01.csv | 83bf4b39a266b327a80ad2e6a701afb730f3ed7e47cf07891ce207551950e569 | 2026-11-12T23:30:55.826485+00:00 |
+| reference download | ibtracs.last3years.list.v04r01.csv | deb60be5fd2b744c9ee45cac15b9efb060548ec73cf830ac7b53ddb7b340b3b5 | 2026-11-12T23:31:16Z |
+| crc-sdk snapshot | ibtracs.last3years.list.v04r01.csv | deb60be5fd2b744c9ee45cac15b9efb060548ec73cf830ac7b53ddb7b340b3b5 | 2026-11-12T23:31:17.421072+00:00 |
+| reference download | ibtracs.since1980.list.v04r01.csv | 2200fc253d536d7cdc60baef766c8c64c54ebbcd0cdb91bfe182d249cdf236f7 | 2026-11-12T23:31:24Z |
+| crc-sdk snapshot | ibtracs.since1980.list.v04r01.csv | 2200fc253d536d7cdc60baef766c8c64c54ebbcd0cdb91bfe182d249cdf236f7 | 2026-11-12T23:31:30.395220+00:00 |
 
 ## Findings
 
