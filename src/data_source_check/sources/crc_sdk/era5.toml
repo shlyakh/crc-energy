@@ -1,0 +1,142 @@
+id = "era5"
+title = "ERA5 reanalysis extremes"
+kind = "fitted curves"
+tier = 1
+tier_reason = "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the ERA5 baseline layer of the Texas data explorer."
+publisher = "ECMWF / Copernicus C3S (public Zarr copies by Google and WeatherBench2)"
+original = "gs://gcp-public-data-arco-era5 (0.25 degree) and gs://weatherbench2 (1.5 degree)"
+purpose = "A historical baseline of annual temperature and rainfall extremes on H3 cells, comparable with the projection recipes."
+explorer = "explore/#tab=crc&source=era5"
+entry_points = ["HazardDataset.era5"]
+symbols = ["ERA5AreaPlan", "ERA5CanonicalizationPlan", "ERA5SourcePlan", "ERA5YearPlan"]
+drafted_by = "agent (draft-source-assessment skill), 2026-11-12"
+notes = "Draft. Assessed on the 1.5 degree store (wb2-1p5), the Texas box (80 grid cells), the rainfall recipes for 2021, with and without the land mask. One variable-year of this store is about 0.9 GB whatever the box, because every chunk covers the globe. The temperature recipes, the 0.25 degree store and the fitted curves were not run."
+
+[options]
+recipe = ["rx1day", "rx5day", "tnn", "txx"]
+store = ["arco-0p25", "wb2-1p5"]
+
+[assessed_options]
+recipe = ["rx1day", "rx5day"]
+store = ["wb2-1p5"]
+
+[status]
+exploration = "in progress"
+verification = "in progress"
+
+[[statement]]
+id = "store"
+text = "Opens one of two public Zarr copies of hourly ERA5 anonymously, with zarr over gcsfs: `arco-0p25` (the default, gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3, 0.25 degree) or `wb2-1p5` (gs://weatherbench2/datasets/era5/1959-2022-1h-240x121_equiangular_with_poles_conservative.zarr, 1.5 degree). No checksum of the hourly data is taken."
+code_ref = "crc_sdk/providers/era5.py:88-109, 218-239; crc_sdk/workflows/portfolio.py:497-519"
+note = "Confirmed for wb2-1p5 only. arco-0p25 was not opened: one variable-year there is about 8,800 global chunks."
+
+[[statement]]
+id = "version"
+text = "Names the release `final-through-<date>`. The date is the store's `valid_time_stop` attribute; for a store without it (wb2-1p5) it is 31 December of a year written in the code, 2022. Only `latest` or that name is accepted."
+code_ref = "crc_sdk/providers/era5.py:104-105, 461-500"
+
+[[statement]]
+id = "years"
+text = "Accepts the years from the store's first year (1959 for wb2-1p5, written in the code) to the last complete year of that release; for rainfall the last year must be followed by one more day of record. The years are not compared with the store's time axis: hours the axis does not hold are skipped without an error."
+code_ref = "crc_sdk/providers/era5.py:262-272, 423-425, 502-515"
+
+[[statement]]
+id = "time-axis"
+text = "Decodes the time axis from its `units` attribute (`hours`, `days` or `seconds since <date>`) as whole numbers; the `calendar` attribute is not read. Days are UTC days."
+code_ref = "crc_sdk/providers/era5.py:242-252"
+
+[[statement]]
+id = "variable"
+text = "Reads `2m_temperature` for `txx` and `tnn` and `total_precipitation` for `rx1day` and `rx5day`, and requires the array to have exactly the dimensions time, latitude and longitude, in any order."
+code_ref = "crc_sdk/providers/era5.py:92, 103, 154-206, 293-301"
+
+[[statement]]
+id = "units-declared"
+text = "Assumes 2 m temperature in kelvin and precipitation in metres. The `units` attribute the store declares for the variable is not read."
+code_ref = "crc_sdk/providers/era5.py:146-149, 293-301, 426-427"
+note = "The check confirms that the assumption holds for wb2-1p5 today. That the attribute is not read is shown in the offline tests on a constructed store that declares another unit (see finding CRC-006-ERA5)."
+
+[[statement]]
+id = "area"
+text = "Selects the grid cells whose centres lie inside the box grown by half a cell on every side, with longitudes brought to -180..180 and ordered west to east. A box narrower than one cell is widened to two cells. The same box is applied a second time to the stored annual file."
+code_ref = "crc_sdk/connectors/blocks.py:63-76, 175-234, 716-729; crc_sdk/providers/era5.py:303-312"
+note = "Confirmed for a box of 8 by 10 cells. A box narrower than one cell and a box at the 180 degree meridian were not run."
+
+[[statement]]
+id = "land-mask"
+text = "With `land_only`, keeps a cell only where the store's `land_sea_mask` is 0.5 or more; the others get no value."
+code_ref = "crc_sdk/providers/era5.py:58, 374-399, 436-437"
+
+[[statement]]
+id = "missing"
+text = "Treats a value that is not finite as missing. A chunk the store does not hold is read as the array's fill value (NaN), so it is missing too, without an error."
+code_ref = "crc_sdk/connectors/blocks.py:512-513; crc_sdk/providers/era5.py:369"
+note = "The chunks read from the publisher hold no NaN in the box. Missing hours inside a chunk were exercised in the offline tests only; absent chunks were exercised by the years the reference copy does not hold. The reading of an absent chunk as NaN is zarr's behaviour and has no line in crc-sdk."
+
+[[statement]]
+id = "units-temperature"
+text = "Subtracts 273.15 from every hourly temperature, before any reduction, to give degrees Celsius."
+code_ref = "crc_sdk/providers/era5.py:146, 165, 177, 427; crc_sdk/connectors/blocks.py:412-415"
+note = "Not run on the publisher's data in this draft (one variable-year is about 0.7 GB). Confirmed on constructed files only."
+
+[[statement]]
+id = "units-rain"
+text = "Multiplies every hourly precipitation value by 1,000, before any reduction, to give millimetres."
+code_ref = "crc_sdk/providers/era5.py:149, 189, 201, 427; crc_sdk/connectors/blocks.py:412-415"
+
+[[statement]]
+id = "day-temperature"
+text = "The daily maximum (`txx`) or minimum (`tnn`) is taken over the hours stamped 00:00 to 23:00 UTC; a day needs at least 18 of its 24 hours."
+code_ref = "crc_sdk/providers/era5.py:164, 176; crc_sdk/connectors/blocks.py:502-526"
+note = "Not run on the publisher's data in this draft. Confirmed on constructed files only."
+
+[[statement]]
+id = "day-rain"
+text = "An hourly precipitation value is counted in the UTC day of its stamp less one hour (the value stamped 00:00 belongs to the day before). A day is the sum of its 24 hours and needs all 24."
+code_ref = "crc_sdk/providers/era5.py:147-152, 414-434; crc_sdk/connectors/blocks.py:396-402, 502-526"
+
+[[statement]]
+id = "completeness"
+text = "Gives a grid cell an annual value only when at least 90 per cent of the year's days have a value (329 of 365, 330 of 366)."
+code_ref = "crc_sdk/providers/era5.py:166, 178, 190, 202; crc_sdk/connectors/blocks.py:454-455, 484"
+note = "In the year read every cell has 364 of 365 days, so the 90 per cent line itself was crossed only in the offline tests."
+
+[[statement]]
+id = "statistic-temperature"
+text = "`txx` is the highest daily maximum of the year and `tnn` the lowest daily minimum."
+code_ref = "crc_sdk/providers/era5.py:157-180; crc_sdk/connectors/blocks.py:479-483"
+note = "Not run on the publisher's data in this draft. Confirmed on constructed files only."
+
+[[statement]]
+id = "statistic-rain"
+text = "`rx1day` is the largest daily total of the year. `rx5day` is the largest sum over five consecutive days that all have a value and lie within the year; windows do not reach into the neighbouring years."
+code_ref = "crc_sdk/providers/era5.py:181-204; crc_sdk/connectors/blocks.py:467-483"
+
+[[statement]]
+id = "cache"
+text = "Keeps each year's values for the recipe and area as 32-bit floats in one small NetCDF file, listed with its checksum in a manifest; the annual values returned are those 32-bit values. Hourly data is never kept. The file's name does not depend on the release."
+code_ref = "crc_sdk/providers/_annual_extremes.py:60-72; crc_sdk/workflows/era5.py:149-167, 322-343"
+note = "The 32-bit rounding is confirmed by the annual values. The manifest and the reuse of stored years were not exercised: every run used an empty cache folder."
+
+[[statement]]
+id = "output"
+text = "`annual_extremes()` returns one row per year and grid cell that has a value: year, latitude and longitude of the cell centre as the store writes them (longitude in -180..180), value in the recipe's unit; ordered by year, then in the store's latitude order, then west to east."
+code_ref = "crc_sdk/workflows/_plans.py:183-204"
+
+[[statement]]
+id = "fit-years"
+text = "Refuses a request of fewer years than `minimum_years` (20 by default, never fewer than 4). Each grid cell is then fitted when it has at least 4 annual values."
+code_ref = "crc_sdk/workflows/blocks.py:33, 48-49, 124-129; crc_sdk/workflows/_plans.py:125-131; crc_sdk/providers/era5.py:566"
+note = "Not checked: the fitting belongs to a later tier. A request of four years was accepted and one of fewer was not tried (finding CRC-002-FWK is about this rule)."
+
+[[statement]]
+id = "fit"
+text = "Fits to each cell's annual values a generalised extreme value distribution by sample L-moments (the default for all four recipes), on H3 cells of resolution 5 by default, and writes the canonical hazard file."
+code_ref = "crc_sdk/providers/era5.py:134-137; crc_sdk/workflows/_plans.py:206-248; crc_sdk/workflows/blocks.py:51-76"
+note = "Not checked: the fitted curve (family, method, assignment to H3 cells) belongs to a later tier."
+
+[[statement]]
+id = "labels"
+text = "Labels the fitted file with the store's address, the licence CC-BY-4.0, a Copernicus attribution with the retrieval year, the retrieval time, a checksum of the annual files' checksums, the window of years, `single_member` pooling and `annual_exceedance`."
+code_ref = "crc_sdk/workflows/era5.py:398-440"
+note = "Not checked: these labels are written when the curve is fitted, which this draft does not run. `annual_extremes()` returns the four value columns only."

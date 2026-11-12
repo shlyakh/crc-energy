@@ -1,0 +1,11 @@
+id = "os-climate"
+title = "OS-Climate hazard indicators"
+kind = "fitted curves"
+tier = 2
+tier_reason = "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet."
+publisher = "OS-Climate"
+original = "https://github.com/os-climate/hazard (inventory) and the os-climate-physical-risk bucket"
+purpose = "Hazard indicator layers from the OS-Climate inventory, fitted with a policy the caller chooses."
+entry_points = ["OSClimateProvider"]
+symbols = ["OSClimateSelectionSpec"]
+notes = "No source page in the crc-sdk docs and no upstream example."

@@ -1,0 +1,10 @@
+id = "hydat"
+title = "ECCC HYDAT daily flow and level"
+kind = "pass-through"
+tier = 3
+tier_reason = "Tier 3: passed through without fitting and not used in crc-lab."
+publisher = "Environment and Climate Change Canada"
+original = "https://api.weather.gc.ca/collections/hydrometric-daily-mean/items"
+purpose = "Daily mean flow and level at hydrometric stations, as published."
+entry_points = ["HYDATDailyPlan"]
+notes = "Canada only."

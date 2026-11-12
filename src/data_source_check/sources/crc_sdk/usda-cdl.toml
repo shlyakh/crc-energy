@@ -1,0 +1,9 @@
+id = "usda-cdl"
+title = "USDA Cropland Data Layer"
+kind = "pass-through"
+tier = 3
+tier_reason = "Tier 3: passed through without fitting and not used in crc-lab."
+publisher = "USDA NASS (copy on Source Cooperative)"
+original = "https://data.source.coop/chill/usda-cropland-data-layer"
+purpose = "Crop class per pixel for an area."
+entry_points = ["AgriculturalLayer.usda_cdl"]

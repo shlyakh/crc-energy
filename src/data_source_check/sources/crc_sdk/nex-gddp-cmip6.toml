@@ -1,0 +1,104 @@
+id = "nex-gddp-cmip6"
+title = "NASA NEX-GDDP-CMIP6 projections"
+kind = "annual samples"
+tier = 2
+tier_reason = "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet. Chosen for the first slice as the gridded case."
+publisher = "NASA NCCS"
+original = "https://nex-gddp-cmip6.s3.us-west-2.amazonaws.com/NEX-GDDP-CMIP6"
+purpose = "Annual extremes from bias-adjusted, downscaled daily model output at 0.25 degree, one model and member at a time."
+entry_points = ["HazardDataset.nex_gddp_cmip6"]
+notes = "Assessed on one model and member (ACCESS-CM2, r1i1p1f1), the Texas box (2,332 grid cells, 2,158 on land), 2014 of the historical run and 2050 of ssp585. The scenario and version lists are hard-coded upstream and are not read by the detector. Each result is one model and one member, not an ensemble. Ocean cells carry no value. The licence written in the files differs by version (CC-BY-SA 4.0 in 1.0, CC-BY 4.0 in 1.1) while NASA states the archive is CC0."
+
+[options]
+recipe = ["rx1day", "rx5day", "tnn", "txx"]
+scenario = ["historical", "ssp126", "ssp245", "ssp370", "ssp585"]
+version = ["1.0", "1.1", "1.2"]
+
+[assessed_options]
+recipe = ["rx1day", "rx5day"]
+scenario = ["historical", "ssp585"]
+version = ["1.0", "1.1"]
+
+[status]
+exploration = "assessed"
+verification = "assessed"
+
+[[statement]]
+id = "files"
+text = "Reads one NetCDF file per variable, model, scenario, member and year from NASA's archive on AWS, by range requests. Nothing is cached and no checksum is taken."
+code_ref = "crc_sdk/workflows/nex.py:33, 90-100, 139-141; docs/sources/cmip6.md:75-77"
+
+[[statement]]
+id = "versions"
+text = "Reads exactly the file version asked for (1.0 has no suffix in the file name; later ones end in `_v<version>`). A version NASA does not have fails; another is never substituted."
+code_ref = "crc_sdk/workflows/nex.py:96, 130-132; docs/sources/cmip6.md:73-74"
+
+[[statement]]
+id = "versions-offered"
+text = "Accepts the file versions 1.0, 1.1 and 1.2."
+code_ref = "crc_sdk/workflows/nex.py:84-85"
+
+[[statement]]
+id = "identity"
+text = "Checks that the file's own attributes name the model, scenario, member and version that were asked for."
+code_ref = "crc_sdk/workflows/nex.py:142-153"
+
+[[statement]]
+id = "licence"
+text = "Reads the model licence written in the file and keeps it beside NASA's archive licence (CC0-1.0). Warns when the file's licence is not CC0; refuses it when `strict_licence` is set."
+code_ref = "crc_sdk/workflows/nex.py:154-165, 227-229"
+note = "The warning was seen on every file read. `strict_licence=True` was not run."
+
+[[statement]]
+id = "units-rain"
+text = "Requires precipitation to be declared in kg m-2 s-1 and multiplies it by 86,400 to give millimetres per day."
+code_ref = "crc_sdk/providers/cmip6.py:606, 636-660, 952; crc_sdk/workflows/nex.py:179-183"
+
+[[statement]]
+id = "units-temperature"
+text = "Requires temperature to be declared in kelvin (K) and subtracts 273.15 to give degrees Celsius."
+code_ref = "crc_sdk/providers/cmip6.py:603, 611-634, 952; crc_sdk/workflows/nex.py:179-183"
+
+[[statement]]
+id = "time"
+text = "Requires the daily time axis to be strictly increasing and to lie within the requested year, in the file's own calendar, and places each day by its date."
+code_ref = "crc_sdk/workflows/nex.py:184-194; crc_sdk/providers/cmip6.py:813-828"
+note = "The files read use the proleptic Gregorian calendar with 365 days and no gap. Other calendars and gaps were exercised only in the offline tests."
+
+[[statement]]
+id = "area"
+text = "Selects the grid cells whose centres lie inside the box grown by half a cell on every side, with longitudes brought to -180..180 and ordered west to east. A box narrower than one cell is widened to two cells."
+code_ref = "crc_sdk/connectors/blocks.py:175-234"
+note = "Confirmed for a box of 44 by 53 cells. A box narrower than one cell and a box across the 180 degree meridian were not run."
+
+[[statement]]
+id = "missing"
+text = "Treats the file's fill value as missing."
+code_ref = "crc_sdk/providers/cmip6.py:762, 823-825, 835-866"
+
+[[statement]]
+id = "completeness"
+text = "Gives a grid cell a value only when at least 90 per cent of the year's days are present."
+code_ref = "crc_sdk/providers/cmip6.py:621; crc_sdk/connectors/blocks.py:454-455, 484"
+note = "In NASA's files a cell has either every day or none (ocean), so the 90 per cent line itself was crossed only in the offline tests."
+
+[[statement]]
+id = "statistic-rain"
+text = "`rx1day` is the largest daily value of the year. `rx5day` is the largest sum over five consecutive days that lie within the year; windows do not reach into the neighbouring years."
+code_ref = "crc_sdk/providers/cmip6.py:636-660; crc_sdk/connectors/blocks.py:467-483"
+
+[[statement]]
+id = "statistic-temperature"
+text = "`txx` is the highest daily maximum of the year and `tnn` the lowest daily minimum."
+code_ref = "crc_sdk/providers/cmip6.py:611-634; crc_sdk/connectors/blocks.py:479-483"
+note = "Cannot be checked at crc-sdk 0.11.1, where both recipes fail (CRC-001-NEX). On a local clone that carries the fix, every cell agrees with the recomputation (checks `annual-fixed-clone`); that is not a statement about a released version."
+
+[[statement]]
+id = "output"
+text = "Returns one row per grid cell that has a value, at the cell's centre, south to north and west to east. No distribution is fitted."
+code_ref = "crc_sdk/workflows/nex.py:202-232"
+
+[[statement]]
+id = "labels"
+text = "Labels every row with the unit, recipe, model, scenario, member, grid, version, calendar (under one name per calendar: `365_day` is written `noleap`), the file's address, the retrieval time, both licences and an attribution."
+code_ref = "crc_sdk/workflows/nex.py:211-231"

@@ -1,0 +1,15 @@
+id = "eccc-idf"
+title = "ECCC rainfall intensity-duration-frequency"
+kind = "fitted curves"
+tier = 2
+tier_reason = "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet."
+publisher = "Environment and Climate Change Canada"
+original = "https://collaboration.cmc.ec.gc.ca/cmc/climate/Engineer_Climate/IDF/"
+purpose = "Published rainfall intensities at return periods per station, refitted to a curve."
+entry_points = ["HazardDataset.eccc_idf"]
+symbols = ["ECCCIDFPlan"]
+notes = "Canada only. The version list is hard-coded upstream and is not read by the detector."
+
+[options]
+duration = ["10min", "12h", "15min", "1h", "24h", "2h", "30min", "5min", "6h"]
+version = ["3.20", "3.40"]

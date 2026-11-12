@@ -1,0 +1,82 @@
+id = "ibtracs"
+title = "IBTrACS tropical cyclone tracks"
+kind = "pass-through"
+tier = 1
+tier_reason = "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the storm tracks and the storm player of the Texas data explorer."
+publisher = "NOAA NCEI"
+original = "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv"
+purpose = "Best-track points of tropical cyclones by basin, as published, for inspection. Not asset winds or return-period curves."
+explorer = "explore/#tab=crc&source=ibtracs"
+entry_points = ["IBTrACSPlan"]
+notes = "Longitudes in NOAA's files are not wrapped to -180..180 (values up to 266.9 occur where a track crosses the date line); crc-sdk passes them through as strings. SEASON runs to 2027 because southern-hemisphere seasons are labelled by their second year. About four values in five are missing: most columns belong to one agency each."
+
+[options]
+subset = ["ALL", "EP", "NA", "NI", "SA", "SI", "SP", "WP", "active", "last3years", "since1980"]
+
+[assessed_options]
+subset = ["ALL", "EP", "NA", "NI", "SA", "SI", "SP", "WP", "last3years", "since1980"]
+
+[status]
+exploration = "assessed"
+verification = "assessed"
+
+[[statement]]
+id = "address"
+text = "Requests `<root>/ibtracs.<subset>.list.v04r01.csv`, with the subset spelled exactly as one of the eleven names crc-sdk accepts."
+code_ref = "crc_sdk/workflows/ibtracs.py:27-41, 70-71"
+
+[[statement]]
+id = "bytes"
+text = "Saves the response unchanged as `source.csv` and records its SHA-256. A download shorter than the announced length is refused."
+code_ref = "crc_sdk/workflows/ibtracs.py:113-128, 154"
+
+[[statement]]
+id = "header"
+text = "Reads line 1 as column names and line 2 as units. Requires the columns SID, SEASON and ISO_TIME. The units go to the manifest only; they are not in the data."
+code_ref = "crc_sdk/workflows/ibtracs.py:129-147, 167-168"
+
+[[statement]]
+id = "columns"
+text = "Keeps every column, in the file's order, under NOAA's names."
+code_ref = "crc_sdk/workflows/ibtracs.py:169, 193"
+
+[[statement]]
+id = "strings"
+text = "Delivers every value as a string. Nothing is parsed into a number or a date, and no unit is converted."
+code_ref = "crc_sdk/workflows/ibtracs.py:198-200"
+
+[[statement]]
+id = "trim"
+text = "Removes leading and trailing whitespace from every value."
+code_ref = "crc_sdk/workflows/ibtracs.py:215-218"
+
+[[statement]]
+id = "null"
+text = "Turns a value that is empty after trimming into null. NOAA marks a missing value with a single space."
+code_ref = "crc_sdk/workflows/ibtracs.py:233-241"
+
+[[statement]]
+id = "rows"
+text = "Keeps every data row in the file's order. Rows are not dropped, merged, sorted or de-duplicated."
+code_ref = "crc_sdk/workflows/ibtracs.py:171-183, 191-212"
+
+[[statement]]
+id = "storms"
+text = "`for_storms(ids)` keeps the rows whose SID is in the list. These are track points, not complete storms across basin files."
+code_ref = "crc_sdk/workflows/ibtracs.py:73-77, 219-222"
+
+[[statement]]
+id = "seasons"
+text = "`years(a, b)` keeps the rows whose SEASON, read as an integer, lies in a..b inclusive. SEASON is NOAA's season label, not the calendar year of the point."
+code_ref = "crc_sdk/workflows/ibtracs.py:79-82, 223-231"
+
+[[statement]]
+id = "provenance"
+text = "Writes a manifest beside the snapshot with the address, version, subset, SHA-256, retrieval time, ETag, Last-Modified, units, a terms address and a citation. The batches themselves carry no metadata."
+code_ref = "crc_sdk/workflows/ibtracs.py:139-155"
+
+[[statement]]
+id = "reuse"
+text = "In `reuse` mode (the default) a cached snapshot is served without asking NOAA whether the file has changed. NOAA rewrites these files in place."
+code_ref = "crc_sdk/workflows/_remote.py:91-115; docs/sources/observations.md:42"
+note = "Read in the code, not shown on data: showing it needs NOAA to change a file between two runs. Left to monitoring (phase V4)."

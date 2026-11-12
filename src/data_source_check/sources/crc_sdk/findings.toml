@@ -1,0 +1,200 @@
+# Findings about crc-sdk. One [[finding]] each; the format is in data_source_check/core/records.py.
+# Identifier: CRC-<number in order of entry>-<source suffix>, e.g. CRC-012-NEX. The number alone is unique.
+# Wording is neutral: what the documentation says, what the code or the data shows.
+# References are to crc-sdk 0.11.1 (commit 9c56bb0), paths relative to that repository.
+# basis = "code reading" means the behaviour was read in the code and is not yet shown on data.
+
+[[finding]]
+id = "CRC-001-NEX"
+source = "nex-gddp-cmip6"
+kind = "defect"
+title = "Temperature recipes (txx, tnn) fail on real NEX files"
+documented = "docs/sources/cmip6.md:5 says NEX uses the four recipes txx, tnn, rx1day and rx5day; line 36 says temperatures must be kelvin."
+observed = "The files declare kelvin, but h5netcdf returns the one-character unit as bytes (b'K') and the unit check compares its text form with 'K'. The call raises: 'tasmax' is published in \"b'K'\", but recipe 'txx' converts from 'K'. Precipitation is unaffected."
+consequence = "No temperature extremes can be read from NEX-GDDP-CMIP6 at this version."
+evidence = [
+  "crc_sdk/providers/cmip6.py:952",
+  "crc_sdk/workflows/nex.py:39-47",
+  "docs/reports/u1-nex-bytes-fix.md (crc-lab): real file headers, failing test, fix",
+  "check records nex-gddp-cmip6/units[txx ...] and units[tnn ...] (site/validation/data/records/nex-gddp-cmip6.json), run of 2026-11-12",
+]
+basis = "reproduced"
+status = "open"
+found_on = "2026-11-10"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-002-FWK"
+source = "framework"
+kind = "doc-code difference"
+title = "The 20-year minimum counts the years requested, not the years valid in each cell"
+documented = "docs/sources/jrc.md:58: 'The curated policy fits the lower tail and requires at least 20 complete years.' The policy's own error message says it 'requires at least 20 complete years' (crc_sdk/workflows/blocks.py:126-129)."
+observed = "validate_years compares the number of years in the request with minimum_years (crc_sdk/workflows/blocks.py:124-125). Each grid cell is then fitted when it has at least 4 valid annual values (MINIMUM_BLOCKS = 4, crc_sdk/connectors/blocks.py:60; minimum_blocks=4 in crc_sdk/providers/era5.py:566 and crc_sdk/providers/cmip6.py:1052). Station sources apply minimum_years per station."
+consequence = "A gridded curve can rest on far fewer years than the request suggests where data are missing; the number of years behind each cell's fit should be checked before use."
+evidence = [
+  "crc_sdk/workflows/blocks.py:124-129",
+  "crc_sdk/connectors/blocks.py:60",
+  "crc_sdk/providers/era5.py:566",
+  "crc_sdk/providers/cmip6.py:1052",
+  "docs/sources/jrc.md:58",
+]
+basis = "code reading"
+status = "open"
+found_on = "2026-11-11"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-003-JRC"
+source = "jrc-flood"
+kind = "doc-code difference"
+title = "JRC flood and EDO output files do not carry licence, attribution, retrieval time or checksum"
+documented = "docs/data-licences.md:14-15: 'Every canonical file records source.licence, source.attribution, retrieved_at and checksum (schema 1.3), so outputs self-describe.'"
+observed = "Those fields are written only when the curve source supplies a CurveSourceInfo (crc_sdk/connectors/adapters.py:309). The JRC and EDO modules define none; the JRC workflow only rewrites the uri (crc_sdk/workflows/jrc.py:521-534). Checksums of the cropped inputs are kept in the cache manifest, not in the output file. Applies to jrc-edo as well."
+consequence = "A JRC flood or EDO file, once moved away from its cache, does not say under which licence or from which bytes it was made."
+evidence = [
+  "docs/data-licences.md:14-15",
+  "crc_sdk/connectors/adapters.py:309",
+  "crc_sdk/workflows/jrc.py:521-534",
+]
+basis = "code reading"
+status = "open"
+found_on = "2026-11-11"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-004-EDO"
+source = "jrc-edo"
+kind = "doc-code difference"
+title = "EDO drought curves are labelled with the last year of the record, not the centre year"
+documented = "docs/design-decisions.md:28-30: for a window, 'horizon = centre year (start + end) // 2'. docs/sources/cmip6.md:42: 'horizon is the window centre'."
+observed = "The EDO provider sets the year of its record to max(years) (crc_sdk/providers/jrc_edo.py:217)."
+consequence = "An EDO file and an ERA5 or CMIP6 file built over the same years would carry different horizons and would not join on the row key."
+evidence = ["crc_sdk/providers/jrc_edo.py:217", "docs/design-decisions.md:28-30"]
+basis = "code reading"
+status = "open"
+found_on = "2026-11-11"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-005-EDO"
+source = "jrc-edo"
+kind = "observation"
+title = "The EDO annual minimum has no completeness rule"
+documented = "crc_sdk/connectors/blocks.py:20-30 states the convention for block statistics: a block needs a minimum fraction of valid days."
+observed = "The EDO annual value is np.nanmin over whatever ten-day values exist in the year (crc_sdk/providers/jrc_edo.py:255), so one valid value makes a year."
+consequence = "A year with most of its record missing still contributes an annual minimum to the fit."
+evidence = ["crc_sdk/providers/jrc_edo.py:250-255", "crc_sdk/connectors/blocks.py:20-30"]
+basis = "code reading"
+status = "open"
+found_on = "2026-11-11"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-006-ERA5"
+source = "era5"
+kind = "observation"
+title = "ERA5 values are converted without checking the unit the store declares"
+documented = ""
+observed = "The CMIP6 and NEX readers refuse a variable whose units attribute differs from the recipe's (crc_sdk/providers/cmip6.py:946-958). The ERA5 provider reads a units attribute only for the time axis (crc_sdk/providers/era5.py:244) and applies the kelvin and metre conversions unconditionally."
+consequence = "If a store changed its units, ERA5 values would be converted wrongly without an error."
+evidence = ["crc_sdk/providers/era5.py:244", "crc_sdk/providers/cmip6.py:946-958"]
+basis = "code reading"
+status = "open"
+found_on = "2026-11-11"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-007-OPEN"
+source = "crc-open"
+kind = "observation"
+title = "retrieved_at in a CRC Open file is the time the file was written, not the time the data were downloaded"
+documented = "docs/data-licences.md:20-21: 'the retrieval date and checksum are the audit trail.'"
+observed = "When a selection is materialised, retrieved_at is set to the current time (crc_sdk/workflows/crc_open.py:600), also when the partitions come from a warm cache."
+consequence = "The field cannot be used to tell when the release was actually fetched."
+evidence = ["crc_sdk/workflows/crc_open.py:588-604"]
+basis = "code reading"
+status = "open"
+found_on = "2026-11-11"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-008-OSC"
+source = "os-climate"
+kind = "doc-code difference"
+title = "The OS-Climate licence is documented as read from layer metadata; no code that reads it was found"
+documented = "docs/data-licences.md:38: 'OS-Climate layers | Read from layer metadata | Per layer'."
+observed = "A search of crc_sdk/providers/os_climate.py for licence handling finds none. Only that file was searched."
+consequence = "An OS-Climate output file may carry no licence."
+evidence = ["docs/data-licences.md:38", "crc_sdk/providers/os_climate.py (search for 'licen': no match)"]
+basis = "code reading"
+status = "open"
+found_on = "2026-11-11"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-009-CDL"
+source = "usda-cdl"
+kind = "observation"
+title = "The Cropland Data Layer is read from a moving branch and its output records no provenance"
+documented = "docs/development.md:25-26: 'Every adapter records licence, attribution, retrieval time and checksums in canonical metadata or its cache manifest.'"
+observed = "The request defaults to branch 'main' of the Source Cooperative repository, not a fixed snapshot (crc_sdk/connectors/agriculture.py:100). Rows carry a source path only."
+consequence = "Two runs of the same request can return different data with nothing in the output to show it."
+evidence = ["crc_sdk/connectors/agriculture.py:96-101", "docs/development.md:25-26"]
+basis = "code reading"
+status = "open"
+found_on = "2026-11-11"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-010-IBT"
+source = "ibtracs"
+kind = "defect"
+title = "The subset \"active\" is accepted but NOAA has no file under that name"
+documented = "crc_sdk/workflows/ibtracs.py:28-41 lists \"active\" among the eleven accepted subsets; the error message for any other spelling names it as valid. docs/sources/observations.md:29 documents basin subsets only."
+observed = "crc-sdk requests .../ibtracs.active.list.v04r01.csv and NOAA answers 404. NOAA's directory holds ibtracs.ACTIVE.list.v04r01.csv (capitals). IBTrACSPlan(\"active\", ...).prefetch() raises HTTPError 404; IBTrACSPlan(\"ACTIVE\", ...) is refused as an invalid subset. The other ten names are served."
+consequence = "Currently active storms cannot be read through IBTrACSPlan at this version. The other subsets are unaffected."
+evidence = [
+  "crc_sdk/workflows/ibtracs.py:28-41",
+  "crc_sdk/workflows/ibtracs.py:70-71",
+  "check record ibtracs/address (site/validation/data/records/ibtracs.json), run of 2026-11-12",
+]
+basis = "reproduced"
+status = "open"
+found_on = "2026-11-12"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-011-IBT"
+source = "ibtracs"
+kind = "observation"
+title = "The snapshot's manifest has a terms address and a citation but no licence field; the batches carry no provenance"
+documented = "AGENTS.md (crc-sdk) asks contributors to 'record licence, attribution, retrieval time and checksums for every source'. docs/data-licences.md:36 lists IBTrACS as a U.S. government work with attribution requested."
+observed = "The manifest written beside the snapshot holds url, version, subset, sha256, retrieved_at, etag, last_modified, units, terms_url and citation (crc_sdk/workflows/ibtracs.py:139-153). It has no licence field. The Arrow batches returned by batches() have no schema metadata, so the provenance travels only in the cache directory."
+consequence = "A user who passes the batches on must copy the citation and terms from the manifest or from prefetch(); nothing in the data carries them."
+evidence = [
+  "crc_sdk/workflows/ibtracs.py:139-153",
+  "check records ibtracs/provenance[*] (site/validation/data/records/ibtracs.json), run of 2026-11-12",
+]
+basis = "reproduced"
+status = "open"
+found_on = "2026-11-12"
+framework_version = "0.11.1"
+
+[[finding]]
+id = "CRC-012-NEX"
+source = "nex-gddp-cmip6"
+kind = "observation"
+title = "NASA serves files of version 2.0, which cannot be requested"
+documented = "docs/sources/cmip6.md:73: 'File revisions 1.0, 1.1 and 1.2 are selected explicitly'. crc_sdk/workflows/nex.py:84-85 refuses any other version."
+observed = "For ACCESS-CM2 r1i1p1f1, NASA's archive holds files ending in _v2.0.nc for tasmax, tasmin and pr, in both years checked (historical 2014, ssp585 2050). They were uploaded on 1 July 2025 and carry the attribute version = '2.0'. No version 1.2 file exists for these; version 1.1 exists for pr only. In the Texas box the annual one-day rainfall from 2.0 equals that from 1.1 and differs from 1.0 in 15 of 2,158 cells in 2014 (by at most 0.08 mm) and 42 cells in 2050 (by at most 0.84 mm); the annual maximum temperature from 2.0 equals that from 1.0."
+consequence = "A user cannot read NASA's latest revision through crc-sdk, and the default (1.0) is the oldest. The differences seen here are small; other models, variables and regions were not compared. NASA's technical note for version 2.0 (31 May 2025, section 4.3) states that tasmax and tasmin were reprocessed in their entirety with a corrected observational reference (an artifact over central Canada) and that values were swapped in grid cells where the maximum was below the minimum; that anomalously large pr values in cells with an extremely small daily climatology were adjusted; and that bounds were applied to hurs, huss, rlds and sfcWind. These corrections are in version 2.0 only."
+evidence = [
+  "crc_sdk/workflows/nex.py:84-85",
+  "docs/sources/cmip6.md:73-74",
+  "NASA technical note for version 2.0, sections 3.2.2.1 and 4.3 (docs/validation/references/nex-gddp-cmip6-v2/README.md)",
+  "check record nex-gddp-cmip6/versions-served (site/validation/data/records/nex-gddp-cmip6.json), run of 2026-11-12",
+]
+basis = "reproduced"
+status = "open"
+found_on = "2026-11-12"
+framework_version = "0.11.1"

@@ -1,0 +1,10 @@
+id = "chirps"
+title = "CHIRPS v3 monthly rainfall"
+kind = "pass-through"
+tier = 3
+tier_reason = "Tier 3: passed through without fitting and not used in crc-lab."
+publisher = "Climate Hazards Center, UC Santa Barbara"
+original = "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/cogs"
+purpose = "Monthly rainfall at pixel centres for an area, as published."
+entry_points = ["CHIRPSMonthlyPlan"]
+notes = "Could not be run on the build Mac: rasterio fails to load (report S1)."

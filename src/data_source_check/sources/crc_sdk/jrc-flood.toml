@@ -1,0 +1,14 @@
+id = "jrc-flood"
+title = "JRC flood hazard maps (GloFAS, EFAS)"
+kind = "fitted curves"
+tier = 2
+tier_reason = "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet."
+publisher = "European Commission JRC, Copernicus Emergency Management Service"
+original = "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/CEMS-GLOFAS/flood_hazard and CEMS-EFAS/flood_hazard"
+purpose = "River flood depth at published return periods, fitted to a curve per cell."
+entry_points = ["HazardDataset.glofas", "HazardDataset.efas", "HazardDataset.jrc"]
+symbols = ["JRCAreaPlan", "JRCCanonicalizationPlan", "JRCSourcePlan"]
+notes = "Could not be run on the build Mac: rasterio fails to load (report S1)."
+
+[options]
+dataset = ["efas", "glofas"]

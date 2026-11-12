@@ -1,0 +1,12 @@
+id = "crc-open"
+title = "CRC Open hosted release"
+kind = "pre-fitted release"
+tier = 1
+tier_reason = "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the eight CRC Open hazard layers of the Texas data explorer."
+publisher = "Riskthinking.AI"
+original = "https://data.riskthinking.ai/crc-open (release ssp585-global-2026-10-20-v1)"
+purpose = "Ready-made hazard curves on H3 cells for 63 hazards under SSP5-8.5, for screening asset portfolios."
+explorer = "explore/#tab=crc&source=crc_open"
+entry_points = ["HazardDataset.crc_open"]
+symbols = ["CRCOpenPlan"]
+notes = "The inputs behind the release are not public, so a comparison with an original (tier 2) is limited to the release's own catalogue and checksums. Assessed mainly by validation (tier 3)."

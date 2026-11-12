@@ -1,0 +1,9 @@
+id = "usgs-streamflow"
+title = "USGS daily streamflow"
+kind = "pass-through"
+tier = 3
+tier_reason = "Tier 3: passed through without fitting and not used in crc-lab."
+publisher = "U.S. Geological Survey"
+original = "https://api.waterdata.usgs.gov/ogcapi/v1/collections/daily/items"
+purpose = "Daily mean discharge at a monitoring location, as published."
+entry_points = ["USGSStreamflowPlan"]

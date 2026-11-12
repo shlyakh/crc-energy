@@ -1,0 +1,12 @@
+id = "noaa-sea-level"
+title = "NOAA 2022 sea-level scenarios"
+kind = "pass-through"
+tier = 3
+tier_reason = "Tier 3: passed through without fitting and not used in crc-lab."
+publisher = "NOAA National Ocean Service, CO-OPS"
+original = "https://api.tidesandcurrents.noaa.gov/dpapi/prod/ (slr_projections)"
+purpose = "The 2022 interagency sea-level scenarios at U.S. stations, as published."
+entry_points = ["NOAASeaLevelPlan"]
+
+[options]
+scenario = ["high", "intermediate", "intermediate-high", "intermediate-low", "low"]

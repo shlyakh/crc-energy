@@ -1,0 +1,732 @@
+             NASA Earth eXchange
+      Global Daily Downscaled Projections
+      version 2 (NEX-GDDP-CMIP6 v2.0)
+Latest update: May 31, 2025
+
+
+
+1. Summary.................................................................................................................................. 2
+2. Dataset description................................................................................................................. 2
+3. Data Origin and Methods........................................................................................................ 4
+    3.1 Introduction........................................................................................................................ 4
+    3.2 Methods............................................................................................................................. 5
+        3.2.1 Datasets....................................................................................................................5
+            3.2.1.1 Climate Model Output...................................................................................... 5
+            3.2.1.2 Historical Climate Data.................................................................................... 5
+        3.2.2 Data Pre-processing................................................................................................. 5
+            3.2.2.1 Temperature artifact adjustment...................................................................... 5
+            3.2.2.2 Temperature trend preservation.......................................................................7
+        3.2.2 Bias Correction (BC)................................................................................................. 7
+        3.2.3 Spatial Disaggregation (SD)..................................................................................... 7
+4. Description of updates from v1.0...........................................................................................8
+    4.1 Creation of v1.1................................................................................................................. 8
+    4.2 Creation of v1.2................................................................................................................. 8
+    4.3 Creation of v2.0................................................................................................................. 8
+    4.3.1 Relative humidity (hurs).................................................................................................. 9
+    4.3.2 Specific humidity (huss)................................................................................................ 11
+    4.3.3 Precipitation (pr)........................................................................................................... 14
+    4.3.4 Downwelling longwave radiation (rlds)......................................................................... 16
+    4.3.5 Downwelling shortwave radiation (rsds)....................................................................... 19
+    4.3.6 Wind speed (sfcWind)...................................................................................................21
+    4.3.7 Average temperature (tas)............................................................................................ 24
+    4.3.8 Maximum temperature (tasmax)...................................................................................26
+    4.3.9 Minimum temperature (tasmin).....................................................................................29
+5. Considerations and Recommended Use.............................................................................31
+    5.1 Recommended Use......................................................................................................... 31
+    5.2 Assumptions and Limitations........................................................................................... 31
+    5.3 Trend Adjustment to Individual Models............................................................................32
+6. Credits and Acknowledgements.......................................................................................... 32
+7. Terms of Use.......................................................................................................................... 33
+8. References............................................................................................................................. 34
+9. Points of contact....................................................................................................................36
+10. Dataset and Document Revision History.......................................................................... 36
+Appendices................................................................................................................................ 37
+    Appendix I – CMIP6 models included in downscaled archive............................................... 37
+    Appendix II – Working with the NetCDF files......................................................................... 39
+
+
+
+
+                                                                                                                                           1
+1. Summary
+This document provides a brief overview of the latest NASA Earth eXchange (NEX) Global Daily
+Downscaled Projections (GDDP) dataset, NEX-GDDP-CMIP6 v2. It is intended for users who
+wish to apply the dataset (https://doi.org/10.7917/OFSG3345; Thrasher, et al., 2022) in studies
+of climate change impacts, summarizing essential information needed for access and use.
+References and additional information are provided at the end of this document. (Users can
+access the v1 Tech Note here.)
+
+
+
+
+2. Dataset description
+ Dataset projection:                Geographic
+
+ Dataset datum:                     WGS-84
+
+                                    The pixel lat and lon fields in the metadata provide the
+ Location of pixel lat and lon:
+                                    location of the center of each pixel.
+
+                                    West Bounding Coordinate: 180° W
+                                    East Bounding Coordinate: 180° E
+ Coverage:
+                                    North Bounding Coordinate: 90° N
+                                    South Bounding Coordinate: 60° S
+
+ Spatial resolution:                0.25 degrees x 0.25 degrees
+
+                                    Daily from 1950-01-01 to 2100-12-31
+                                    Units are in days since a reference date. The reference
+ Temporal resolution and extent:
+                                    date varies by model and is based on the reference date
+                                    used in the corresponding CMIP6 GCM experiment.
+
+
+
+
+                                                                                               2
+CF variable name and units:       hurs
+                                  Near-Surface Relative Humidity
+(See metadata in the netCDF       percentage
+headers for more information on
+each variable.)
+                                  huss
+                                  Near-Surface Specific Humidity
+                                  dimensionless ratio (kg/kg)
+
+                                  pr
+                                  Precipitation (mean of the daily precipitation rate)
+                                  kg m-2 s-1
+
+                                  rlds
+                                  Surface Downwelling Longwave Radiation
+                                  W m-2
+
+                                  rsds
+                                  Surface Downwelling Shortwave Radiation
+                                  W m-2
+
+                                  sfcWind
+                                  Daily-Mean Near-Surface Wind Speed
+                                  m s-1
+
+                                  tas
+                                  Daily Near-Surface Air Temperature
+                                  Degrees Kelvin
+
+                                  tasmax
+                                  Daily Maximum Near-Surface Air Temperature
+                                  degrees Kelvin
+
+                                  tasmin
+                                  Daily Minimum Near-Surface Air Temperature
+                                  degrees Kelvin
+
+
+
+
+                                                                                         3
+3. Data Origin and Methods
+3.1 Introduction
+The NEX-GDDP-CMIP6 dataset is comprised of global downscaled climate scenarios derived
+from the General Circulation Model (GCM) runs conducted under the Coupled Model
+Intercomparison Project Phase 6 (CMIP6) [Eyring et al. 2016] and across the four “Tier 1”
+greenhouse gas emissions scenarios known as Shared Socioeconomic Pathways (SSPs)
+[O’Neill et al. 2016; Meinshausen et al. 2020]. The CMIP6 GCM runs were developed in support
+of the Sixth Assessment Report of the Intergovernmental Panel on Climate Change (IPCC
+AR6). This dataset includes downscaled projections from ScenarioMIP model runs [O’Neill et al.
+2016; Tebaldi et al. 2021] for which daily scenarios were produced and distributed through the
+Earth System Grid Federation. The purpose of this dataset is to provide a set of global, high
+resolution, bias-corrected climate change projections that can be used to evaluate climate
+change impacts on processes that are sensitive to finer-scale climate gradients and the effects
+of local topography on climate conditions.
+
+The demand for downscaling of GCM outputs arises from two primary limitations inherent in
+current global simulation results. First, most GCMs use relatively coarse resolution grids (e.g., a
+few degrees or 102 km), which limit their ability to capture the spatial details in climate patterns
+that are often required or desired in regional or local analyses. Second, even the most
+advanced GCM may produce projections that are globally accurate but locally biased in their
+statistical characteristics (i.e., mean, variance, etc.) when compared with observations.
+
+The Bias-Correction Spatial Disaggregation (BCSD) method used to generate the
+NEX-GDDP-CMIP6 dataset is a statistical downscaling algorithm specifically developed to
+address these limitations of global GCM outputs [Wood et al. 2002; Wood et al. 2004; Maurer et
+al. 2008; Thrasher et al. 2012]. The algorithm compares the GCM outputs with corresponding
+climate observations over a common period and uses information derived from the comparison
+to adjust future climate projections so that they are progressively more consistent with the
+historical climate records and, presumably, more realistic for the spatial domain of interest. The
+algorithm also utilizes the spatial detail provided by observationally-derived datasets to
+interpolate the GCM outputs to higher-resolution grids.
+
+With the help of the computational resources provided by NEX and the NASA Advanced
+Supercomputing (NAS) facility, we have applied the BCSD method to produce a global dataset
+of downscaled CMIP6 climate projections to facilitate the assessment of climate change
+impacts. The dataset compiles climate projections from thirty-five CMIP6 GCMs (Table 1) and
+four SSP scenarios (SSP1-2.6, SSP2-4.5, SSP3-7.0, and SSP5-8.5) for the period from 2015 to
+2100, as well as the historical experiment for each model for the period 1950-2014. Each of
+these climate projections is downscaled to a spatial resolution of 0.25 degrees x 0.25 degrees,
+resulting in a data archive size of more than 18TB (1TB = 1012 Bytes).
+
+
+
+
+                                                                                                   4
+This document provides a basic description of the implementation of the BCSD method as
+applied in the downscaling of the CMIP6 GCM data. Additional technical details for the algorithm
+may also be found in Wood et al. [2002, 2004], and Maurer et al. [2008]. The approach used to
+produce the NEX-GDDP-CMIP6 dataset was previously applied to data from the CMIP5 archive,
+and the approach used in production of both datasets is described in detail in Thrasher et al.
+[2012].
+
+
+3.2 Methods
+
+3.2.1 Datasets
+
+3.2.1.1 Climate Model Output
+We compiled output from thirty-five CMIP6 GCM models (Table 1), including the historical
+experiment and four SSP scenarios (SSP1-2.6, SSP2-4.5, SSP3-7.0, and SSP5-8.5). Each of
+the climate projections includes daily average variables for the periods from 1950 through 2014
+(“retrospective simulation”) and from 2015 to 2100 (“prospective simulation”). During the
+downscaling process, the retrospective simulations serve as the training data and are compared
+against the observational climate records (see below). The relationships derived from the
+comparison are then applied to downscale the prospective climate projections. Because all
+climate projections are downscaled through the same procedures, for simplicity we refer to them
+as “GCM data” without differentiating any individual models.
+
+3.2.1.2 Historical Climate Data
+We use a climate dataset from the Global Meteorological Forcing Dataset (GMFD) for Land
+Surface Modeling, now available from the University of Southampton as the Princeton Global
+Forcing (PGF) dataset [https://hydrology.soton.ac.uk, Sheffield et al. 2006]. This dataset blends
+reanalysis data with observations and is currently available at spatial resolutions of 0.25
+degrees, 0.5 degrees and 1.0 degree, and temporal resolutions of 3-hourly, daily, and monthly
+timesteps. For development of the NEX-GDDP-CMIP6 dataset, we used the 0.25-degree
+historical daily-averaged data for maximum temperature, minimum temperature, precipitation,
+near-surface humidity, downwell shortwave/longwave radiation, and near-surface wind speed
+from 1960 to 2014. All processed GMFD files used for GDDPv2 can be found at
+   GMFD_for_GDDPv2 .
+
+
+3.2.2 Data Pre-processing
+
+3.2.2.1 Temperature artifact adjustment
+An artifact exists over central Canada in the GMFD tasmax and tasmin files. This was
+addressed by removing the grid cells from 50-71°N and 257-260°E and using the NCL
+poisson_grid_fill procedure to infill with more realistic values. Note that while the adjusted
+GMFD files were used in the original processing of GDDP, they were inadvertently not used in
+the v1.1 & v1.2 updates to the SSP126 & SSP370 tasmin (and therefore tas) files.
+
+
+                                                                                                    5
+6
+3.2.2.2 Temperature trend preservation
+Because the BCSD method does not explicitly adjust the trends (the slopes, in particular) in
+climate variables produced by GCMs, we extract the monthly large-scale climate trends from the
+GCM temperature data. This is calculated as a 9-year running average for each individual
+month (e.g. the trend for all Januaries taken together). These trends are preserved and added
+back to the adjusted data after the bias-correction step.
+
+
+3.2.2 Bias Correction (BC)
+The Bias-Correction step adjusts the bias of the GCM data through comparisons performed
+against the GMFD historical data. For each climate variable in a given day, the algorithm
+generates the cumulative distribution function (CDF) for the GMFD data and for the
+retrospective GCM simulations, respectively, by pooling and sorting the corresponding source
+values (day of year +/- 15 days) over the period from 1960 through 2014. It then compares the
+two CDFs at various probability thresholds to establish a quantile map between the GCM data
+and the historical climate data. Based on this map, GCM values in any CDF quantile (e.g.,
+p=90%) can be translated to corresponding GMFD values in the same CDF quantile. Assuming
+that the CDF of the GCM simulations is stable across the retrospective and the prospective
+periods, to “correct” the projected future climate variations the algorithm simply looks up the
+probability quantile associated with the predicted climate values from the estimated GCM CDF,
+identifies the corresponding observed climate values at the same probability quantile in the
+GMFD CDF, and then accepts the latter as the adjusted climate predictions. The climate
+projections adjusted in this way have the same CDF as the GMFD data; therefore, the possible
+biases in the statistical structure (the variance, in particular) of the original GCM outputs are
+removed by this procedure. At the end of the Bias-Correction step, the previously extracted
+temperature climate trends are added back to the adjusted GCM climate fields
+
+
+3.2.3 Spatial Disaggregation (SD)
+The Spatial-Disaggregation step spatially interpolates the Adjusted GCM data to the finer
+resolution grid of the 0.25-degree GMFD data. Rather than simple linear spatial interpolation,
+multiple steps are adopted in the SD algorithm to preserve spatial details of the observational
+data. First, a smoothed daily climatology is generated from the gridded observations over the
+reference period 1960-2014 using a Fast Fourier Transform retaining three harmonics at both
+the native and GCM resolutions. Second, for each time step, the algorithm compares the
+bias-corrected GCM variables with the corresponding GMFD climatology to calculate “scaling
+factors”. In particular, the scaling factors are calculated as the differences between the
+bias-corrected GCM and the GMFD data for temperature, and as the quotients (between the
+two datasets) for the remaining variables to avoid negative values for the latter. Third, the
+coarse-resolution scaling factors are bilinearly interpolated to the fine-resolution GMFD grid.
+Finally, the scaling factors are applied, by addition or “shifting” for temperatures and by
+multiplication for the remaining variables, on the fine-resolution GMFD climatologies to obtain
+the desired downscaled climate fields. As such, the algorithm essentially merges the observed
+historical spatial climatology with the relative changes at each time step simulated by the GCMs
+to produce the final results.
+
+
+                                                                                                7
+4. Description of updates from v1.0
+
+4.1 Creation of v1.1
+As explained in the v1 Tech Note, in August 2023, the following improvements and fixes were
+applied to some v1.0 variables:
+
+   ●​ The tasmin output for SSP1.2-6 and SSP3.7-0 across all models was found to have
+      incorrect values in a limited number of grid cells, primarily along coasts. These were
+      reprocessed, along with the corresponding tas outputs.
+   ●​ The original TaiESM1 tasmax and tasmin outputs from the historical experiment were
+      retracted and replaced in the CMIP6 archive. The new outputs were obtained and used
+      to reprocess the tas, tasmax, and tasmin variables.
+   ●​ Some models were found to have unrealistically high values of hurs in their original
+      CMIP6 output. All hurs downscaled outputs were reprocessed with a more realistic upper
+      bound.
+   ●​ The pr output has been reprocessed to address an overcorrection in climatologically dry
+      areas. These files were added to the archive as “_v1.1.nc” in February 2024 to
+      accompany the other v1.1 variables added in August 2023.
+   ●​ The updated files contain version = "1.1" in the global file attributes, and the file names
+      have “_v1.1.nc” to help disambiguate between versions 1.0 and 1.1.
+
+
+
+4.2 Creation of v1.2
+As explained in the v1 Tech Note, the v1.1 fixes to the tasmin output for SSP1.2-6 and
+SSP3.7-0 were found to have not been applied to enough grid cells. These fields have been
+reprocessed in full (i.e. all grid cells were touched, though not all values have changed), along
+with the corresponding tas outputs, both of which are noted as “v1.2” in the filenames.
+The updated files contain version = "1.2" or version = "1.1" in the global file attributes, and the
+file names have “_v1.1.nc” or “_v1.2.nc” to help disambiguate between versions 1.0, 1.1 and
+1.2.
+
+
+4.3 Creation of v2.0
+Below is an explanation of the updates applied to the various v1.x GDDP variables to create the
+v2 output. Please note that the ensemble daily average difference plots below show the location
+of changes across the ensemble as a whole, so changes reflected in individual models likely
+occur at a subset of locations and at a different proportional value than shown. The plots are
+based on the latest v1.x version of each variable and are provided so users can evaluate
+whether the update is of significance in their region of interest.
+
+
+
+
+                                                                                                      8
+4.3.1 Relative humidity (hurs)
+A small percentage of grid cells in v1.1 remained unrealistically high, so an upper bound of
+105% was applied.
+
+
+
+
+                                                                                               9
+10
+4.3.2 Specific humidity (huss)
+Some CMIP6 output contained negative values for huss that were then perpetuated through the
+downscaling process, so a lower bound 0.0 was applied to the v1.0 files.
+
+
+
+
+                                                                                         11
+12
+13
+4.3.3 Precipitation (pr)
+Due to the nature of the BCSD method, cells with extremely small daily climatology values can
+result in anomalously large downscaled values. These instances were adjusted in the v1.1 files.
+
+
+
+
+                                                                                             14
+15
+4.3.4 Downwelling longwave radiation (rlds)
+Some CMIP6 output contained negative values for rlds that were then perpetuated through the
+downscaling process, so a lower bound 0.0 was applied to the v1.0 files.
+
+
+
+
+                                                                                          16
+17
+18
+4.3.5 Downwelling shortwave radiation (rsds)
+Due to the nature of the BCSD method, cells with extremely small daily climatology values can
+result in anomalously large downscaled values. These instances were adjusted in the v1.0 files.
+
+
+
+
+                                                                                             19
+20
+4.3.6 Wind speed (sfcWind)
+Some CMIP6 output contained negative values for sfcWind that were then perpetuated through
+the downscaling process, so a lower bound 0.0 was applied to the v1.0 files.
+
+
+
+
+                                                                                        21
+22
+23
+4.3.7 Average temperature (tas)
+Due to the reprocessing of tasmax & tasmin (see below), new tas files were calculated.
+
+
+
+
+                                                                                         24
+25
+4.3.8 Maximum temperature (tasmax)
+The tasmax variable was re-processed in its entirety with the adjusted GMFD tasmax (see
+section 3.2.2.1). Also, values have been swapped in grid cells where tx<tn. (See Thrasher, et
+al., 2012, for a discussion of this phenomenon.)
+
+
+
+
+                                                                                                26
+27
+28
+4.3.9 Minimum temperature (tasmin)
+The tasmin variable was re-processed in its entirety with the adjusted GMFD tasmin (see
+section 3.2.2.1). Also, values have been swapped in grid cells where tx<tn. (See Thrasher, et
+al., 2012, for a discussion of this phenomenon.)
+
+
+
+
+                                                                                                29
+30
+5. Considerations and Recommended Use
+5.1 Recommended Use
+This dataset has been generated and is being distributed to assist the science community in
+conducting studies of climate change impacts at local to regional scales, and to enhance public
+understanding of possible future climate patterns and climate impacts at the scale of individual
+cities, communities, and watersheds. This dataset is intended for use in scientific research only,
+and use of this dataset for other purposes, such as commercial applications, and engineering or
+design studies is not recommended without consultation with a qualified expert.
+
+
+5.2 Assumptions and Limitations
+The BCSD approach used in generating this downscaled dataset inherently assumes that the
+relative spatial patterns observed from 1960 through 2014 will remain constant under future
+climate change. Other than the higher spatial resolution and bias correction, this dataset does
+not add information beyond what is contained in the original CMIP6 scenarios, and preserves
+the frequency of periods of anomalously high and low values (i.e., extreme events) within each
+
+
+
+                                                                                                31
+individual scenario. Due to the lack of validation of the GMFD over oceans, GDDP values over
+smaller island areas might not be realistic.
+
+
+5.3 Trend Adjustment to Individual Models
+As described in Section 3.2, the BCSD algorithm does not adjust the slope of the trends in the
+GCM projections. In the case of temperature, for instance, if the GCM predicts a mean
+temperature increase of 2°C between 2015 and 2100, the same temperature change (i.e., a
+trend of 2°C over 86 years) will be observed in the downscaled temperature field. However, the
+BCSD algorithm does adjust the offset of the climate trends by shifting the retrospectively
+simulated climate variables (1960 through 2014) to match the GMFD data. In the previous
+example, if the simulated mean temperature from the GCM over the period 1996-2005 is 14°C,
+while the observed mean temperature is 15°C, the BCSD algorithm will correct the “bias” by
+shifting the GCM retrospective and prospective projections upward by 1°C. The adjusted mean
+temperature projected for the end of the 21st century will then be raised from 16°C to 17°C,
+though its relative change over the period 2015-2100 is preserved as 2°C. Though such
+adjustments of future climate projections are qualitatively justifiable, quantitatively the linear
+shifting itself may not be realistic because the climate system is nonlinear in nature. Users of
+this dataset should be aware of this limitation of the downscaled data, particularly when using
+downscaled scenarios from individual GCMs.
+
+
+
+
+6. Credits and Acknowledgements
+
+Please use the references below as the primary citations for the dataset described herein:
+
+       Thrasher, B., Wang, W., Michaelis, A. et al. (2022). NASA Global Daily Downscaled
+       Projections, CMIP6. Sci Data 9, 262. https://doi.org/10.1038/s41597-022-01393-4
+
+       Thrasher, B., Wang, W., Michaelis, A. Nemani, R. (2021). NEX-GDDP-CMIP6. NASA
+       Center for Climate Simulation. https://doi.org/10.7917/OFSG3345
+
+
+
+
+                                                                                                32
+Please use the reference below as the primary citation for the methods used to produce this
+dataset:
+
+       Thrasher, B., Maurer, E. P., McKellar, C., & Duffy, P. B. (2012). Technical Note: Bias
+       correcting climate model simulated daily temperature extremes with quantile mapping.
+       Hydrology and Earth System Sciences, 16(9), 3309-3314.
+       doi:10.5194/hess-16-3309-2012
+
+Please add the following acknowledgement to any publications that result from use of this
+dataset:
+
+       Climate scenarios used were from the NEX-GDDP-CMIP6 dataset, prepared by the
+       Climate Analytics Group and NASA Ames Research Center using the NASA Earth
+       eXchange (NEX) and distributed by the NASA Center for Climate Simulation (NCCS).
+
+We acknowledge the World Climate Research Programme, which, through its Working Group on
+Coupled Modeling, coordinated and promoted CMIP6. We thank the climate modeling groups
+for producing and making available their model output, the Earth System Grid Federation
+(ESGF) for archiving the data and providing access, and the multiple funding agencies who
+support CMIP6 and ESGF.
+
+
+
+
+7. Terms of Use
+All CMIP6 GCM model inputs, as noted in Table 1, and any derivatives work, such as this
+dataset, are governed by the original Terms of use
+(https://pcmdi.llnl.gov/CMIP6/TermsOfUse/TermsOfUse6-1.html) and may have some
+restrictions on usage. See the individual netcdf files for the data licensing, the global attribute
+“cmip6_license” notes the specific license the data may fall under.
+
+
+
+
+                                                                                                      33
+8. References
+
+Daly, C., R.P. Neilson, and D.L. Phillips, 1994: A statistical-topographic model for mapping
+climatological precipitation over mountainous terrain. Journal of Applied Meteorology, 33,
+140-158.
+
+Eyring, V., Bony, S., Meehl, G. A., Senior, C. A., Stevens, B., Stouffer, R. J., and Taylor, K. E.,
+2016: Overview of the Coupled Model Intercomparison Project Phase 6 (CMIP6) experimental
+design and organization, Geosci. Model Dev., 9, 1937–1958.
+
+Maurer, E. P. and Hidalgo, H. G., 2008: Utility of daily vs. monthly large-scale climate data: an
+intercomparison of two statistical downscaling methods, Hydrology and Earth System Sciences,
+12, 551-563.
+
+Meinshausen, M. S.J. Smith, K. Calvin, J.S. Daniel, M.L.T. Kainuma, and et al., 2011: The RCP
+greenhouse gas concentrations and their extensions from 1765 to 2300. Climatic Change,
+109, 213-241.
+
+Meinshausen, M., Nicholls, Z. R. J., Lewis, J., Gidden, M. J., Vogel, E., Freund, M., Beyerle, U.,
+Gessner, C., Nauels, A., Bauer, N., Canadell, J. G., Daniel, J. S., John, A., Krummel, P. B.,
+Luderer, G., Meinshausen, N., Montzka, S. A., Rayner, P. J., Reimann, S., Smith, S. J., van den
+Berg, M., Velders, G. J. M., Vollmer, M. K., and Wang, R. H. J., 2020: The shared
+socio-economic pathway (SSP) greenhouse gas concentrations and their extensions to 2500,
+Geosci. Model Dev., 13, 3571–3605.
+
+O'Neill, B. C., Tebaldi, C., van Vuuren, D. P., Eyring, V., Friedlingstein, P., Hurtt, G., Knutti, R.,
+Kriegler, E., Lamarque, J.-F., Lowe, J., Meehl, G. A., Moss, R., Riahi, K., and Sanderson, B. M.,
+2016: The Scenario Model Intercomparison Project (ScenarioMIP) for CMIP6, Geosci. Model
+Dev., 9, 3461–3482.
+
+Sheffield, J., G. Goteti, and E. F. Wood, 2006: Development of a 50-yr high-resolution global
+dataset of meteorological forcings for land surface modeling, J. Climate, 19 (13), 3088-3111.
+
+Shepard, D.S., 1984: Computer mapping: The SYMAP interpolation algorithm, in Spatial
+Statistics and Models, edited by G.L. Gaile and C.J. Willmott. D. Reidel Publishing Co.,
+Norwell, Dordrecht, Holland, pp. 133-145.
+
+Taylor, Karl E., Ronald J. Stouffer, Gerald A. Meehl, 2012: An Overview of CMIP5 and the
+Experiment Design. Bull. Amer. Meteor. Soc., 93, 485–498.
+
+
+                                                                                                    34
+Tebaldi, C., Debeire, K., Eyring, V., Fischer, E., Fyfe, J., Friedlingstein, P., Knutti, R., Lowe, J.,
+O'Neill, B., Sanderson, B., van Vuuren, D., Riahi, K., Meinshausen, M., Nicholls, Z., Tokarska,
+K. B., Hurtt, G., Kriegler, E., Lamarque, J.-F., Meehl, G., Moss, R., Bauer, S. E., Boucher, O.,
+Brovkin, V., Byun, Y.-H., Dix, M., Gualdi, S., Guo, H., John, J. G., Kharin, S., Kim, Y., Koshiro,
+T., Ma, L., Olivié, D., Panickal, S., Qiao, F., Rong, X., Rosenbloom, N., Schupfner, M., Séférian,
+R., Sellar, A., Semmler, T., Shi, X., Song, Z., Steger, C., Stouffer, R., Swart, N., Tachiiri, K.,
+Tang, Q., Tatebe, H., Voldoire, A., Volodin, E., Wyser, K., Xin, X., Yang, S., Yu, Y., and Ziehn,
+T., 2021: Climate model projections from the Scenario Model Intercomparison Project
+(ScenarioMIP) of CMIP6, Earth Syst. Dynam., 12, 253–293.
+
+Thrasher, B., Wang, W., Michaelis, A., Melton, F., Lee, T., & Nemani, R., 2022: NASA Global
+Daily Downscaled Projections, CMIP6. Nature Scientific Data, 9 (254),
+https://doi.org/10.1038/s41597-022-01393-4.
+
+Thrasher, B., Xiong, J., Wang, W., Melton, F., Michaelis, A., & Nemani, R., 2013: Downscaled
+climate projections suitable for resource management. Eos, Transactions American Geophysical
+Union, 94 (37), 321-323, https://doi.org/10.1002/2013EO370002.
+
+Thrasher, B., Maurer, E. P., McKellar, C., & Duffy, P. B., 2012: Technical Note: Bias correcting
+climate model simulated daily temperature extremes with quantile mapping. Hydrology and
+Earth System Sciences, 16 (9), 3309-3314, https://doi.org/10.5194/hess-16-3309-2012.
+
+Wood, A.W., E.P. Maurer, A. Kumar, and D.P. Lettenmaier, 2002: Long-range experimental
+hydrologic forecasting for the eastern United States. J. Geophysical Research-Atmospheres,
+107, 4429, https://doi.org/10.1029/2001JD000659.
+
+Wood, A.W., L.R. Leung, V. Sridhar, and D.P. Lettenmaier, 2004: Hydrologic implications of
+dynamical and statistical approaches to downscaling climate model outputs. Climatic Change,
+15, 189-216.
+
+
+
+
+                                                                                                   35
+9. Points of contact
+Email comments to bridget@climateanalyticsgroup.org with copy to weile.wang@nasa.gov
+
+Technical points of contact for this dataset:
+Dr. Bridget Thrasher, bridget@climateanalyticsgroup.org
+Weile Wang, weile.wang@nasa.gov
+
+For issues with data access:
+support@nccs.nasa.gov
+
+
+
+
+10. Dataset and Document Revision History
+Rev 1 – March 2025 – Document created.
+
+
+
+
+                                                                                       36
+Appendices
+Appendix I – CMIP6 models included in downscaled archive
+Model              Variant hurs huss pr rlds rsds sfcWind tas tasmax tasmin
+ACCESS-CM2         r1i1p1f1
+ACCESS-ESM1-5      r1i1p1f1
+BCC-CSM2-MR        r1i1p1f1
+CanESM5            r1i1p1f1
+CESM2              r4i1p1f1
+CESM2-WACCM        r3i1p1f1
+                                                           1    1      1
+CMCC-CM2-SR5       r1i1p1f1
+CMCC-ESM2          r1i1p1f1
+CNRM-CM6-1         r1i1p1f2
+CNRM-ESM2-1        r1i1p1f2
+EC-Earth3          r1i1p1f1
+EC-Earth3-Veg-LR   r1i1p1f1
+FGOALS-g3          r3i1p1f1
+GFDL-CM4 (gr1)     r1i1p1f1
+GFDL-CM4 (gr2)     r1i1p1f1
+GFDL-ESM4          r1i1p1f1
+GISS-E2-1-G        r1i1p1f2
+HadGEM3-GC31-LL    r1i1p1f3
+HadGEM3-GC31-MM r1i1p1f3
+IITM-ESM 2         r1i1p1f1
+INM-CM4-8          r1i1p1f1
+INM-CM5-0          r1i1p1f1
+IPSL-CM6A-LR       r1i1p1f1
+KACE-1-0-G         r1i1p1f1
+                              3
+KIOST-ESM          r1i1p1f1
+MIROC-ES2L         r1i1p1f2
+MIROC6             r1i1p1f1
+MPI-ESM1-2-HR      r1i1p1f1
+
+
+                                                                              37
+MPI-ESM1-2-LR         r1i1p1f1
+MRI-ESM2-0            r1i1p1f1
+NESM3                 r1i1p1f1
+NorESM2-LM            r1i1p1f1
+NorESM2-MM            r1i1p1f1
+TaiESM1               r1i1p1f1
+UKESM1-0-LL           r1i1p1f2
+Key: Green = historical & all SSPs available; yellow = historical & some SSPs available; red =
+no data available
+1
+  Original GCM tasmax & tasmin output retracted by CMCC.
+(https://errata.es-doc.org/static/view.html?uid=33496f30-9e86-c0ff-874c-61f78df0509a)
+2
+  Original GCM output missing year 2100 and SSP3.7-0 missing year 2099 for all variables.
+3
+  Original GCM output for hurs SSP2.4-5 missing year 2058, hurs SSP1.2-6 missing year 2023.
+
+Note, all CMIP6 source_id and institutional_id’s as listed in the CMIP6 controlled vocabulary
+are noted in each individual netcdf files as a global attribute cmip6_source_id and
+cmip6_institution_id. The controlled vocabulary is defined here:
+https://github.com/WCRP-CMIP/CMIP6_CVs/blob/master/CMIP6_source_id.json
+and here:
+https://github.com/WCRP-CMIP/CMIP6_CVs/blob/master/CMIP6_institution_id.json.
+
+
+
+
+                                                                                                38
+Appendix II – Working with the NetCDF files
+The data provided is in NetCDF (https://www.unidata.ucar.edu/software/netcdf/) file format. All
+files are written with the CF-1.7 metadata conventions (https://cfconventions.org/), as noted by
+the “Conventions” global attribute within the files.
+
+There are many software options available for reading and writing NetCDF files. The most basic
+option is to use the ncdump command line utility, which the standard netCDF-c software
+package (https://github.com/Unidata/netcdf-c) provides. Note, many Linux distributions provide
+pre-built packages that can be installed, e.g. Ubuntu. There are also pre-built Windows and
+MacOS packages available.
+
+An example of viewing a file's structure, or header, in a terminal one can execute the following
+command line:
+$ ncdump -h hurs_day_ACCESS-CM2_historical_r1i1p1f1_gn_1971.nc
+netcdf hurs_day_ACCESS-CM2_historical_r1i1p1f1_gn_1971 {
+dimensions:
+​       time = UNLIMITED ; // (365 currently)
+​       lat = 600 ;
+​       lon = 1440 ;
+variables:
+​       double time(time) ;
+​       ​       time:axis = "T" ;
+.
+.
+.
+}
+
+Python (https://www.python.org/) is a popular scripting language that can be used to view and
+analyze the data. You will need to install the Python package netCDF4
+(https://unidata.github.io/netcdf4-python/) via pip, conda or build the package from source. With
+the netCDF4 package installed on your system, in the Python interpreter:
+
+$ python
+Python 3.7.3 (default, Mar 27 2019, 22:11:17)
+[GCC 7.3.0] :: Anaconda, Inc. on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import netCDF4
+>>> data = netCDF4.Dataset('tasmax_day_ACCESS-CM2_historical_r1i1p1f1_gn_2014.nc')
+>>> # print out the file structure
+>>> print(data)
+
+
+                                                                                               39
+.
+.
+.
+>>> # print out the variables
+>>> print(data.variables)
+>>> # get a variable
+>>> var_tasmax = data.variables['tasmax']
+>>> # print the variable structure and attributes
+>>> print(var_tasmax)
+.
+.
+.
+>>> # print the variable units and fill value
+>>> print(var_tasmax.units)
+K
+>>> print(var_tasmax._FillValue)
+1e+20
+>>> # actually load the data into an numpy array
+>>> dat = var_tasmax[:]
+dat = var_tasmax[:]
+>>> # compute the max and min
+>>> dat.max()
+329.3559
+>>> dat.min()
+211.7591
+>>> # subset or slice the data
+>>> sub_dat = dat[10:50,20:30]
+>>> # close for clean up.
+>>> data.close()
+
+
+
+
+                                                    40
+

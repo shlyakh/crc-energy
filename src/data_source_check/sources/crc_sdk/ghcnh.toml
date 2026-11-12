@@ -1,0 +1,96 @@
+id = "ghcnh"
+title = "NOAA GHCNh station temperatures"
+kind = "fitted curves"
+tier = 1
+tier_reason = "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the airport station curves of the Texas data explorer."
+publisher = "NOAA NCEI"
+original = "https://noaa-ghcnh-pds.s3.amazonaws.com/hourly/access/by-year"
+purpose = "Annual extremes of hourly station temperature, fitted per station, as a local check on gridded curves."
+explorer = "explore/#tab=crc&source=ghcnh"
+entry_points = ["HazardDataset.ghcnh"]
+symbols = ["GHCNhPlan"]
+
+notes = "Assessed on the stations the Texas data explorer uses: the first forty USW stations in the Texas box, 2000 to 2024. These are small airports whose records begin around 2005, so 592 of 1,000 station-years have a file, 8 stations reach 15 complete years and none reaches crc-sdk's default of 20. Days are UTC days: in Texas a UTC day runs from the local evening to the next. The values are extremes of sampled hourly temperature, not of an instrument's daily maximum and minimum."
+
+[options]
+recipe = ["temperature_max", "temperature_min"]
+
+[assessed_options]
+recipe = ["temperature_max", "temperature_min"]
+
+[status]
+exploration = "assessed"
+verification = "assessed"
+
+[[statement]]
+id = "files"
+text = "Reads one Parquet file per station and year, `<root>/<year>/parquet/GHCNh_<station>_<year>.parquet`. A file NOAA does not have (HTTP 404) gives a year with no value; other errors stop the run."
+code_ref = "crc_sdk/providers/ghcnh.py:143-158"
+
+[[statement]]
+id = "columns"
+text = "Reads eight columns by range requests tied to the file's ETag: STATION, DATE, LATITUDE, LONGITUDE, ELEVATION, temperature and its quality and source codes. Hourly files are not kept."
+code_ref = "crc_sdk/providers/ghcnh.py:35-44, 162-168"
+
+[[statement]]
+id = "time"
+text = "Reads DATE as a timestamp and keeps the reports of the requested station whose timestamp falls in the requested year. A report whose DATE cannot be read is dropped."
+code_ref = "crc_sdk/providers/ghcnh.py:107; crc_sdk/providers/stations.py:31-33"
+
+[[statement]]
+id = "quality"
+text = "Uses a temperature when its quality code is blank, or is 1 from one of fourteen listed source codes, or is 5 from one of eight listed source codes. Any other code excludes the report's value."
+code_ref = "crc_sdk/providers/ghcnh.py:45-46, 55, 110-120"
+note = "In these files the excluded reports carried other quality codes. No report had code 1 or 5 from an unlisted source, so on NOAA's data the source lists were not put to the test; the offline tests exercise them on constructed files."
+
+[[statement]]
+id = "range"
+text = "Uses a temperature only if it is a finite number between -93.2 and 61.8 degrees Celsius inclusive."
+code_ref = "crc_sdk/providers/ghcnh.py:121-122"
+
+[[statement]]
+id = "units"
+text = "Takes the temperature in degrees Celsius as published. No unit is converted; the output is labelled degC."
+code_ref = "crc_sdk/providers/ghcnh.py:123; crc_sdk/workflows/stations.py:654"
+
+[[statement]]
+id = "day"
+text = "Groups reports by UTC calendar day. For each day it counts all reports, the accepted reports and the distinct clock hours that hold an accepted report, and takes the lowest and highest accepted temperature."
+code_ref = "crc_sdk/providers/stations.py:34-42"
+
+[[statement]]
+id = "valid-day"
+text = "Counts a day as valid when at least 18 distinct hours hold an accepted report (three quarters of 24, rounded up). Several reports in one hour count once."
+code_ref = "crc_sdk/workflows/stations.py:518-523"
+
+[[statement]]
+id = "valid-year"
+text = "Counts a year as complete when at least 90 per cent of its days are valid (329 of 365, 330 of 366)."
+code_ref = "crc_sdk/workflows/stations.py:524-527"
+
+[[statement]]
+id = "annual-value"
+text = "For a complete year, takes the highest daily maximum (`temperature_max`) or the lowest daily minimum (`temperature_min`) over the valid days only. An incomplete year has no value. Values on days that are not valid are ignored."
+code_ref = "crc_sdk/workflows/stations.py:528-533"
+
+[[statement]]
+id = "location"
+text = "Places the station at the lowest latitude and lowest longitude reported in the year, with the lowest reported elevation (-999.9 read as missing). Refuses a station whose coordinates move by more than 0.05 degrees within a year."
+code_ref = "crc_sdk/providers/ghcnh.py:108-109; crc_sdk/workflows/stations.py:499-517"
+note = "No station in these files moved or lacked coordinates, so the refusal was not seen on NOAA's data; the offline tests exercise it on constructed files."
+
+[[statement]]
+id = "minimum-years"
+text = "Fits a curve for a station only when it has at least the policy's minimum of complete years (20 by default; 15 in the Texas data explorer). The minimum is applied per station."
+code_ref = "crc_sdk/workflows/stations.py:616-621, 670"
+
+[[statement]]
+id = "family"
+text = "Fits a generalized extreme value distribution to annual maxima and a lower-tail Gumbel distribution to annual minima, both by L-moments."
+code_ref = "crc_sdk/workflows/stations.py:301-303; docs/sources/stations.md:67-68"
+note = "Confirmed here: the family named in the output. The fit itself (parameters, method, behaviour on short records) is not checked; it belongs to validation (phase V7)."
+
+[[statement]]
+id = "provenance"
+text = "Writes the licence (CC0-1.0), an attribution text, the latest retrieval time, a checksum over the cached daily files and the request into the curve file's metadata."
+code_ref = "crc_sdk/workflows/stations.py:657-667; crc_sdk/providers/ghcnh.py:25-30"

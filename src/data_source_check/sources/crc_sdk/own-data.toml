@@ -1,0 +1,8 @@
+id = "own-data"
+title = "Your own data"
+kind = "user data"
+publisher = "The user"
+original = "Supplied by the user"
+purpose = "Tables, Zarr stores or rasters of the user's own, turned into CRC's dataset form. Listed for completeness; not an upstream source."
+entry_points = ["HazardDataset.from_table", "HazardDataset.from_zarr", "HazardDataset.from_raster"]
+symbols = ["BYOPlan"]

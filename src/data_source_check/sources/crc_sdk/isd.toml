@@ -1,0 +1,13 @@
+id = "isd"
+title = "NOAA ISD station temperatures"
+kind = "fitted curves"
+tier = 2
+tier_reason = "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet."
+publisher = "NOAA NCEI"
+original = "https://noaa-global-hourly-pds.s3.amazonaws.com"
+purpose = "As GHCNh, from the older Integrated Surface Database archive (updates ended August 2025)."
+entry_points = ["HazardDataset.isd"]
+symbols = ["ISDPlan"]
+
+[options]
+recipe = ["temperature_max", "temperature_min"]

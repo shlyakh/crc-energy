@@ -1,0 +1,35 @@
+# Source validation: weekly check that nothing an assessment rests on has changed (V20, V21).
+# Asks each publisher about the files the assessments read (HEAD requests only), compares the
+# installed crc-sdk with the versions assessed, and lists entry points the inventory does not cover.
+# It reports and fails when something needs attention. It never commits or publishes.
+name: validation-monitor
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  push:
+    branches: [main]
+    paths: [pyproject.toml, uv.lock] # a pin change
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --group dev
+      - id: monitor
+        run: uv run python -m data_source_check.monitor
+        continue-on-error: true
+      - run: cat docs/validation/monitoring.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: validation-monitoring
+          path: |
+            docs/validation/monitoring.md
+            site/validation/data/monitor.json
+      - if: steps.monitor.outcome == 'failure'
+        run: |
+          echo "An assessment is stale or the inventory has a gap; see the summary." >&2
+          exit 1

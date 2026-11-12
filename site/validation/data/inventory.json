@@ -1,0 +1,1753 @@
+{
+ "findings": [
+  {
+   "basis": "reproduced",
+   "consequence": "No temperature extremes can be read from NEX-GDDP-CMIP6 at this version.",
+   "documented": "docs/sources/cmip6.md:5 says NEX uses the four recipes txx, tnn, rx1day and rx5day; line 36 says temperatures must be kelvin.",
+   "evidence": [
+    "crc_sdk/providers/cmip6.py:952",
+    "crc_sdk/workflows/nex.py:39-47",
+    "docs/reports/u1-nex-bytes-fix.md (crc-lab): real file headers, failing test, fix",
+    "check records nex-gddp-cmip6/units[txx ...] and units[tnn ...] (site/validation/data/records/nex-gddp-cmip6.json), run of 2026-11-12"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-10",
+   "framework_version": "0.11.1",
+   "id": "CRC-001-NEX",
+   "kind": "defect",
+   "observed": "The files declare kelvin, but h5netcdf returns the one-character unit as bytes (b'K') and the unit check compares its text form with 'K'. The call raises: 'tasmax' is published in \"b'K'\", but recipe 'txx' converts from 'K'. Precipitation is unaffected.",
+   "source": "nex-gddp-cmip6",
+   "status": "open",
+   "title": "Temperature recipes (txx, tnn) fail on real NEX files",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "code reading",
+   "consequence": "A gridded curve can rest on far fewer years than the request suggests where data are missing; the number of years behind each cell's fit should be checked before use.",
+   "documented": "docs/sources/jrc.md:58: 'The curated policy fits the lower tail and requires at least 20 complete years.' The policy's own error message says it 'requires at least 20 complete years' (crc_sdk/workflows/blocks.py:126-129).",
+   "evidence": [
+    "crc_sdk/workflows/blocks.py:124-129",
+    "crc_sdk/connectors/blocks.py:60",
+    "crc_sdk/providers/era5.py:566",
+    "crc_sdk/providers/cmip6.py:1052",
+    "docs/sources/jrc.md:58"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-11",
+   "framework_version": "0.11.1",
+   "id": "CRC-002-FWK",
+   "kind": "doc-code difference",
+   "observed": "validate_years compares the number of years in the request with minimum_years (crc_sdk/workflows/blocks.py:124-125). Each grid cell is then fitted when it has at least 4 valid annual values (MINIMUM_BLOCKS = 4, crc_sdk/connectors/blocks.py:60; minimum_blocks=4 in crc_sdk/providers/era5.py:566 and crc_sdk/providers/cmip6.py:1052). Station sources apply minimum_years per station.",
+   "source": "framework",
+   "status": "open",
+   "title": "The 20-year minimum counts the years requested, not the years valid in each cell",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "code reading",
+   "consequence": "A JRC flood or EDO file, once moved away from its cache, does not say under which licence or from which bytes it was made.",
+   "documented": "docs/data-licences.md:14-15: 'Every canonical file records source.licence, source.attribution, retrieved_at and checksum (schema 1.3), so outputs self-describe.'",
+   "evidence": [
+    "docs/data-licences.md:14-15",
+    "crc_sdk/connectors/adapters.py:309",
+    "crc_sdk/workflows/jrc.py:521-534"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-11",
+   "framework_version": "0.11.1",
+   "id": "CRC-003-JRC",
+   "kind": "doc-code difference",
+   "observed": "Those fields are written only when the curve source supplies a CurveSourceInfo (crc_sdk/connectors/adapters.py:309). The JRC and EDO modules define none; the JRC workflow only rewrites the uri (crc_sdk/workflows/jrc.py:521-534). Checksums of the cropped inputs are kept in the cache manifest, not in the output file. Applies to jrc-edo as well.",
+   "source": "jrc-flood",
+   "status": "open",
+   "title": "JRC flood and EDO output files do not carry licence, attribution, retrieval time or checksum",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "code reading",
+   "consequence": "An EDO file and an ERA5 or CMIP6 file built over the same years would carry different horizons and would not join on the row key.",
+   "documented": "docs/design-decisions.md:28-30: for a window, 'horizon = centre year (start + end) // 2'. docs/sources/cmip6.md:42: 'horizon is the window centre'.",
+   "evidence": [
+    "crc_sdk/providers/jrc_edo.py:217",
+    "docs/design-decisions.md:28-30"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-11",
+   "framework_version": "0.11.1",
+   "id": "CRC-004-EDO",
+   "kind": "doc-code difference",
+   "observed": "The EDO provider sets the year of its record to max(years) (crc_sdk/providers/jrc_edo.py:217).",
+   "source": "jrc-edo",
+   "status": "open",
+   "title": "EDO drought curves are labelled with the last year of the record, not the centre year",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "code reading",
+   "consequence": "A year with most of its record missing still contributes an annual minimum to the fit.",
+   "documented": "crc_sdk/connectors/blocks.py:20-30 states the convention for block statistics: a block needs a minimum fraction of valid days.",
+   "evidence": [
+    "crc_sdk/providers/jrc_edo.py:250-255",
+    "crc_sdk/connectors/blocks.py:20-30"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-11",
+   "framework_version": "0.11.1",
+   "id": "CRC-005-EDO",
+   "kind": "observation",
+   "observed": "The EDO annual value is np.nanmin over whatever ten-day values exist in the year (crc_sdk/providers/jrc_edo.py:255), so one valid value makes a year.",
+   "source": "jrc-edo",
+   "status": "open",
+   "title": "The EDO annual minimum has no completeness rule",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "code reading",
+   "consequence": "If a store changed its units, ERA5 values would be converted wrongly without an error.",
+   "documented": "",
+   "evidence": [
+    "crc_sdk/providers/era5.py:244",
+    "crc_sdk/providers/cmip6.py:946-958"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-11",
+   "framework_version": "0.11.1",
+   "id": "CRC-006-ERA5",
+   "kind": "observation",
+   "observed": "The CMIP6 and NEX readers refuse a variable whose units attribute differs from the recipe's (crc_sdk/providers/cmip6.py:946-958). The ERA5 provider reads a units attribute only for the time axis (crc_sdk/providers/era5.py:244) and applies the kelvin and metre conversions unconditionally.",
+   "source": "era5",
+   "status": "open",
+   "title": "ERA5 values are converted without checking the unit the store declares",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "code reading",
+   "consequence": "The field cannot be used to tell when the release was actually fetched.",
+   "documented": "docs/data-licences.md:20-21: 'the retrieval date and checksum are the audit trail.'",
+   "evidence": [
+    "crc_sdk/workflows/crc_open.py:588-604"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-11",
+   "framework_version": "0.11.1",
+   "id": "CRC-007-OPEN",
+   "kind": "observation",
+   "observed": "When a selection is materialised, retrieved_at is set to the current time (crc_sdk/workflows/crc_open.py:600), also when the partitions come from a warm cache.",
+   "source": "crc-open",
+   "status": "open",
+   "title": "retrieved_at in a CRC Open file is the time the file was written, not the time the data were downloaded",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "code reading",
+   "consequence": "An OS-Climate output file may carry no licence.",
+   "documented": "docs/data-licences.md:38: 'OS-Climate layers | Read from layer metadata | Per layer'.",
+   "evidence": [
+    "docs/data-licences.md:38",
+    "crc_sdk/providers/os_climate.py (search for 'licen': no match)"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-11",
+   "framework_version": "0.11.1",
+   "id": "CRC-008-OSC",
+   "kind": "doc-code difference",
+   "observed": "A search of crc_sdk/providers/os_climate.py for licence handling finds none. Only that file was searched.",
+   "source": "os-climate",
+   "status": "open",
+   "title": "The OS-Climate licence is documented as read from layer metadata; no code that reads it was found",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "code reading",
+   "consequence": "Two runs of the same request can return different data with nothing in the output to show it.",
+   "documented": "docs/development.md:25-26: 'Every adapter records licence, attribution, retrieval time and checksums in canonical metadata or its cache manifest.'",
+   "evidence": [
+    "crc_sdk/connectors/agriculture.py:96-101",
+    "docs/development.md:25-26"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-11",
+   "framework_version": "0.11.1",
+   "id": "CRC-009-CDL",
+   "kind": "observation",
+   "observed": "The request defaults to branch 'main' of the Source Cooperative repository, not a fixed snapshot (crc_sdk/connectors/agriculture.py:100). Rows carry a source path only.",
+   "source": "usda-cdl",
+   "status": "open",
+   "title": "The Cropland Data Layer is read from a moving branch and its output records no provenance",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "reproduced",
+   "consequence": "Currently active storms cannot be read through IBTrACSPlan at this version. The other subsets are unaffected.",
+   "documented": "crc_sdk/workflows/ibtracs.py:28-41 lists \"active\" among the eleven accepted subsets; the error message for any other spelling names it as valid. docs/sources/observations.md:29 documents basin subsets only.",
+   "evidence": [
+    "crc_sdk/workflows/ibtracs.py:28-41",
+    "crc_sdk/workflows/ibtracs.py:70-71",
+    "check record ibtracs/address (site/validation/data/records/ibtracs.json), run of 2026-11-12"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-12",
+   "framework_version": "0.11.1",
+   "id": "CRC-010-IBT",
+   "kind": "defect",
+   "observed": "crc-sdk requests .../ibtracs.active.list.v04r01.csv and NOAA answers 404. NOAA's directory holds ibtracs.ACTIVE.list.v04r01.csv (capitals). IBTrACSPlan(\"active\", ...).prefetch() raises HTTPError 404; IBTrACSPlan(\"ACTIVE\", ...) is refused as an invalid subset. The other ten names are served.",
+   "source": "ibtracs",
+   "status": "open",
+   "title": "The subset \"active\" is accepted but NOAA has no file under that name",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "reproduced",
+   "consequence": "A user who passes the batches on must copy the citation and terms from the manifest or from prefetch(); nothing in the data carries them.",
+   "documented": "AGENTS.md (crc-sdk) asks contributors to 'record licence, attribution, retrieval time and checksums for every source'. docs/data-licences.md:36 lists IBTrACS as a U.S. government work with attribution requested.",
+   "evidence": [
+    "crc_sdk/workflows/ibtracs.py:139-153",
+    "check records ibtracs/provenance[*] (site/validation/data/records/ibtracs.json), run of 2026-11-12"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-12",
+   "framework_version": "0.11.1",
+   "id": "CRC-011-IBT",
+   "kind": "observation",
+   "observed": "The manifest written beside the snapshot holds url, version, subset, sha256, retrieved_at, etag, last_modified, units, terms_url and citation (crc_sdk/workflows/ibtracs.py:139-153). It has no licence field. The Arrow batches returned by batches() have no schema metadata, so the provenance travels only in the cache directory.",
+   "source": "ibtracs",
+   "status": "open",
+   "title": "The snapshot's manifest has a terms address and a citation but no licence field; the batches carry no provenance",
+   "upstream_ref": ""
+  },
+  {
+   "basis": "reproduced",
+   "consequence": "A user cannot read NASA's latest revision through crc-sdk, and the default (1.0) is the oldest. The differences seen here are small; other models, variables and regions were not compared. NASA's technical note for version 2.0 (31 May 2025, section 4.3) states that tasmax and tasmin were reprocessed in their entirety with a corrected observational reference (an artifact over central Canada) and that values were swapped in grid cells where the maximum was below the minimum; that anomalously large pr values in cells with an extremely small daily climatology were adjusted; and that bounds were applied to hurs, huss, rlds and sfcWind. These corrections are in version 2.0 only.",
+   "documented": "docs/sources/cmip6.md:73: 'File revisions 1.0, 1.1 and 1.2 are selected explicitly'. crc_sdk/workflows/nex.py:84-85 refuses any other version.",
+   "evidence": [
+    "crc_sdk/workflows/nex.py:84-85",
+    "docs/sources/cmip6.md:73-74",
+    "NASA technical note for version 2.0, sections 3.2.2.1 and 4.3 (docs/validation/references/nex-gddp-cmip6-v2/README.md)",
+    "check record nex-gddp-cmip6/versions-served (site/validation/data/records/nex-gddp-cmip6.json), run of 2026-11-12"
+   ],
+   "fixed_in": "",
+   "found_on": "2026-11-12",
+   "framework_version": "0.11.1",
+   "id": "CRC-012-NEX",
+   "kind": "observation",
+   "observed": "For ACCESS-CM2 r1i1p1f1, NASA's archive holds files ending in _v2.0.nc for tasmax, tasmin and pr, in both years checked (historical 2014, ssp585 2050). They were uploaded on 1 July 2025 and carry the attribute version = '2.0'. No version 1.2 file exists for these; version 1.1 exists for pr only. In the Texas box the annual one-day rainfall from 2.0 equals that from 1.1 and differs from 1.0 in 15 of 2,158 cells in 2014 (by at most 0.08 mm) and 42 cells in 2050 (by at most 0.84 mm); the annual maximum temperature from 2.0 equals that from 1.0.",
+   "source": "nex-gddp-cmip6",
+   "status": "open",
+   "title": "NASA serves files of version 2.0, which cannot be requested",
+   "upstream_ref": ""
+  }
+ ],
+ "framework": "crc-sdk",
+ "gaps": {
+  "could_not_enumerate": [],
+  "new_options": [],
+  "unassessed_options": [
+   {
+    "option": "recipe",
+    "source": "era5",
+    "value": "tnn"
+   },
+   {
+    "option": "recipe",
+    "source": "era5",
+    "value": "txx"
+   },
+   {
+    "option": "store",
+    "source": "era5",
+    "value": "arco-0p25"
+   },
+   {
+    "option": "subset",
+    "source": "ibtracs",
+    "value": "active"
+   },
+   {
+    "option": "recipe",
+    "source": "cmip6",
+    "value": "rx1day"
+   },
+   {
+    "option": "recipe",
+    "source": "cmip6",
+    "value": "rx5day"
+   },
+   {
+    "option": "recipe",
+    "source": "cmip6",
+    "value": "tnn"
+   },
+   {
+    "option": "recipe",
+    "source": "cmip6",
+    "value": "txx"
+   },
+   {
+    "option": "duration",
+    "source": "eccc-idf",
+    "value": "10min"
+   },
+   {
+    "option": "duration",
+    "source": "eccc-idf",
+    "value": "12h"
+   },
+   {
+    "option": "duration",
+    "source": "eccc-idf",
+    "value": "15min"
+   },
+   {
+    "option": "duration",
+    "source": "eccc-idf",
+    "value": "1h"
+   },
+   {
+    "option": "duration",
+    "source": "eccc-idf",
+    "value": "24h"
+   },
+   {
+    "option": "duration",
+    "source": "eccc-idf",
+    "value": "2h"
+   },
+   {
+    "option": "duration",
+    "source": "eccc-idf",
+    "value": "30min"
+   },
+   {
+    "option": "duration",
+    "source": "eccc-idf",
+    "value": "5min"
+   },
+   {
+    "option": "duration",
+    "source": "eccc-idf",
+    "value": "6h"
+   },
+   {
+    "option": "version",
+    "source": "eccc-idf",
+    "value": "3.20"
+   },
+   {
+    "option": "version",
+    "source": "eccc-idf",
+    "value": "3.40"
+   },
+   {
+    "option": "dataset",
+    "source": "jrc-edo",
+    "value": "smi"
+   },
+   {
+    "option": "dataset",
+    "source": "jrc-flood",
+    "value": "efas"
+   },
+   {
+    "option": "dataset",
+    "source": "jrc-flood",
+    "value": "glofas"
+   },
+   {
+    "option": "recipe",
+    "source": "nex-gddp-cmip6",
+    "value": "tnn"
+   },
+   {
+    "option": "recipe",
+    "source": "nex-gddp-cmip6",
+    "value": "txx"
+   },
+   {
+    "option": "scenario",
+    "source": "nex-gddp-cmip6",
+    "value": "ssp126"
+   },
+   {
+    "option": "scenario",
+    "source": "nex-gddp-cmip6",
+    "value": "ssp245"
+   },
+   {
+    "option": "scenario",
+    "source": "nex-gddp-cmip6",
+    "value": "ssp370"
+   },
+   {
+    "option": "version",
+    "source": "nex-gddp-cmip6",
+    "value": "1.2"
+   },
+   {
+    "option": "recipe",
+    "source": "isd",
+    "value": "temperature_max"
+   },
+   {
+    "option": "recipe",
+    "source": "isd",
+    "value": "temperature_min"
+   },
+   {
+    "option": "scenario",
+    "source": "noaa-sea-level",
+    "value": "high"
+   },
+   {
+    "option": "scenario",
+    "source": "noaa-sea-level",
+    "value": "intermediate"
+   },
+   {
+    "option": "scenario",
+    "source": "noaa-sea-level",
+    "value": "intermediate-high"
+   },
+   {
+    "option": "scenario",
+    "source": "noaa-sea-level",
+    "value": "intermediate-low"
+   },
+   {
+    "option": "scenario",
+    "source": "noaa-sea-level",
+    "value": "low"
+   }
+  ],
+  "unassessed_sources": [
+   "crc-open",
+   "cmip6",
+   "eccc-idf",
+   "jrc-edo",
+   "jrc-flood",
+   "isd",
+   "os-climate",
+   "chirps",
+   "eccc-daily",
+   "hydat",
+   "ftw-fields",
+   "noaa-sea-level",
+   "usda-cdl",
+   "usgs-streamflow"
+  ],
+  "unclaimed_symbols": []
+ },
+ "generated": "2026-11-12T15:13:30Z",
+ "schema": "data_source_check/0.1",
+ "sources": [
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HazardDataset.crc_open"
+   ],
+   "explorer": "explore/#tab=crc&source=crc_open",
+   "framework": "crc-sdk",
+   "id": "crc-open",
+   "kind": "pre-fitted release",
+   "notes": "The inputs behind the release are not public, so a comparison with an original (tier 2) is limited to the release's own catalogue and checksums. Assessed mainly by validation (tier 3).",
+   "options": {},
+   "original": "https://data.riskthinking.ai/crc-open (release ssp585-global-2026-10-20-v1)",
+   "publisher": "Riskthinking.AI",
+   "purpose": "Ready-made hazard curves on H3 cells for 63 hazards under SSP5-8.5, for screening asset portfolios.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [
+    "CRCOpenPlan"
+   ],
+   "tier": 1,
+   "tier_reason": "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the eight CRC Open hazard layers of the Texas data explorer.",
+   "title": "CRC Open hosted release"
+  },
+  {
+   "assessed_options": {
+    "recipe": [
+     "rx1day",
+     "rx5day"
+    ],
+    "store": [
+     "wb2-1p5"
+    ]
+   },
+   "draft": true,
+   "drafted_by": "agent (draft-source-assessment skill), 2026-11-12",
+   "entry_points": [
+    "HazardDataset.era5"
+   ],
+   "explorer": "explore/#tab=crc&source=era5",
+   "framework": "crc-sdk",
+   "id": "era5",
+   "kind": "fitted curves",
+   "notes": "Draft. Assessed on the 1.5 degree store (wb2-1p5), the Texas box (80 grid cells), the rainfall recipes for 2021, with and without the land mask. One variable-year of this store is about 0.9 GB whatever the box, because every chunk covers the globe. The temperature recipes, the 0.25 degree store and the fitted curves were not run.",
+   "options": {
+    "recipe": [
+     "rx1day",
+     "rx5day",
+     "tnn",
+     "txx"
+    ],
+    "store": [
+     "arco-0p25",
+     "wb2-1p5"
+    ]
+   },
+   "original": "gs://gcp-public-data-arco-era5 (0.25 degree) and gs://weatherbench2 (1.5 degree)",
+   "publisher": "ECMWF / Copernicus C3S (public Zarr copies by Google and WeatherBench2)",
+   "purpose": "A historical baseline of annual temperature and rainfall extremes on H3 cells, comparable with the projection recipes.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [
+    {
+     "code_ref": "crc_sdk/providers/era5.py:88-109, 218-239; crc_sdk/workflows/portfolio.py:497-519",
+     "id": "store",
+     "note": "Confirmed for wb2-1p5 only. arco-0p25 was not opened: one variable-year there is about 8,800 global chunks.",
+     "outcome": "not checked",
+     "text": "Opens one of two public Zarr copies of hourly ERA5 anonymously, with zarr over gcsfs: `arco-0p25` (the default, gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3, 0.25 degree) or `wb2-1p5` (gs://weatherbench2/datasets/era5/1959-2022-1h-240x121_equiangular_with_poles_conservative.zarr, 1.5 degree). No checksum of the hourly data is taken."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:104-105, 461-500",
+     "id": "version",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Names the release `final-through-<date>`. The date is the store's `valid_time_stop` attribute; for a store without it (wb2-1p5) it is 31 December of a year written in the code, 2022. Only `latest` or that name is accepted."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:262-272, 423-425, 502-515",
+     "id": "years",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Accepts the years from the store's first year (1959 for wb2-1p5, written in the code) to the last complete year of that release; for rainfall the last year must be followed by one more day of record. The years are not compared with the store's time axis: hours the axis does not hold are skipped without an error."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:242-252",
+     "id": "time-axis",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Decodes the time axis from its `units` attribute (`hours`, `days` or `seconds since <date>`) as whole numbers; the `calendar` attribute is not read. Days are UTC days."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:92, 103, 154-206, 293-301",
+     "id": "variable",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Reads `2m_temperature` for `txx` and `tnn` and `total_precipitation` for `rx1day` and `rx5day`, and requires the array to have exactly the dimensions time, latitude and longitude, in any order."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:146-149, 293-301, 426-427",
+     "id": "units-declared",
+     "note": "The check confirms that the assumption holds for wb2-1p5 today. That the attribute is not read is shown in the offline tests on a constructed store that declares another unit (see finding CRC-006-ERA5).",
+     "outcome": "not checked",
+     "text": "Assumes 2 m temperature in kelvin and precipitation in metres. The `units` attribute the store declares for the variable is not read."
+    },
+    {
+     "code_ref": "crc_sdk/connectors/blocks.py:63-76, 175-234, 716-729; crc_sdk/providers/era5.py:303-312",
+     "id": "area",
+     "note": "Confirmed for a box of 8 by 10 cells. A box narrower than one cell and a box at the 180 degree meridian were not run.",
+     "outcome": "not checked",
+     "text": "Selects the grid cells whose centres lie inside the box grown by half a cell on every side, with longitudes brought to -180..180 and ordered west to east. A box narrower than one cell is widened to two cells. The same box is applied a second time to the stored annual file."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:58, 374-399, 436-437",
+     "id": "land-mask",
+     "note": "",
+     "outcome": "not checked",
+     "text": "With `land_only`, keeps a cell only where the store's `land_sea_mask` is 0.5 or more; the others get no value."
+    },
+    {
+     "code_ref": "crc_sdk/connectors/blocks.py:512-513; crc_sdk/providers/era5.py:369",
+     "id": "missing",
+     "note": "The chunks read from the publisher hold no NaN in the box. Missing hours inside a chunk were exercised in the offline tests only; absent chunks were exercised by the years the reference copy does not hold. The reading of an absent chunk as NaN is zarr's behaviour and has no line in crc-sdk.",
+     "outcome": "not checked",
+     "text": "Treats a value that is not finite as missing. A chunk the store does not hold is read as the array's fill value (NaN), so it is missing too, without an error."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:146, 165, 177, 427; crc_sdk/connectors/blocks.py:412-415",
+     "id": "units-temperature",
+     "note": "Not run on the publisher's data in this draft (one variable-year is about 0.7 GB). Confirmed on constructed files only.",
+     "outcome": "not checked",
+     "text": "Subtracts 273.15 from every hourly temperature, before any reduction, to give degrees Celsius."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:149, 189, 201, 427; crc_sdk/connectors/blocks.py:412-415",
+     "id": "units-rain",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Multiplies every hourly precipitation value by 1,000, before any reduction, to give millimetres."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:164, 176; crc_sdk/connectors/blocks.py:502-526",
+     "id": "day-temperature",
+     "note": "Not run on the publisher's data in this draft. Confirmed on constructed files only.",
+     "outcome": "not checked",
+     "text": "The daily maximum (`txx`) or minimum (`tnn`) is taken over the hours stamped 00:00 to 23:00 UTC; a day needs at least 18 of its 24 hours."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:147-152, 414-434; crc_sdk/connectors/blocks.py:396-402, 502-526",
+     "id": "day-rain",
+     "note": "",
+     "outcome": "not checked",
+     "text": "An hourly precipitation value is counted in the UTC day of its stamp less one hour (the value stamped 00:00 belongs to the day before). A day is the sum of its 24 hours and needs all 24."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:166, 178, 190, 202; crc_sdk/connectors/blocks.py:454-455, 484",
+     "id": "completeness",
+     "note": "In the year read every cell has 364 of 365 days, so the 90 per cent line itself was crossed only in the offline tests.",
+     "outcome": "not checked",
+     "text": "Gives a grid cell an annual value only when at least 90 per cent of the year's days have a value (329 of 365, 330 of 366)."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:157-180; crc_sdk/connectors/blocks.py:479-483",
+     "id": "statistic-temperature",
+     "note": "Not run on the publisher's data in this draft. Confirmed on constructed files only.",
+     "outcome": "not checked",
+     "text": "`txx` is the highest daily maximum of the year and `tnn` the lowest daily minimum."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:181-204; crc_sdk/connectors/blocks.py:467-483",
+     "id": "statistic-rain",
+     "note": "",
+     "outcome": "not checked",
+     "text": "`rx1day` is the largest daily total of the year. `rx5day` is the largest sum over five consecutive days that all have a value and lie within the year; windows do not reach into the neighbouring years."
+    },
+    {
+     "code_ref": "crc_sdk/providers/_annual_extremes.py:60-72; crc_sdk/workflows/era5.py:149-167, 322-343",
+     "id": "cache",
+     "note": "The 32-bit rounding is confirmed by the annual values. The manifest and the reuse of stored years were not exercised: every run used an empty cache folder.",
+     "outcome": "not checked",
+     "text": "Keeps each year's values for the recipe and area as 32-bit floats in one small NetCDF file, listed with its checksum in a manifest; the annual values returned are those 32-bit values. Hourly data is never kept. The file's name does not depend on the release."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/_plans.py:183-204",
+     "id": "output",
+     "note": "",
+     "outcome": "not checked",
+     "text": "`annual_extremes()` returns one row per year and grid cell that has a value: year, latitude and longitude of the cell centre as the store writes them (longitude in -180..180), value in the recipe's unit; ordered by year, then in the store's latitude order, then west to east."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/blocks.py:33, 48-49, 124-129; crc_sdk/workflows/_plans.py:125-131; crc_sdk/providers/era5.py:566",
+     "id": "fit-years",
+     "note": "Not checked: the fitting belongs to a later tier. A request of four years was accepted and one of fewer was not tried (finding CRC-002-FWK is about this rule).",
+     "outcome": "not checked",
+     "text": "Refuses a request of fewer years than `minimum_years` (20 by default, never fewer than 4). Each grid cell is then fitted when it has at least 4 annual values."
+    },
+    {
+     "code_ref": "crc_sdk/providers/era5.py:134-137; crc_sdk/workflows/_plans.py:206-248; crc_sdk/workflows/blocks.py:51-76",
+     "id": "fit",
+     "note": "Not checked: the fitted curve (family, method, assignment to H3 cells) belongs to a later tier.",
+     "outcome": "not checked",
+     "text": "Fits to each cell's annual values a generalised extreme value distribution by sample L-moments (the default for all four recipes), on H3 cells of resolution 5 by default, and writes the canonical hazard file."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/era5.py:398-440",
+     "id": "labels",
+     "note": "Not checked: these labels are written when the curve is fitted, which this draft does not run. `annual_extremes()` returns the four value columns only.",
+     "outcome": "not checked",
+     "text": "Labels the fitted file with the store's address, the licence CC-BY-4.0, a Copernicus attribution with the retrieval year, the retrieval time, a checksum of the annual files' checksums, the window of years, `single_member` pooling and `annual_exceedance`."
+    }
+   ],
+   "status": {
+    "exploration": "in progress",
+    "validation": "not assessed",
+    "verification": "in progress"
+   },
+   "symbols": [
+    "ERA5AreaPlan",
+    "ERA5CanonicalizationPlan",
+    "ERA5SourcePlan",
+    "ERA5YearPlan"
+   ],
+   "tier": 1,
+   "tier_reason": "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the ERA5 baseline layer of the Texas data explorer.",
+   "title": "ERA5 reanalysis extremes"
+  },
+  {
+   "assessed_options": {
+    "subset": [
+     "ALL",
+     "EP",
+     "NA",
+     "NI",
+     "SA",
+     "SI",
+     "SP",
+     "WP",
+     "last3years",
+     "since1980"
+    ]
+   },
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "IBTrACSPlan"
+   ],
+   "explorer": "explore/#tab=crc&source=ibtracs",
+   "framework": "crc-sdk",
+   "id": "ibtracs",
+   "kind": "pass-through",
+   "notes": "Longitudes in NOAA's files are not wrapped to -180..180 (values up to 266.9 occur where a track crosses the date line); crc-sdk passes them through as strings. SEASON runs to 2027 because southern-hemisphere seasons are labelled by their second year. About four values in five are missing: most columns belong to one agency each.",
+   "options": {
+    "subset": [
+     "ALL",
+     "EP",
+     "NA",
+     "NI",
+     "SA",
+     "SI",
+     "SP",
+     "WP",
+     "active",
+     "last3years",
+     "since1980"
+    ]
+   },
+   "original": "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv",
+   "publisher": "NOAA NCEI",
+   "purpose": "Best-track points of tropical cyclones by basin, as published, for inspection. Not asset winds or return-period curves.",
+   "records": "records/ibtracs.json",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:27-41, 70-71",
+     "id": "address",
+     "note": "",
+     "outcome": "differs",
+     "text": "Requests `<root>/ibtracs.<subset>.list.v04r01.csv`, with the subset spelled exactly as one of the eleven names crc-sdk accepts."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:113-128, 154",
+     "id": "bytes",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Saves the response unchanged as `source.csv` and records its SHA-256. A download shorter than the announced length is refused."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:129-147, 167-168",
+     "id": "header",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Reads line 1 as column names and line 2 as units. Requires the columns SID, SEASON and ISO_TIME. The units go to the manifest only; they are not in the data."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:169, 193",
+     "id": "columns",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Keeps every column, in the file's order, under NOAA's names."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:198-200",
+     "id": "strings",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Delivers every value as a string. Nothing is parsed into a number or a date, and no unit is converted."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:215-218",
+     "id": "trim",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Removes leading and trailing whitespace from every value."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:233-241",
+     "id": "null",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Turns a value that is empty after trimming into null. NOAA marks a missing value with a single space."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:171-183, 191-212",
+     "id": "rows",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Keeps every data row in the file's order. Rows are not dropped, merged, sorted or de-duplicated."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:73-77, 219-222",
+     "id": "storms",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "`for_storms(ids)` keeps the rows whose SID is in the list. These are track points, not complete storms across basin files."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:79-82, 223-231",
+     "id": "seasons",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "`years(a, b)` keeps the rows whose SEASON, read as an integer, lies in a..b inclusive. SEASON is NOAA's season label, not the calendar year of the point."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/ibtracs.py:139-155",
+     "id": "provenance",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Writes a manifest beside the snapshot with the address, version, subset, SHA-256, retrieval time, ETag, Last-Modified, units, a terms address and a citation. The batches themselves carry no metadata."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/_remote.py:91-115; docs/sources/observations.md:42",
+     "id": "reuse",
+     "note": "Read in the code, not shown on data: showing it needs NOAA to change a file between two runs. Left to monitoring (phase V4).",
+     "outcome": "not checked",
+     "text": "In `reuse` mode (the default) a cached snapshot is served without asking NOAA whether the file has changed. NOAA rewrites these files in place."
+    }
+   ],
+   "status": {
+    "exploration": "assessed",
+    "validation": "not assessed",
+    "verification": "assessed"
+   },
+   "symbols": [],
+   "tier": 1,
+   "tier_reason": "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the storm tracks and the storm player of the Texas data explorer.",
+   "title": "IBTrACS tropical cyclone tracks"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "agent (draft-source-assessment skill), 2026-11-12",
+   "entry_points": [
+    "NOAAExtremeWaterLevelPlan"
+   ],
+   "explorer": "explore/#tab=crc&source=coops",
+   "framework": "crc-sdk",
+   "id": "noaa-water-levels",
+   "kind": "pass-through",
+   "notes": "Draft. NOAA lists 126 stations with this product; ten are in Texas. A station without the product is answered with HTTP 200 and an empty body of the usual shape, which crc-sdk refuses. NOAA sends no ETag and no Last-Modified for these responses. The exceedance levels carry the datum label in capitals (MHHW) and the annual series in lower case (mhhw); crc-sdk passes both on as published. NOAA sometimes answers the same address with the values rounded to one decimal instead of two or three (seen 2026-11-12); crc-sdk delivers whichever answer it received.",
+   "options": {},
+   "original": "https://api.tidesandcurrents.noaa.gov/dpapi/prod/ (extremewaterlevels)",
+   "publisher": "NOAA National Ocean Service, CO-OPS",
+   "purpose": "NOAA's published exceedance levels and annual extremes at tide stations, as published.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:61-63",
+     "id": "station-id",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Accepts a station only as a string of exactly seven digits 0-9; anything else raises ValueError before any request."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:22, 92-104",
+     "id": "requests",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Makes three GET requests to `https://api.tidesandcurrents.noaa.gov/dpapi/prod/webapi/product.json` with `name=extremewaterlevels`, the station and `units=metric`: one with nothing more (station), one with `details=exceedancelevels&levelType=high` (levels), one with `extremeType=annuals&levelType=high` (annuals). Low-water and monthly products are never requested."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/_noaa.py:39-52, 67-68",
+     "id": "bytes",
+     "note": "The check compares with a second download of the same address, so it also differs when NOAA answers the same address differently (step one-answer); it cannot tell the two apart.",
+     "outcome": "not checked",
+     "text": "Saves each response unchanged as `source.json` and records its SHA-256 in a manifest beside it."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/_noaa.py:39-52; crc_sdk/workflows/noaa_water_levels.py:134-145, 196-203",
+     "id": "one-answer",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Asks each address once and takes that answer as the station's published values. Nothing asks a second time or compares two answers; the recorded SHA-256 is that of the one answer received."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/_noaa.py:40, 44-47",
+     "id": "limits",
+     "note": "Read in the code, not shown on data: NOAA's responses are a few kilobytes and complete. No constructed test was written for it.",
+     "outcome": "not checked",
+     "text": "Refuses a response longer than 4 MiB (4,194,304 bytes) or shorter than its announced Content-Length."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:147-158, 263-338",
+     "id": "refusals",
+     "note": "On NOAA's data two of these rules fire: an empty station list (a station without the product) and a levels response without the station id (NOAA sent an error message in its place). Each of the other rules is confirmed on constructed responses only, in the tests.",
+     "outcome": "not checked",
+     "text": "Refuses a station (ValueError, nothing cached) unless: the station response lists exactly one station with that id, a longitude in -180..180, a latitude in -90..90 and a non-empty epoch; the levels and annuals responses carry that id, `units` equal to `meters` and a non-empty datum; the two datum labels are equal when letter case is ignored; the annuals response has a non-empty notice, a trend that is null or a number, and for every extreme an integer year and a finite value; the levels response has a non-empty `GEV_HI.exceedanceLevels` in which every probability is in (0, 1] and not repeated, every return period is at least 1, every level is finite, and a confidence bound that is present lies on its side of the level. There is no rule about the length or completeness of the annual series."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:24-39, 224-244",
+     "id": "levels",
+     "note": "",
+     "outcome": "not checked",
+     "text": "`source_levels()` gives one row per entry of `GEV_HI.exceedanceLevels`, in NOAA's order, with eleven columns: the station id, then name, longitude, latitude and datum epoch from the station response repeated on every row, the datum label from the levels response, and NOAA's `probability`, `returnPeriod`, `level`, `lower90CI` and `upper90CI`. A missing confidence bound becomes null. The return period is NOAA's rounded label, not 1/probability. `GEV_LO` and the monthly groups are not delivered."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:40-49, 246-260",
+     "id": "annuals",
+     "note": "",
+     "outcome": "not checked",
+     "text": "`annual_extremes()` gives one row per entry of `extremes` in the annuals response, in NOAA's order, with six columns: the station id, `year`, `value`, the datum label from the annuals response, the datum epoch from the station response and NOAA's notice repeated on every row. No year is added, dropped or filled."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:24-49, 54, 97, 297-301",
+     "id": "numbers",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Delivers numbers as 64-bit floats (the year as a 32-bit integer) with NOAA's values: nothing is rounded, no unit is converted (metres are requested and required) and no datum is transformed."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:159-169, 220-222",
+     "id": "info",
+     "note": "",
+     "outcome": "not checked",
+     "text": "`source_info()` gives the whole station entry as NOAA sent it, the datum label and units of the levels response, and the trend, its units, its start and end dates and the notice of the annuals response. The trend (mm/yr) appears here only, not in the tables."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/_noaa.py:53-68",
+     "id": "provenance",
+     "note": "",
+     "outcome": "not checked",
+     "text": "Writes for each response a manifest with the address, station id, resource name, SHA-256, retrieval time, ETag, Last-Modified, an attribution, a documentation address and a terms address. The tables themselves carry no metadata."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:66-73, 78-90, 139; crc_sdk/workflows/_remote.py:86-88, 110-115",
+     "id": "pinned-checksums",
+     "note": "",
+     "outcome": "not checked",
+     "text": "With `cache(dir, sha256={resource: digest})` a response whose SHA-256 is not the given one is refused with RuntimeError; the names accepted are station, levels and annuals."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:111-119, 171-211",
+     "id": "snapshot",
+     "note": "Read in the code and in crc-sdk's own test (tests/test_noaa_water_levels.py), not shown on data: showing it needs NOAA to fail or change between two requests.",
+     "outcome": "not checked",
+     "text": "Keeps the three responses of one fetch together as one snapshot; `refresh` fetches all three again, moves a pointer to the new snapshot and deletes the old one, and a fetch that fails leaves the previous snapshot in place."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/noaa_water_levels.py:171-185; crc_sdk/workflows/_remote.py:91-118",
+     "id": "reuse",
+     "note": "Read in the code, not shown on data: showing it needs NOAA to change a response between two runs. Left to monitoring.",
+     "outcome": "not checked",
+     "text": "In `reuse` mode (the default) a complete cached snapshot is served without asking NOAA whether the responses have changed. NOAA sends neither ETag nor Last-Modified for them."
+    }
+   ],
+   "status": {
+    "exploration": "in progress",
+    "validation": "not assessed",
+    "verification": "in progress"
+   },
+   "symbols": [],
+   "tier": 1,
+   "tier_reason": "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the coastal station levels of the Texas data explorer.",
+   "title": "NOAA CO-OPS extreme water levels"
+  },
+  {
+   "assessed_options": {
+    "recipe": [
+     "temperature_max",
+     "temperature_min"
+    ]
+   },
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HazardDataset.ghcnh"
+   ],
+   "explorer": "explore/#tab=crc&source=ghcnh",
+   "framework": "crc-sdk",
+   "id": "ghcnh",
+   "kind": "fitted curves",
+   "notes": "Assessed on the stations the Texas data explorer uses: the first forty USW stations in the Texas box, 2000 to 2024. These are small airports whose records begin around 2005, so 592 of 1,000 station-years have a file, 8 stations reach 15 complete years and none reaches crc-sdk's default of 20. Days are UTC days: in Texas a UTC day runs from the local evening to the next. The values are extremes of sampled hourly temperature, not of an instrument's daily maximum and minimum.",
+   "options": {
+    "recipe": [
+     "temperature_max",
+     "temperature_min"
+    ]
+   },
+   "original": "https://noaa-ghcnh-pds.s3.amazonaws.com/hourly/access/by-year",
+   "publisher": "NOAA NCEI",
+   "purpose": "Annual extremes of hourly station temperature, fitted per station, as a local check on gridded curves.",
+   "records": "records/ghcnh.json",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [
+    {
+     "code_ref": "crc_sdk/providers/ghcnh.py:143-158",
+     "id": "files",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Reads one Parquet file per station and year, `<root>/<year>/parquet/GHCNh_<station>_<year>.parquet`. A file NOAA does not have (HTTP 404) gives a year with no value; other errors stop the run."
+    },
+    {
+     "code_ref": "crc_sdk/providers/ghcnh.py:35-44, 162-168",
+     "id": "columns",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Reads eight columns by range requests tied to the file's ETag: STATION, DATE, LATITUDE, LONGITUDE, ELEVATION, temperature and its quality and source codes. Hourly files are not kept."
+    },
+    {
+     "code_ref": "crc_sdk/providers/ghcnh.py:107; crc_sdk/providers/stations.py:31-33",
+     "id": "time",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Reads DATE as a timestamp and keeps the reports of the requested station whose timestamp falls in the requested year. A report whose DATE cannot be read is dropped."
+    },
+    {
+     "code_ref": "crc_sdk/providers/ghcnh.py:45-46, 55, 110-120",
+     "id": "quality",
+     "note": "In these files the excluded reports carried other quality codes. No report had code 1 or 5 from an unlisted source, so on NOAA's data the source lists were not put to the test; the offline tests exercise them on constructed files.",
+     "outcome": "confirmed",
+     "text": "Uses a temperature when its quality code is blank, or is 1 from one of fourteen listed source codes, or is 5 from one of eight listed source codes. Any other code excludes the report's value."
+    },
+    {
+     "code_ref": "crc_sdk/providers/ghcnh.py:121-122",
+     "id": "range",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Uses a temperature only if it is a finite number between -93.2 and 61.8 degrees Celsius inclusive."
+    },
+    {
+     "code_ref": "crc_sdk/providers/ghcnh.py:123; crc_sdk/workflows/stations.py:654",
+     "id": "units",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Takes the temperature in degrees Celsius as published. No unit is converted; the output is labelled degC."
+    },
+    {
+     "code_ref": "crc_sdk/providers/stations.py:34-42",
+     "id": "day",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Groups reports by UTC calendar day. For each day it counts all reports, the accepted reports and the distinct clock hours that hold an accepted report, and takes the lowest and highest accepted temperature."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/stations.py:518-523",
+     "id": "valid-day",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Counts a day as valid when at least 18 distinct hours hold an accepted report (three quarters of 24, rounded up). Several reports in one hour count once."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/stations.py:524-527",
+     "id": "valid-year",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Counts a year as complete when at least 90 per cent of its days are valid (329 of 365, 330 of 366)."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/stations.py:528-533",
+     "id": "annual-value",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "For a complete year, takes the highest daily maximum (`temperature_max`) or the lowest daily minimum (`temperature_min`) over the valid days only. An incomplete year has no value. Values on days that are not valid are ignored."
+    },
+    {
+     "code_ref": "crc_sdk/providers/ghcnh.py:108-109; crc_sdk/workflows/stations.py:499-517",
+     "id": "location",
+     "note": "No station in these files moved or lacked coordinates, so the refusal was not seen on NOAA's data; the offline tests exercise it on constructed files.",
+     "outcome": "confirmed",
+     "text": "Places the station at the lowest latitude and lowest longitude reported in the year, with the lowest reported elevation (-999.9 read as missing). Refuses a station whose coordinates move by more than 0.05 degrees within a year."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/stations.py:616-621, 670",
+     "id": "minimum-years",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Fits a curve for a station only when it has at least the policy's minimum of complete years (20 by default; 15 in the Texas data explorer). The minimum is applied per station."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/stations.py:301-303; docs/sources/stations.md:67-68",
+     "id": "family",
+     "note": "Confirmed here: the family named in the output. The fit itself (parameters, method, behaviour on short records) is not checked; it belongs to validation (phase V7).",
+     "outcome": "confirmed",
+     "text": "Fits a generalized extreme value distribution to annual maxima and a lower-tail Gumbel distribution to annual minima, both by L-moments."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/stations.py:657-667; crc_sdk/providers/ghcnh.py:25-30",
+     "id": "provenance",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Writes the licence (CC0-1.0), an attribution text, the latest retrieval time, a checksum over the cached daily files and the request into the curve file's metadata."
+    }
+   ],
+   "status": {
+    "exploration": "assessed",
+    "validation": "not assessed",
+    "verification": "assessed"
+   },
+   "symbols": [
+    "GHCNhPlan"
+   ],
+   "tier": 1,
+   "tier_reason": "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the airport station curves of the Texas data explorer.",
+   "title": "NOAA GHCNh station temperatures"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HazardDataset.cmip6"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "cmip6",
+   "kind": "fitted curves",
+   "notes": "",
+   "options": {
+    "recipe": [
+     "rx1day",
+     "rx5day",
+     "tnn",
+     "txx"
+    ]
+   },
+   "original": "s3://cmip6-pds (catalogue pangeo-cmip6.csv)",
+   "publisher": "WCRP CMIP6 modelling centres (Pangeo copy on AWS Open Data)",
+   "purpose": "Annual extremes of daily model output on the model's own grid, fitted per cell, for change signals between periods.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [
+    "CMIP6AreaPlan",
+    "CMIP6CanonicalizationPlan",
+    "CMIP6SourcePlan",
+    "CMIP6YearPlan"
+   ],
+   "tier": 2,
+   "tier_reason": "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet.",
+   "title": "CMIP6 projections (native grids)"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HazardDataset.eccc_idf"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "eccc-idf",
+   "kind": "fitted curves",
+   "notes": "Canada only. The version list is hard-coded upstream and is not read by the detector.",
+   "options": {
+    "duration": [
+     "10min",
+     "12h",
+     "15min",
+     "1h",
+     "24h",
+     "2h",
+     "30min",
+     "5min",
+     "6h"
+    ],
+    "version": [
+     "3.20",
+     "3.40"
+    ]
+   },
+   "original": "https://collaboration.cmc.ec.gc.ca/cmc/climate/Engineer_Climate/IDF/",
+   "publisher": "Environment and Climate Change Canada",
+   "purpose": "Published rainfall intensities at return periods per station, refitted to a curve.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [
+    "ECCCIDFPlan"
+   ],
+   "tier": 2,
+   "tier_reason": "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet.",
+   "title": "ECCC rainfall intensity-duration-frequency"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HazardDataset.smi",
+    "HazardDataset.edo"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "jrc-edo",
+   "kind": "fitted curves",
+   "notes": "No coverage of Texas.",
+   "options": {
+    "dataset": [
+     "smi"
+    ]
+   },
+   "original": "https://drought.emergency.copernicus.eu/data/Drought_Observatories_datasets/EDO_Soil_Moisture_Index",
+   "publisher": "European Commission JRC, European Drought Observatory",
+   "purpose": "Annual minimum of the ten-day soil moisture index, fitted on the lower tail, for drought screening in Europe.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [
+    "EDOAreaPlan",
+    "EDOCanonicalizationPlan",
+    "EDOSourcePlan",
+    "EDOYearPlan"
+   ],
+   "tier": 2,
+   "tier_reason": "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet.",
+   "title": "JRC EDO soil moisture index"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HazardDataset.glofas",
+    "HazardDataset.efas",
+    "HazardDataset.jrc"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "jrc-flood",
+   "kind": "fitted curves",
+   "notes": "Could not be run on the build Mac: rasterio fails to load (report S1).",
+   "options": {
+    "dataset": [
+     "efas",
+     "glofas"
+    ]
+   },
+   "original": "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/CEMS-GLOFAS/flood_hazard and CEMS-EFAS/flood_hazard",
+   "publisher": "European Commission JRC, Copernicus Emergency Management Service",
+   "purpose": "River flood depth at published return periods, fitted to a curve per cell.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [
+    "JRCAreaPlan",
+    "JRCCanonicalizationPlan",
+    "JRCSourcePlan"
+   ],
+   "tier": 2,
+   "tier_reason": "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet.",
+   "title": "JRC flood hazard maps (GloFAS, EFAS)"
+  },
+  {
+   "assessed_options": {
+    "recipe": [
+     "rx1day",
+     "rx5day"
+    ],
+    "scenario": [
+     "historical",
+     "ssp585"
+    ],
+    "version": [
+     "1.0",
+     "1.1"
+    ]
+   },
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HazardDataset.nex_gddp_cmip6"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "nex-gddp-cmip6",
+   "kind": "annual samples",
+   "notes": "Assessed on one model and member (ACCESS-CM2, r1i1p1f1), the Texas box (2,332 grid cells, 2,158 on land), 2014 of the historical run and 2050 of ssp585. The scenario and version lists are hard-coded upstream and are not read by the detector. Each result is one model and one member, not an ensemble. Ocean cells carry no value. The licence written in the files differs by version (CC-BY-SA 4.0 in 1.0, CC-BY 4.0 in 1.1) while NASA states the archive is CC0.",
+   "options": {
+    "recipe": [
+     "rx1day",
+     "rx5day",
+     "tnn",
+     "txx"
+    ],
+    "scenario": [
+     "historical",
+     "ssp126",
+     "ssp245",
+     "ssp370",
+     "ssp585"
+    ],
+    "version": [
+     "1.0",
+     "1.1",
+     "1.2"
+    ]
+   },
+   "original": "https://nex-gddp-cmip6.s3.us-west-2.amazonaws.com/NEX-GDDP-CMIP6",
+   "publisher": "NASA NCCS",
+   "purpose": "Annual extremes from bias-adjusted, downscaled daily model output at 0.25 degree, one model and member at a time.",
+   "records": "records/nex-gddp-cmip6.json",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [
+    {
+     "code_ref": "crc_sdk/workflows/nex.py:33, 90-100, 139-141; docs/sources/cmip6.md:75-77",
+     "id": "files",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Reads one NetCDF file per variable, model, scenario, member and year from NASA's archive on AWS, by range requests. Nothing is cached and no checksum is taken."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/nex.py:96, 130-132; docs/sources/cmip6.md:73-74",
+     "id": "versions",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Reads exactly the file version asked for (1.0 has no suffix in the file name; later ones end in `_v<version>`). A version NASA does not have fails; another is never substituted."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/nex.py:84-85",
+     "id": "versions-offered",
+     "note": "",
+     "outcome": "differs",
+     "text": "Accepts the file versions 1.0, 1.1 and 1.2."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/nex.py:142-153",
+     "id": "identity",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Checks that the file's own attributes name the model, scenario, member and version that were asked for."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/nex.py:154-165, 227-229",
+     "id": "licence",
+     "note": "The warning was seen on every file read. `strict_licence=True` was not run.",
+     "outcome": "confirmed",
+     "text": "Reads the model licence written in the file and keeps it beside NASA's archive licence (CC0-1.0). Warns when the file's licence is not CC0; refuses it when `strict_licence` is set."
+    },
+    {
+     "code_ref": "crc_sdk/providers/cmip6.py:606, 636-660, 952; crc_sdk/workflows/nex.py:179-183",
+     "id": "units-rain",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Requires precipitation to be declared in kg m-2 s-1 and multiplies it by 86,400 to give millimetres per day."
+    },
+    {
+     "code_ref": "crc_sdk/providers/cmip6.py:603, 611-634, 952; crc_sdk/workflows/nex.py:179-183",
+     "id": "units-temperature",
+     "note": "",
+     "outcome": "differs",
+     "text": "Requires temperature to be declared in kelvin (K) and subtracts 273.15 to give degrees Celsius."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/nex.py:184-194; crc_sdk/providers/cmip6.py:813-828",
+     "id": "time",
+     "note": "The files read use the proleptic Gregorian calendar with 365 days and no gap. Other calendars and gaps were exercised only in the offline tests.",
+     "outcome": "confirmed",
+     "text": "Requires the daily time axis to be strictly increasing and to lie within the requested year, in the file's own calendar, and places each day by its date."
+    },
+    {
+     "code_ref": "crc_sdk/connectors/blocks.py:175-234",
+     "id": "area",
+     "note": "Confirmed for a box of 44 by 53 cells. A box narrower than one cell and a box across the 180 degree meridian were not run.",
+     "outcome": "confirmed",
+     "text": "Selects the grid cells whose centres lie inside the box grown by half a cell on every side, with longitudes brought to -180..180 and ordered west to east. A box narrower than one cell is widened to two cells."
+    },
+    {
+     "code_ref": "crc_sdk/providers/cmip6.py:762, 823-825, 835-866",
+     "id": "missing",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Treats the file's fill value as missing."
+    },
+    {
+     "code_ref": "crc_sdk/providers/cmip6.py:621; crc_sdk/connectors/blocks.py:454-455, 484",
+     "id": "completeness",
+     "note": "In NASA's files a cell has either every day or none (ocean), so the 90 per cent line itself was crossed only in the offline tests.",
+     "outcome": "confirmed",
+     "text": "Gives a grid cell a value only when at least 90 per cent of the year's days are present."
+    },
+    {
+     "code_ref": "crc_sdk/providers/cmip6.py:636-660; crc_sdk/connectors/blocks.py:467-483",
+     "id": "statistic-rain",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "`rx1day` is the largest daily value of the year. `rx5day` is the largest sum over five consecutive days that lie within the year; windows do not reach into the neighbouring years."
+    },
+    {
+     "code_ref": "crc_sdk/providers/cmip6.py:611-634; crc_sdk/connectors/blocks.py:479-483",
+     "id": "statistic-temperature",
+     "note": "Cannot be checked at crc-sdk 0.11.1, where both recipes fail (CRC-001-NEX). On a local clone that carries the fix, every cell agrees with the recomputation (checks `annual-fixed-clone`); that is not a statement about a released version.",
+     "outcome": "not checked",
+     "text": "`txx` is the highest daily maximum of the year and `tnn` the lowest daily minimum."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/nex.py:202-232",
+     "id": "output",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Returns one row per grid cell that has a value, at the cell's centre, south to north and west to east. No distribution is fitted."
+    },
+    {
+     "code_ref": "crc_sdk/workflows/nex.py:211-231",
+     "id": "labels",
+     "note": "",
+     "outcome": "confirmed",
+     "text": "Labels every row with the unit, recipe, model, scenario, member, grid, version, calendar (under one name per calendar: `365_day` is written `noleap`), the file's address, the retrieval time, both licences and an attribution."
+    }
+   ],
+   "status": {
+    "exploration": "assessed",
+    "validation": "not assessed",
+    "verification": "assessed"
+   },
+   "symbols": [],
+   "tier": 2,
+   "tier_reason": "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet. Chosen for the first slice as the gridded case.",
+   "title": "NASA NEX-GDDP-CMIP6 projections"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HazardDataset.isd"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "isd",
+   "kind": "fitted curves",
+   "notes": "",
+   "options": {
+    "recipe": [
+     "temperature_max",
+     "temperature_min"
+    ]
+   },
+   "original": "https://noaa-global-hourly-pds.s3.amazonaws.com",
+   "publisher": "NOAA NCEI",
+   "purpose": "As GHCNh, from the older Integrated Surface Database archive (updates ended August 2025).",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [
+    "ISDPlan"
+   ],
+   "tier": 2,
+   "tier_reason": "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet.",
+   "title": "NOAA ISD station temperatures"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "OSClimateProvider"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "os-climate",
+   "kind": "fitted curves",
+   "notes": "No source page in the crc-sdk docs and no upstream example.",
+   "options": {},
+   "original": "https://github.com/os-climate/hazard (inventory) and the os-climate-physical-risk bucket",
+   "publisher": "OS-Climate",
+   "purpose": "Hazard indicator layers from the OS-Climate inventory, fitted with a policy the caller chooses.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [
+    "OSClimateSelectionSpec"
+   ],
+   "tier": 2,
+   "tier_reason": "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet.",
+   "title": "OS-Climate hazard indicators"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "CHIRPSMonthlyPlan"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "chirps",
+   "kind": "pass-through",
+   "notes": "Could not be run on the build Mac: rasterio fails to load (report S1).",
+   "options": {},
+   "original": "https://data.chc.ucsb.edu/products/CHIRPS/v3.0/monthly/global/cogs",
+   "publisher": "Climate Hazards Center, UC Santa Barbara",
+   "purpose": "Monthly rainfall at pixel centres for an area, as published.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [],
+   "tier": 3,
+   "tier_reason": "Tier 3: passed through without fitting and not used in crc-lab.",
+   "title": "CHIRPS v3 monthly rainfall"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "ECCCDailyPlan"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "eccc-daily",
+   "kind": "pass-through",
+   "notes": "Canada only.",
+   "options": {},
+   "original": "https://api.weather.gc.ca/collections/climate-daily/items",
+   "publisher": "Environment and Climate Change Canada",
+   "purpose": "Daily station measurements and flags, as published.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [],
+   "tier": 3,
+   "tier_reason": "Tier 3: passed through without fitting and not used in crc-lab.",
+   "title": "ECCC daily climate observations"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HYDATDailyPlan"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "hydat",
+   "kind": "pass-through",
+   "notes": "Canada only.",
+   "options": {},
+   "original": "https://api.weather.gc.ca/collections/hydrometric-daily-mean/items",
+   "publisher": "Environment and Climate Change Canada",
+   "purpose": "Daily mean flow and level at hydrometric stations, as published.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [],
+   "tier": 3,
+   "tier_reason": "Tier 3: passed through without fitting and not used in crc-lab.",
+   "title": "ECCC HYDAT daily flow and level"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "AgriculturalLayer.ftw_fields"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "ftw-fields",
+   "kind": "pass-through",
+   "notes": "",
+   "options": {},
+   "original": "s3://us-west-2.opendata.source.coop/tge-labs/ftw-global-data",
+   "publisher": "Taylor Geospatial Engine (copy on Source Cooperative)",
+   "purpose": "Predicted field boundaries for an area.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [],
+   "tier": 3,
+   "tier_reason": "Tier 3: passed through without fitting and not used in crc-lab.",
+   "title": "Fields of The World field boundaries"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "NOAASeaLevelPlan"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "noaa-sea-level",
+   "kind": "pass-through",
+   "notes": "",
+   "options": {
+    "scenario": [
+     "high",
+     "intermediate",
+     "intermediate-high",
+     "intermediate-low",
+     "low"
+    ]
+   },
+   "original": "https://api.tidesandcurrents.noaa.gov/dpapi/prod/ (slr_projections)",
+   "publisher": "NOAA National Ocean Service, CO-OPS",
+   "purpose": "The 2022 interagency sea-level scenarios at U.S. stations, as published.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [],
+   "tier": 3,
+   "tier_reason": "Tier 3: passed through without fitting and not used in crc-lab.",
+   "title": "NOAA 2022 sea-level scenarios"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "AgriculturalLayer.usda_cdl"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "usda-cdl",
+   "kind": "pass-through",
+   "notes": "",
+   "options": {},
+   "original": "https://data.source.coop/chill/usda-cropland-data-layer",
+   "publisher": "USDA NASS (copy on Source Cooperative)",
+   "purpose": "Crop class per pixel for an area.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [],
+   "tier": 3,
+   "tier_reason": "Tier 3: passed through without fitting and not used in crc-lab.",
+   "title": "USDA Cropland Data Layer"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "USGSStreamflowPlan"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "usgs-streamflow",
+   "kind": "pass-through",
+   "notes": "",
+   "options": {},
+   "original": "https://api.waterdata.usgs.gov/ogcapi/v1/collections/daily/items",
+   "publisher": "U.S. Geological Survey",
+   "purpose": "Daily mean discharge at a monitoring location, as published.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [],
+   "tier": 3,
+   "tier_reason": "Tier 3: passed through without fitting and not used in crc-lab.",
+   "title": "USGS daily streamflow"
+  },
+  {
+   "assessed_options": {},
+   "draft": true,
+   "drafted_by": "",
+   "entry_points": [
+    "HazardDataset.from_table",
+    "HazardDataset.from_zarr",
+    "HazardDataset.from_raster"
+   ],
+   "explorer": "",
+   "framework": "crc-sdk",
+   "id": "own-data",
+   "kind": "user data",
+   "notes": "",
+   "options": {},
+   "original": "Supplied by the user",
+   "publisher": "The user",
+   "purpose": "Tables, Zarr stores or rasters of the user's own, turned into CRC's dataset form. Listed for completeness; not an upstream source.",
+   "records": "",
+   "reviewed_by": "",
+   "reviewed_on": "",
+   "statement": [],
+   "status": {
+    "exploration": "not assessed",
+    "validation": "not assessed",
+    "verification": "not assessed"
+   },
+   "symbols": [
+    "BYOPlan"
+   ],
+   "tier": null,
+   "tier_reason": "",
+   "title": "Your own data"
+  }
+ ],
+ "versions": {
+  "crc-framework": "0.6.0",
+  "crc-sdk": "0.11.1"
+ }
+}

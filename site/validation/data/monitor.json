@@ -1,0 +1,45 @@
+{
+ "gaps": {
+  "new_options": [],
+  "unclaimed_symbols": []
+ },
+ "installed": {
+  "crc-framework": "0.6.0",
+  "crc-sdk": "0.11.1"
+ },
+ "needs_attention": false,
+ "reruns": [],
+ "run_at": "2026-11-12T04:54:13Z",
+ "sources": [
+  {
+   "assessed_at": "2026-11-12T04:28:02Z",
+   "files": 10,
+   "files_changed": [],
+   "files_unreachable": [],
+   "reasons": [],
+   "source": "ibtracs",
+   "stale": false,
+   "versions_changed": {}
+  },
+  {
+   "assessed_at": "2026-11-12T04:34:47Z",
+   "files": 1008,
+   "files_changed": [],
+   "files_unreachable": [],
+   "reasons": [],
+   "source": "ghcnh",
+   "stale": false,
+   "versions_changed": {}
+  },
+  {
+   "assessed_at": "2026-11-12T04:51:25Z",
+   "files": 8,
+   "files_changed": [],
+   "files_unreachable": [],
+   "reasons": [],
+   "source": "nex-gddp-cmip6",
+   "stale": false,
+   "versions_changed": {}
+  }
+ ]
+}

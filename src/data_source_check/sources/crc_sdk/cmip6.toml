@@ -1,0 +1,13 @@
+id = "cmip6"
+title = "CMIP6 projections (native grids)"
+kind = "fitted curves"
+tier = 2
+tier_reason = "Tier 2: crc-sdk reduces or fits the data, but no crc-lab result depends on it yet."
+publisher = "WCRP CMIP6 modelling centres (Pangeo copy on AWS Open Data)"
+original = "s3://cmip6-pds (catalogue pangeo-cmip6.csv)"
+purpose = "Annual extremes of daily model output on the model's own grid, fitted per cell, for change signals between periods."
+entry_points = ["HazardDataset.cmip6"]
+symbols = ["CMIP6AreaPlan", "CMIP6CanonicalizationPlan", "CMIP6SourcePlan", "CMIP6YearPlan"]
+
+[options]
+recipe = ["rx1day", "rx5day", "tnn", "txx"]

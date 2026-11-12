@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source validation: crc-sdk</title>
+<link rel="stylesheet" href="validation.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><b>Source validation</b><small>climate-risk data sources, checked against their originals</small></div>
+  <nav><a href="../">crc-lab</a><a href="explore/">Texas data explorer</a><a href="../hail/">Texas hail risk</a><a href="https://github.com/shlyakh/crc-lab/blob/main/docs/validation/method.md">Method</a><a href="https://github.com/shlyakh/crc-lab/blob/main/docs/validation/inventory.md">Inventory as text</a></nav>
+</header>
+<main>
+  <section class="intro">
+    <h1>What does <span id="framework">the framework</span> do to each data source?</h1>
+    <p>Each source is assessed in three tiers. <b>Exploration</b> shows what is there. <b>Verification</b> states every step the framework applies between the publisher's files and its output, and recomputes a sample independently from the publisher's files. <b>Validation</b> asks whether the values and fitted curves suit a stated use.</p>
+    <p class="mute" id="stamp"></p>
+    <p class="notice" id="notice"></p>
+  </section>
+  <section class="tiles" id="tiles" aria-label="Summary"></section>
+
+  <section>
+    <div class="sec-head"><h2>Inventory</h2>
+      <label>Kind <select id="f-kind"><option value="">all</option></select></label>
+      <label>Tier <select id="f-tier"><option value="">all</option><option>1</option><option>2</option><option>3</option></select></label>
+    </div>
+    <div class="scroll"><table class="data" id="inventory">
+      <thead><tr><th class="l">Source</th><th class="l">Kind</th><th>Tier</th><th class="l">Exploration</th><th class="l">Verification</th><th class="l">Validation</th><th>Findings</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="mute small">Tier is materiality: 1 feeds a crc-lab result today or is the release most users consume; 2 is reduced or fitted by the framework but not yet relied on here; 3 is passed through and not used here. Select a row for details.</p>
+  </section>
+
+  <section id="assessments-section" hidden>
+    <div class="sec-head"><h2>Assessments</h2></div>
+    <p class="mute small">One block per assessed source: what was counted in the publisher's files, each step the framework applies with its outcome, and the checks behind the outcomes. A draft has not been reviewed by a person.</p>
+    <div id="assessments"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Findings</h2>
+      <label>Status <select id="f-status"><option value="">all</option></select></label>
+    </div>
+    <p class="mute small">What the documentation says beside what the code or the data shows. "Code reading" means the behaviour was read in the code and is not yet shown on data.</p>
+    <div id="findings"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Offered by the framework, not yet assessed</h2></div>
+    <div id="gaps"></div>
+  </section>
+</main>
+<script type="module" src="validation.js"></script>
+</body>
+</html>

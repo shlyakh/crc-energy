@@ -1,0 +1,95 @@
+id = "noaa-water-levels"
+title = "NOAA CO-OPS extreme water levels"
+kind = "pass-through"
+tier = 1
+tier_reason = "Tier 1: feeds a crc-lab result today, or is the release most CRC users consume. Feeds the coastal station levels of the Texas data explorer."
+publisher = "NOAA National Ocean Service, CO-OPS"
+original = "https://api.tidesandcurrents.noaa.gov/dpapi/prod/ (extremewaterlevels)"
+purpose = "NOAA's published exceedance levels and annual extremes at tide stations, as published."
+explorer = "explore/#tab=crc&source=coops"
+entry_points = ["NOAAExtremeWaterLevelPlan"]
+drafted_by = "agent (draft-source-assessment skill), 2026-11-12"
+notes = "Draft. NOAA lists 126 stations with this product; ten are in Texas. A station without the product is answered with HTTP 200 and an empty body of the usual shape, which crc-sdk refuses. NOAA sends no ETag and no Last-Modified for these responses. The exceedance levels carry the datum label in capitals (MHHW) and the annual series in lower case (mhhw); crc-sdk passes both on as published. NOAA sometimes answers the same address with the values rounded to one decimal instead of two or three (seen 2026-11-12); crc-sdk delivers whichever answer it received."
+
+[status]
+exploration = "in progress"
+verification = "in progress"
+
+# crc-sdk enumerates no option for this source: the only selector is the station. The stations
+# compared are listed in the records (sample).
+[assessed_options]
+
+[[statement]]
+id = "station-id"
+text = "Accepts a station only as a string of exactly seven digits 0-9; anything else raises ValueError before any request."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:61-63"
+
+[[statement]]
+id = "requests"
+text = "Makes three GET requests to `https://api.tidesandcurrents.noaa.gov/dpapi/prod/webapi/product.json` with `name=extremewaterlevels`, the station and `units=metric`: one with nothing more (station), one with `details=exceedancelevels&levelType=high` (levels), one with `extremeType=annuals&levelType=high` (annuals). Low-water and monthly products are never requested."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:22, 92-104"
+
+[[statement]]
+id = "bytes"
+text = "Saves each response unchanged as `source.json` and records its SHA-256 in a manifest beside it."
+code_ref = "crc_sdk/workflows/_noaa.py:39-52, 67-68"
+note = "The check compares with a second download of the same address, so it also differs when NOAA answers the same address differently (step one-answer); it cannot tell the two apart."
+
+[[statement]]
+id = "one-answer"
+text = "Asks each address once and takes that answer as the station's published values. Nothing asks a second time or compares two answers; the recorded SHA-256 is that of the one answer received."
+code_ref = "crc_sdk/workflows/_noaa.py:39-52; crc_sdk/workflows/noaa_water_levels.py:134-145, 196-203"
+
+[[statement]]
+id = "limits"
+text = "Refuses a response longer than 4 MiB (4,194,304 bytes) or shorter than its announced Content-Length."
+code_ref = "crc_sdk/workflows/_noaa.py:40, 44-47"
+note = "Read in the code, not shown on data: NOAA's responses are a few kilobytes and complete. No constructed test was written for it."
+
+[[statement]]
+id = "refusals"
+text = "Refuses a station (ValueError, nothing cached) unless: the station response lists exactly one station with that id, a longitude in -180..180, a latitude in -90..90 and a non-empty epoch; the levels and annuals responses carry that id, `units` equal to `meters` and a non-empty datum; the two datum labels are equal when letter case is ignored; the annuals response has a non-empty notice, a trend that is null or a number, and for every extreme an integer year and a finite value; the levels response has a non-empty `GEV_HI.exceedanceLevels` in which every probability is in (0, 1] and not repeated, every return period is at least 1, every level is finite, and a confidence bound that is present lies on its side of the level. There is no rule about the length or completeness of the annual series."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:147-158, 263-338"
+note = "On NOAA's data two of these rules fire: an empty station list (a station without the product) and a levels response without the station id (NOAA sent an error message in its place). Each of the other rules is confirmed on constructed responses only, in the tests."
+
+[[statement]]
+id = "levels"
+text = "`source_levels()` gives one row per entry of `GEV_HI.exceedanceLevels`, in NOAA's order, with eleven columns: the station id, then name, longitude, latitude and datum epoch from the station response repeated on every row, the datum label from the levels response, and NOAA's `probability`, `returnPeriod`, `level`, `lower90CI` and `upper90CI`. A missing confidence bound becomes null. The return period is NOAA's rounded label, not 1/probability. `GEV_LO` and the monthly groups are not delivered."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:24-39, 224-244"
+
+[[statement]]
+id = "annuals"
+text = "`annual_extremes()` gives one row per entry of `extremes` in the annuals response, in NOAA's order, with six columns: the station id, `year`, `value`, the datum label from the annuals response, the datum epoch from the station response and NOAA's notice repeated on every row. No year is added, dropped or filled."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:40-49, 246-260"
+
+[[statement]]
+id = "numbers"
+text = "Delivers numbers as 64-bit floats (the year as a 32-bit integer) with NOAA's values: nothing is rounded, no unit is converted (metres are requested and required) and no datum is transformed."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:24-49, 54, 97, 297-301"
+
+[[statement]]
+id = "info"
+text = "`source_info()` gives the whole station entry as NOAA sent it, the datum label and units of the levels response, and the trend, its units, its start and end dates and the notice of the annuals response. The trend (mm/yr) appears here only, not in the tables."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:159-169, 220-222"
+
+[[statement]]
+id = "provenance"
+text = "Writes for each response a manifest with the address, station id, resource name, SHA-256, retrieval time, ETag, Last-Modified, an attribution, a documentation address and a terms address. The tables themselves carry no metadata."
+code_ref = "crc_sdk/workflows/_noaa.py:53-68"
+
+[[statement]]
+id = "pinned-checksums"
+text = "With `cache(dir, sha256={resource: digest})` a response whose SHA-256 is not the given one is refused with RuntimeError; the names accepted are station, levels and annuals."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:66-73, 78-90, 139; crc_sdk/workflows/_remote.py:86-88, 110-115"
+
+[[statement]]
+id = "snapshot"
+text = "Keeps the three responses of one fetch together as one snapshot; `refresh` fetches all three again, moves a pointer to the new snapshot and deletes the old one, and a fetch that fails leaves the previous snapshot in place."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:111-119, 171-211"
+note = "Read in the code and in crc-sdk's own test (tests/test_noaa_water_levels.py), not shown on data: showing it needs NOAA to fail or change between two requests."
+
+[[statement]]
+id = "reuse"
+text = "In `reuse` mode (the default) a complete cached snapshot is served without asking NOAA whether the responses have changed. NOAA sends neither ETag nor Last-Modified for them."
+code_ref = "crc_sdk/workflows/noaa_water_levels.py:171-185; crc_sdk/workflows/_remote.py:91-118"
+note = "Read in the code, not shown on data: showing it needs NOAA to change a response between two runs. Left to monitoring."
